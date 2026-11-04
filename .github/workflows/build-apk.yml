@@ -50,6 +50,10 @@ jobs:
             exit 1
           fi
 
+          sdk_root="$RUNNER_TEMP/openwrt-sdk-${SDK_VERSION}"
+          mkdir -p "$sdk_root"
+          cd "$sdk_root"
+
           primary="$base/$sdk_file"
           mirrors=(
             "https://mirror.sjtu.edu.cn/openwrt/releases/${SDK_VERSION}/targets/${SDK_TARGET}/${sdk_file}"
