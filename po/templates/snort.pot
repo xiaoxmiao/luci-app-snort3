@@ -1,0 +1,447 @@
+# Snort3 LuCI translation template.
+# Run `npm run check:i18n -- --write-pot` after changing the UI.
+msgid ""
+msgstr ""
+"Project-Id-Version: luci-app-snort3\n"
+"Report-Msgid-Bugs-To: https://github.com/dddavid51/luci-snort3-openwrt/issues\n"
+"POT-Creation-Date: 2026-11-04 00:00+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "Access code to download official Snort rules (optional)"
+msgstr ""
+
+msgid "Actions"
+msgstr ""
+
+msgid "Active symbolic link"
+msgstr ""
+
+msgid "Advanced"
+msgstr ""
+
+msgid "Alert"
+msgstr ""
+
+msgid "Alert file"
+msgstr ""
+
+msgid "Alerts"
+msgstr ""
+
+msgid "Auto-refresh every 5 seconds"
+msgstr ""
+
+msgid "Auto-start"
+msgstr ""
+
+msgid "Auto-start disabled"
+msgstr ""
+
+msgid "Auto-start enabled"
+msgstr ""
+
+msgid "Block"
+msgstr ""
+
+msgid "Broken symbolic link"
+msgstr ""
+
+msgid "Capture Length"
+msgstr ""
+
+msgid "Chain priority"
+msgstr ""
+
+msgid "Chain type"
+msgstr ""
+
+msgid "Cleanup temporary files"
+msgstr ""
+
+msgid "Configuration directory"
+msgstr ""
+
+msgid "Configuration rules path is a directory"
+msgstr ""
+
+msgid "Create a symbolic link from /var/snort.d/rules to /etc/snort/rules?"
+msgstr ""
+
+msgid "Create symbolic link"
+msgstr ""
+
+msgid "DAQ method"
+msgstr ""
+
+msgid "Default"
+msgstr ""
+
+msgid "Default action for rules"
+msgstr ""
+
+msgid "Detailed JSON alerts"
+msgstr ""
+
+msgid "Directory does not exist:"
+msgstr ""
+
+msgid "Directory for temporary files and downloaded rules"
+msgstr ""
+
+msgid "Disable at boot"
+msgstr ""
+
+msgid "Disabled"
+msgstr ""
+
+msgid "Drop"
+msgstr ""
+
+msgid "Enable application detection with the OpenAppID package"
+msgstr ""
+
+msgid "Enable at boot"
+msgstr ""
+
+msgid "Enable event logging"
+msgstr ""
+
+msgid "Enable logging"
+msgstr ""
+
+msgid "Enable or disable Snort service"
+msgstr ""
+
+msgid "Enable Snort"
+msgstr ""
+
+msgid "Enabled"
+msgstr ""
+
+msgid "Enter your Oinkcode if you have one"
+msgstr ""
+
+msgid "Error creating symbolic link"
+msgstr ""
+
+msgid "Existing rules path is not a directory"
+msgstr ""
+
+msgid "External IP address range"
+msgstr ""
+
+msgid "External network"
+msgstr ""
+
+msgid "Fanout type"
+msgstr ""
+
+msgid "Fast alerts"
+msgstr ""
+
+msgid "First queue number"
+msgstr ""
+
+msgid "Full path to user-defined extra rules included in the queue chain"
+msgstr ""
+
+msgid "Idle"
+msgstr ""
+
+msgid "IDS (Detection)"
+msgstr ""
+
+msgid "IDS = Detection only, IPS = Active prevention"
+msgstr ""
+
+msgid "In progress..."
+msgstr ""
+
+msgid "Interface"
+msgstr ""
+
+msgid "Invalid action"
+msgstr ""
+
+msgid "IP address range to protect"
+msgstr ""
+
+msgid "IPS (Prevention)"
+msgstr ""
+
+msgid "Kernel load balancing algorithm"
+msgstr ""
+
+msgid "Loading..."
+msgstr ""
+
+msgid "Local network"
+msgstr ""
+
+msgid "Log directory"
+msgstr ""
+
+msgid "Log files:"
+msgstr ""
+
+msgid "Logging configuration"
+msgstr ""
+
+msgid "Manual mode"
+msgstr ""
+
+msgid "Maximum number of packet threads, 0 uses the number of CPU cores"
+msgstr ""
+
+msgid "Maximum packet capture size"
+msgstr ""
+
+msgid "Maximum queue length"
+msgstr ""
+
+msgid "Memory"
+msgstr ""
+
+msgid "Mode"
+msgstr ""
+
+msgid "Netfilter queue settings used when the DAQ method is NFQ."
+msgstr ""
+
+msgid "Network interface"
+msgstr ""
+
+msgid "Network interface to monitor (e.g. br-lan, eth0)"
+msgstr ""
+
+msgid "NFQ (for IPS)"
+msgstr ""
+
+msgid "NFQ rules include"
+msgstr ""
+
+msgid "NFQ settings"
+msgstr ""
+
+msgid "nftables chain type used for IPS mode"
+msgstr ""
+
+msgid "No alerts recorded"
+msgstr ""
+
+msgid "No logs"
+msgstr ""
+
+msgid "No recent alerts - Your network is secure"
+msgstr ""
+
+msgid "No rules directory found"
+msgstr ""
+
+msgid "No update log yet."
+msgstr ""
+
+msgid "Number of NFQ queues, usually 2 to 8"
+msgstr ""
+
+msgid "Oinkcode"
+msgstr ""
+
+msgid "Old directory backed up. Symbolic link created successfully"
+msgstr ""
+
+msgid "OpenAppID"
+msgstr ""
+
+msgid "Operating mode"
+msgstr ""
+
+msgid "Optional Snort configuration file appended to the generated snort.lua"
+msgstr ""
+
+msgid "Packet acquisition method"
+msgstr ""
+
+msgid "Packet thread count"
+msgstr ""
+
+msgid "Path where logs will be stored"
+msgstr ""
+
+msgid "PCAP (Recommended)"
+msgstr ""
+
+msgid "PID"
+msgstr ""
+
+msgid "Queue count"
+msgstr ""
+
+msgid "Real-time status, service control and rules management."
+msgstr ""
+
+msgid "Recent alerts"
+msgstr ""
+
+msgid "Recent alerts (50 most recent)"
+msgstr ""
+
+msgid "Refresh"
+msgstr ""
+
+msgid "Reject"
+msgstr ""
+
+msgid "Restart"
+msgstr ""
+
+msgid "RPC request failed"
+msgstr ""
+
+msgid "Rule action"
+msgstr ""
+
+msgid "Rule files:"
+msgstr ""
+
+msgid "Rule updates and symbolic link repair are available on the overview page."
+msgstr ""
+
+msgid "Rules are in"
+msgstr ""
+
+msgid "Rules management"
+msgstr ""
+
+msgid "Rules updater not found: /usr/bin/snort-rules"
+msgstr ""
+
+msgid "Running"
+msgstr ""
+
+msgid "Service"
+msgstr ""
+
+msgid "Service action failed"
+msgstr ""
+
+msgid "Service control"
+msgstr ""
+
+msgid "Service settings"
+msgstr ""
+
+msgid "Settings"
+msgstr ""
+
+msgid "Snort - Alerts and Logs"
+msgstr ""
+
+msgid "Snort configuration directory path"
+msgstr ""
+
+msgid "Snort IDS/IPS"
+msgstr ""
+
+msgid "Snort init script not found"
+msgstr ""
+
+msgid "Snort is an open source intrusion detection and prevention system."
+msgstr ""
+
+msgid "Snort memory"
+msgstr ""
+
+msgid "Snort restarted"
+msgstr ""
+
+msgid "Snort started"
+msgstr ""
+
+msgid "Snort stopped"
+msgstr ""
+
+msgid "Snort system logs (20 most recent)"
+msgstr ""
+
+msgid "Start"
+msgstr ""
+
+msgid "Stop"
+msgstr ""
+
+msgid "Stopped"
+msgstr ""
+
+msgid "Symbolic link created successfully"
+msgstr ""
+
+msgid "System memory"
+msgstr ""
+
+msgid "System uptime"
+msgstr ""
+
+msgid "Temporary directory"
+msgstr ""
+
+msgid "Temporary files cleaned"
+msgstr ""
+
+msgid "Temporary rules:"
+msgstr ""
+
+msgid "Total alerts"
+msgstr ""
+
+msgid "Unable to back up the old rules directory"
+msgstr ""
+
+msgid "Unable to clean temporary files"
+msgstr ""
+
+msgid "Unable to start the rules update"
+msgstr ""
+
+msgid "Unavailable"
+msgstr ""
+
+msgid "Unknown error"
+msgstr ""
+
+msgid "Update already in progress..."
+msgstr ""
+
+msgid "Update completed!"
+msgstr ""
+
+msgid "Update in progress..."
+msgstr ""
+
+msgid "Update launched in background. Monitoring starts automatically."
+msgstr ""
+
+msgid "Update rules"
+msgstr ""
+
+msgid "Update status"
+msgstr ""
+
+msgid "Use manual configuration (snort.lua)"
+msgstr ""
+
+msgid "User configuration include"
+msgstr ""
+
+msgid "View all alerts"
+msgstr ""
+
+msgid "View detailed reports via SSH with the command:"
+msgstr ""

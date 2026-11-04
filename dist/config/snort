@@ -1,0 +1,31 @@
+# Snort3 configuration for LuCI
+# Managed through Services -> Snort IDS/IPS -> Settings.
+# This file is also understood by the OpenWrt snort3 init script.
+
+config snort 'snort'
+	option enabled '0'
+	option manual '1'
+	option interface 'br-lan'
+	option home_net '192.168.1.0/24'
+	option external_net 'any'
+	option mode 'ids'
+	option method 'pcap'
+	option snaplen '1518'
+	option logging '1'
+	option log_dir '/var/log'
+	option config_dir '/etc/snort'
+	option temp_dir '/var/snort.d'
+	option oinkcode ''
+	option action 'default'
+	option openappid '0'
+	option include ''
+
+config nfq 'nfq'
+	option queue_count '4'
+	option queue_start '4'
+	option queue_maxlen '1024'
+	option fanout_type 'hash'
+	option thread_count '0'
+	option chain_type 'input'
+	option chain_priority 'filter'
+	option include ''

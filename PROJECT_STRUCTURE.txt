@@ -1,36 +1,45 @@
-.
-./CHANGELOG.md
-./CHANGES_SUMMARY.md
-./CONTRIBUTING.md
-./LICENSE
-./PROJECT_STRUCTURE.txt
-./README.md
-./docs
-./docs/INSTALLATION.md
-./docs/USAGE.md
-./generate_install.py
-./install.sh
-./original_script.sh
-./src
-./src/controller
-./src/controller/snort.lua
-./src/i18n
-./src/i18n/snort.en.po
-./src/i18n/snort.fr.po
-./src/model
-./src/model/cbi
-./src/model/cbi/snort
-./src/model/cbi/snort/config.lua
-./src/view
-./src/view/snort
-./src/view/snort/alerts.htm
-./src/view/snort/control.htm
-./src/view/snort/recent_alerts.htm
-./src/view/snort/status.htm
-./src/view/snort/status_page.htm
-./verify.sh
-./{src
-./{src/{controller,model
-./{src/{controller,model/cbi
-./{src/{controller,model/cbi/snort,view
-./{src/{controller,model/cbi/snort,view/snort,i18n},docs}
+LuCI Snort3 - project structure
+===============================
+
+Frontend (installed under /www/luci-static/resources)
+  htdocs/luci-static/resources/view/snort/overview.js   dashboard, service control, rules
+  htdocs/luci-static/resources/view/snort/config.js     UCI settings form
+  htdocs/luci-static/resources/view/snort/alerts.js     alerts and logs
+  htdocs/luci-static/resources/snort/api.js             rpc.declare wrappers
+  htdocs/luci-static/resources/snort/util.js            pure helpers and message mapping
+  htdocs/luci-static/resources/snort/style.js           shared CSS
+
+Backend (installed under /usr/share)
+  root/usr/share/rpcd/ucode/luci.snort.uc               luci.snort rpcd/ucode plugin
+  root/usr/share/luci/menu.d/luci-app-snort3.json       menu entries
+  root/usr/share/rpcd/acl.d/luci-app-snort3.json        RPC and UCI permissions
+
+System integration
+  root/etc/uci-defaults/80_luci-app-snort3             one-shot rules link repair
+
+Install templates
+  dist/config/snort                                    default UCI configuration
+  dist/lmo/snort.fr.lmo                                prebuilt catalog for install.sh
+  po/fr/snort.po                                       French catalog
+  po/templates/snort.pot                               translation template
+
+Build and verification
+  Makefile                                             luci.mk package definition
+  install.sh                                           direct router installer
+  verify.sh                                            installed-system checks
+  package.json                                         local development scripts
+  scripts/po2lmo.js                                    PO -> LMO compiler
+  scripts/check-i18n.js                                UI/catalog consistency checker
+  scripts/check-js.js                                  JavaScript syntax checker
+  tests/                                               Node test suite
+
+Documentation
+  README.md
+  CHANGELOG.md
+  CONTRIBUTING.md
+  docs/INSTALLATION.md
+  docs/USAGE.md
+
+Legacy (not installed)
+  legacy/lua-v3/                                       previous Lua LuCI module
+  legacy/v0-cgi-interface/                             original CGI prototype

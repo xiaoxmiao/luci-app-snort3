@@ -1,0 +1,18 @@
+{
+  "name": "luci-app-snort3",
+  "version": "4.0.0",
+  "private": true,
+  "description": "LuCI JavaScript frontend and rpcd/ucode backend for Snort3 on OpenWrt",
+  "license": "GPL-2.0",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test",
+    "check:js": "node scripts/check-js.js",
+    "check:i18n": "node scripts/check-i18n.js",
+    "check:ucode": "npx --yes ucode-lsp root/usr/share/rpcd/ucode/luci.snort.uc",
+    "build:lmo": "node scripts/po2lmo.js po/fr/snort.po dist/lmo/snort.fr.lmo",
+    "check": "npm run check:js && npm run test && npm run check:i18n"
+  }
+}

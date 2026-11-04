@@ -1,352 +1,225 @@
-# Installation Guide - LuCI Snort3 Module
+# Installation Guide
 
-## Table of Contents
-- [Prerequisites](#prerequisites)
-- [Quick Installation](#quick-installation)
-- [Manual Installation](#manual-installation)
-- [Verification](#verification)
-- [Troubleshooting](#troubleshooting)
-- [Uninstallation](#uninstallation)
+This guide covers the JavaScript/ucode version of LuCI Snort3. For the old Lua
+module, see `legacy/lua-v3/docs/INSTALLATION.md`.
 
----
+## 1. Requirements
 
-## Prerequisites
+| Component | Requirement |
+| --- | --- |
+| OpenWrt | 23.05 or newer; 24.10 LTS recommended |
+| LuCI | JavaScript runtime (`luci-base`) |
+| RPC backend | `rpcd-mod-ucode` |
+| Snort | `snort3`, with `/etc/init.d/snort` and `/usr/bin/snort` |
+| Rules updater | optional `/usr/bin/snort-rules` |
+| French LuCI | optional `luci-i18n-base-fr` |
 
-### Required Packages
+Install the packages first:
 
-1. **OpenWrt** version 21.02 or later
-2. **Snort3** package installed:
-   ```bash
-   opkg update
-   opkg install snort3
-   ```
-3. **LuCI** web interface installed (usually pre-installed)
-4. **Root access** to your router
-
-### Optional Packages
-
-- `po2lmo`: For compiled translations (usually included in LuCI)
-- `wget` or `curl`: For downloading the installation script
-
-### System Requirements
-
-- Minimum 128MB RAM (256MB recommended)
-- At least 10MB free storage space
-- Working network connection
-
----
-
-## Quick Installation
-
-### Method 1: One-line Installation
-
-```bash
-wget -O - https://raw.githubusercontent.com/dddavid51/luci-snort3/main/install.sh | sh
+```sh
+opkg update
+opkg install luci-base rpcd-mod-ucode snort3
 ```
 
-### Method 2: Download and Execute
+Check that the Snort service exists:
 
-```bash
-# Download the script
-wget https://raw.githubusercontent.com/dddavid51/luci-snort3/main/install.sh
-
-# Make it executable
-chmod +x install.sh
-
-# Run as root
-./install.sh
+```sh
+ls -l /etc/init.d/snort /usr/bin/snort
 ```
 
-### Method 3: Using curl
+## 2. Direct installation
 
-```bash
-curl -sSL https://raw.githubusercontent.com/dddavid51/luci-snort3/main/install.sh | sh
+The installer performs a complete installation without rebuilding firmware. It
+must be run as root.
+
+### From a cloned repository
+
+```sh
+git clone https://github.com/dddavid51/luci-snort3-openwrt.git
+cd luci-snort3-openwrt
+sh install.sh
 ```
 
----
+### From the downloaded script
 
-## Manual Installation
-
-If you prefer to install files manually or the automatic script fails:
-
-### Step 1: Create Directories
-
-```bash
-mkdir -p /usr/lib/lua/luci/controller
-mkdir -p /usr/lib/lua/luci/model/cbi/snort
-mkdir -p /usr/lib/lua/luci/view/snort
-mkdir -p /usr/lib/lua/luci/i18n
+```sh
+wget -O /tmp/install-snort3.sh \
+  https://raw.githubusercontent.com/dddavid51/luci-snort3-openwrt/main/install.sh
+sh /tmp/install-snort3.sh
 ```
 
-### Step 2: Download Source Files
+The installer:
 
-Clone the repository:
+1. verifies root access and the Snort installation;
+2. copies the JavaScript views and shared modules;
+3. installs `luci.snort.uc`, the menu entry and the ACL file;
+4. installs the default `/etc/config/snort` only when no config exists;
+5. removes files installed by the old Lua module;
+6. compiles `po/fr/snort.po` with `po2lmo` when available, otherwise copies
+   `dist/lmo/snort.fr.lmo`;
+7. runs the uci-defaults helper and restarts rpcd;
+8. clears the LuCI menu and module caches.
 
-```bash
-cd /tmp
-git clone https://github.com/dddavid51/luci-snort3.git
-cd luci-snort3
+### After installation
+
+1. Log out of LuCI and log in again.
+2. Hard-refresh the browser if the old menu is cached.
+3. Open **Services → Snort IDS/IPS**.
+4. Open **Settings** and configure the interface and operating mode.
+5. Review the rules path and update log on the **Overview** page.
+
+Run the verification script:
+
+```sh
+sh verify.sh
 ```
 
-Or download individual files from the `src/` directory.
+## 3. OpenWrt package build
 
-### Step 3: Copy Files
+The repository is a standard LuCI application:
 
-```bash
-# Controller
-cp src/controller/snort.lua /usr/lib/lua/luci/controller/
-
-# Configuration interface
-cp src/model/cbi/snort/config.lua /usr/lib/lua/luci/model/cbi/snort/
-
-# Views
-cp src/view/snort/*.htm /usr/lib/lua/luci/view/snort/
-
-# Translations
-cp src/i18n/*.po /usr/lib/lua/luci/i18n/
+```text
+feeds/luci/applications/luci-app-snort3/
+├── Makefile
+├── htdocs/
+├── root/
+└── po/
 ```
 
-### Step 4: Compile Translations (Optional)
+Place the directory in your LuCI feed, then:
 
-If `po2lmo` is available:
-
-```bash
-po2lmo /usr/lib/lua/luci/i18n/snort.fr.po /usr/lib/lua/luci/i18n/snort.fr.lmo
-po2lmo /usr/lib/lua/luci/i18n/snort.en.po /usr/lib/lua/luci/i18n/snort.en.lmo
+```sh
+make menuconfig
+# LuCI -> Applications -> luci-app-snort3
+# LuCI -> Translations -> luci-i18n-snort3-fr (optional)
+make package/luci-app-snort3/compile V=s
 ```
 
-### Step 5: Clear Cache and Restart
+For a full firmware build, select the package before running `make`. `luci.mk`
+installs the contents of `root/`, the JavaScript assets from `htdocs/`, and
+creates a translation package from `po/fr/snort.po`.
 
-```bash
-# Clear LuCI cache
-rm -rf /tmp/luci-indexcache /tmp/luci-modulecache /tmp/luci-sessions/*
+## 4. Manual installation
 
-# Restart web server
-/etc/init.d/uhttpd restart
-```
+Use this method only when the installer cannot be used. All commands are run as
+root.
 
----
+```sh
+# LuCI JavaScript assets
+mkdir -p /www/luci-static/resources/view/snort
+mkdir -p /www/luci-static/resources/snort
+cp htdocs/luci-static/resources/view/snort/*.js \
+   /www/luci-static/resources/view/snort/
+cp htdocs/luci-static/resources/snort/*.js \
+   /www/luci-static/resources/snort/
 
-## Verification
+# rpcd backend, menu and ACL
+mkdir -p /usr/share/rpcd/ucode /usr/share/luci/menu.d /usr/share/rpcd/acl.d
+cp root/usr/share/rpcd/ucode/luci.snort.uc /usr/share/rpcd/ucode/
+cp root/usr/share/luci/menu.d/luci-app-snort3.json /usr/share/luci/menu.d/
+cp root/usr/share/rpcd/acl.d/luci-app-snort3.json /usr/share/rpcd/acl.d/
 
-### Check Installed Files
+# Fallback configuration (snort3 normally provides /etc/config/snort)
+[ -f /etc/config/snort ] || cp dist/config/snort /etc/config/snort
 
-```bash
-# Controller
-ls -la /usr/lib/lua/luci/controller/snort.lua
+# One-shot helper for an existing rules symlink
+cp root/etc/uci-defaults/80_luci-app-snort3 /etc/uci-defaults/
+chmod 0755 /etc/uci-defaults/80_luci-app-snort3
 
-# Configuration
-ls -la /usr/lib/lua/luci/model/cbi/snort/config.lua
-
-# Views
-ls -la /usr/lib/lua/luci/view/snort/
-
-# Translations
-ls -la /usr/lib/lua/luci/i18n/snort.*
-```
-
-### Access the Interface
-
-1. Open your browser and navigate to your router's IP (e.g., http://192.168.1.1)
-2. Log in to LuCI
-3. Go to **Services → Snort IDS/IPS**
-
-If the menu doesn't appear:
-- Logout and login again
-- Clear browser cache (Ctrl+Shift+R)
-- Clear LuCI cache and restart uhttpd
-
-### Check Snort Configuration
-
-```bash
-# Verify Snort is installed
-snort -V
-
-# Check UCI configuration
-uci show snort
-
-# View service status
-/etc/init.d/snort status
-```
-
----
-
-## Troubleshooting
-
-### Interface Not Appearing
-
-**Problem:** Snort IDS/IPS menu doesn't appear in Services
-
-**Solutions:**
-1. Clear LuCI cache:
-   ```bash
-   rm -rf /tmp/luci-*
-   /etc/init.d/uhttpd restart
-   ```
-
-2. Check if files exist:
-   ```bash
-   ls -la /usr/lib/lua/luci/controller/snort.lua
-   ```
-
-3. Check LuCI logs:
-   ```bash
-   logread | grep luci
-   ```
-
-4. Verify Snort UCI configuration exists:
-   ```bash
-   ls -la /etc/config/snort
-   ```
-
-### Translation Issues
-
-**Problem:** Interface is not in the expected language
-
-**Solutions:**
-1. Change language in LuCI:
-   - Go to **System → System → Language & Style**
-   - Select your preferred language
-   - Save & Apply
-
-2. Check translation files:
-   ```bash
-   ls -la /usr/lib/lua/luci/i18n/snort.*
-   ```
-
-3. Recompile translations:
-   ```bash
-   po2lmo /usr/lib/lua/luci/i18n/snort.fr.po /usr/lib/lua/luci/i18n/snort.fr.lmo
-   po2lmo /usr/lib/lua/luci/i18n/snort.en.po /usr/lib/lua/luci/i18n/snort.en.lmo
-   ```
-
-### Permission Errors
-
-**Problem:** Installation fails with permission errors
-
-**Solutions:**
-1. Ensure you're running as root:
-   ```bash
-   whoami  # Should return 'root'
-   ```
-
-2. If not root, use `sudo` or login as root:
-   ```bash
-   sudo sh install.sh
-   ```
-
-### Snort Not Starting
-
-**Problem:** Snort service won't start from LuCI
-
-**Solutions:**
-1. Check Snort configuration:
-   ```bash
-   snort -c /etc/snort/snort.lua -T
-   ```
-
-2. View logs:
-   ```bash
-   logread | grep snort
-   ```
-
-3. Check network interface:
-   ```bash
-   uci get snort.snort.interface
-   ip link show
-   ```
-
-4. Verify rules exist:
-   ```bash
-   ls -la /etc/snort/rules/
-   ```
-
-### Rules Update Fails
-
-**Problem:** Rules update doesn't complete
-
-**Solutions:**
-1. Check network connectivity:
-   ```bash
-   ping -c 3 www.snort.org
-   ```
-
-2. Check available space:
-   ```bash
-   df -h
-   ```
-
-3. Check update log:
-   ```bash
-   cat /tmp/snort_rules_update.log
-   ```
-
-4. Clean temporary files:
-   ```bash
-   rm -f /var/snort.d/*.tar.gz
-   rm -f /tmp/snort*.tar.gz
-   rm -f /tmp/snort_rules_update.*
-   ```
-
-### Memory Issues
-
-**Problem:** Snort uses too much memory
-
-**Solutions:**
-1. Adjust detection settings in the configuration interface
-2. Reduce loaded rule sets
-3. Increase swap space
-4. Upgrade router hardware if necessary
-
----
-
-## Uninstallation
-
-### Complete Removal
-
-```bash
-# Remove files
+# Remove the old Lua module if it is still present
 rm -f /usr/lib/lua/luci/controller/snort.lua
-rm -rf /usr/lib/lua/luci/model/cbi/snort
+rm -f /usr/lib/lua/luci/model/cbi/snort/config.lua
+rm -f /usr/lib/lua/luci/view/snort/*.htm
+rm -f /usr/lib/lua/luci/i18n/snort.*.po /usr/lib/lua/luci/i18n/snort.*.lmo
+
+# Translation
+mkdir -p /usr/lib/lua/luci/i18n
+if command -v po2lmo >/dev/null 2>&1; then
+	po2lmo po/fr/snort.po /usr/lib/lua/luci/i18n/snort.fr.lmo
+else
+	cp dist/lmo/snort.fr.lmo /usr/lib/lua/luci/i18n/
+fi
+
+# Refresh caches and rpcd
+/etc/uci-defaults/80_luci-app-snort3 || true
+rm -rf /tmp/luci-indexcache* /tmp/luci-modulecache
+/etc/init.d/rpcd restart
+```
+
+## 5. Upgrading from the Lua version
+
+The JavaScript installer and package use the same UCI file and the same
+translation domain (`snort`). An existing `/etc/config/snort` is preserved.
+
+After upgrading:
+
+```sh
+rm -f /usr/lib/lua/luci/controller/snort.lua
+rm -f /usr/lib/lua/luci/model/cbi/snort/config.lua
 rm -rf /usr/lib/lua/luci/view/snort
-rm -f /usr/lib/lua/luci/i18n/snort.*
+rm -rf /tmp/luci-indexcache* /tmp/luci-modulecache
+/etc/init.d/rpcd restart
+```
 
-# Clear cache
-rm -rf /tmp/luci-*
+If the old menu remains visible, log out and back in or restart uhttpd:
 
-# Restart web server
+```sh
 /etc/init.d/uhttpd restart
 ```
 
-### Keep Snort, Remove LuCI Module Only
+## 6. Verification
 
-The above commands only remove the LuCI interface. Snort itself remains installed and can still be configured via UCI or configuration files.
+```sh
+sh verify.sh
+```
 
----
+The script checks:
 
-## Post-Installation
+- all installed JavaScript, ucode, menu, ACL, configuration and translation files;
+- the Snort init script and binary;
+- registration of the `luci.snort` ubus object;
+- a successful `luci.snort status` call;
+- the presence of `rpcd-mod-ucode`.
 
-After successful installation:
+You can also test the object manually:
 
-1. **Reconnect to LuCI** (logout and login)
-2. **Clear browser cache** (Ctrl+Shift+R)
-3. **Configure Snort** (Services → Snort IDS/IPS)
-4. **Set network interface** and operating mode
-5. **Update rules** if desired
-6. **Start the service**
+```sh
+ubus list luci.snort
+ubus call luci.snort status
+ubus call luci.snort rules
+```
 
----
+## 7. Uninstallation
 
-## Support
+```sh
+rm -f /www/luci-static/resources/view/snort/overview.js
+rm -f /www/luci-static/resources/view/snort/config.js
+rm -f /www/luci-static/resources/view/snort/alerts.js
+rm -rf /www/luci-static/resources/snort
+rm -f /usr/share/rpcd/ucode/luci.snort.uc
+rm -f /usr/share/luci/menu.d/luci-app-snort3.json
+rm -f /usr/share/rpcd/acl.d/luci-app-snort3.json
+rm -f /etc/uci-defaults/80_luci-app-snort3
+rm -f /usr/lib/lua/luci/i18n/snort.fr.lmo
+rm -rf /tmp/luci-indexcache* /tmp/luci-modulecache
+/etc/init.d/rpcd restart
+```
 
-If you encounter issues not covered here:
+`/etc/config/snort` is intentionally left in place. Remove it manually only if
+you also want to discard the Snort configuration:
 
-1. Check the [main README](../README.md)
-2. Review [Usage Guide](USAGE.md)
-3. Check Snort logs: `logread | grep snort`
-4. Open an issue on GitHub
+```sh
+rm -f /etc/config/snort
+```
 
----
+## 8. Troubleshooting
 
-**Version:** 3.6  
-**Last Updated:** November 2025
+| Symptom | Check |
+| --- | --- |
+| Menu entry missing | `/etc/config/snort` exists; LuCI caches cleared |
+| `luci.snort` not registered | `rpcd-mod-ucode` installed; `luci.snort.uc` present; rpcd restarted |
+| Permission denied | ACL file present; user is logged in as an administrator |
+| Rules update disabled | `/usr/bin/snort-rules` exists and is executable |
+| No alerts | `/var/log/alert_fast.txt` exists and Snort logging is enabled |
+| French texts missing | `snort.fr.lmo` installed; LuCI language set to French |
+| Service control fails | `/etc/init.d/snort` exists and is executable |

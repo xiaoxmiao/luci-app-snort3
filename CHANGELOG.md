@@ -5,6 +5,42 @@ All notable changes to the LuCI Snort3 Module will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.0.0] - 2026-11-04
+
+### Added
+- Complete JavaScript LuCI frontend: Overview, Settings and Alerts pages.
+- `luci.snort` rpcd/ucode backend with `status`, `service`, `alerts`, `rules`,
+  `rules_update`, `rules_fix` and `rules_cleanup` methods.
+- UCI settings form covering service, logging, rules, OpenAppID and NFQ.
+- Allow-listed service actions, path sanitization and an ACL limited to the
+  Snort ubus object and the `snort` UCI package.
+- Direct router installer that preserves `/etc/config/snort`, removes old Lua
+  files, installs the prebuilt French catalog and refreshes rpcd.
+- Standard `luci.mk` package definition and translation package support.
+- Node test suite for pure helpers and the LMO compiler.
+- `po2lmo` reimplementation, translation template and i18n consistency checker.
+- Prebuilt `dist/lmo/snort.fr.lmo` for installations without `po2lmo`.
+- Verification script for files, dependencies and the `luci.snort` ubus object.
+
+### Changed
+- Migrated the frontend from Lua CBI/templates to JavaScript views.
+- Rules management is now integrated into the Overview page with update log,
+  link repair and cleanup controls.
+- Translations use the LuCI `snort` domain and are loaded from
+  `/usr/lib/lua/luci/i18n/snort.fr.lmo`.
+- The legacy Lua implementation, original installer and documentation moved to
+  `legacy/lua-v3/`.
+
+### Removed
+- Lua controller, CBI model and template files from the installed package.
+- The generated Lua-era installer and the old top-level project structure.
+
+### Fixed
+- Correct handling of broken rules symlinks, missing rules directories and
+  concurrent rules updates.
+- Alert and log reads are bounded and newest-first.
+- Status detection handles multiple Snort PIDs and missing `/proc` entries.
+
 ## [3.6.0] - 2025-11-03
 
 ### Added
@@ -226,24 +262,17 @@ See v3.0+ for the full LuCI module (preferred solution).
 
 ## Roadmap
 
-### Planned for 4.0.0
+### Under Consideration
 - Multi-interface monitoring support
-- Advanced filtering rules in UI
+- Advanced filtering rules in the UI
 - Alert email notifications
 - Integration with external SIEM systems
-- Dashboard widgets for OpenWrt overview page
-- Mobile-responsive interface improvements
-
-### Under Consideration
 - Scheduled rules updates
-- Custom rule set management
 - Performance metrics dashboard
-- Integration with threat intelligence feeds
 - Automated backup and restore
-- Rule testing sandbox
 
 ---
 
-**Current Version:** 3.6.0  
-**Release Date:** November 3, 2025  
+**Current Version:** 4.0.0  
+**Release Date:** November 4, 2026  
 **Status:** Stable

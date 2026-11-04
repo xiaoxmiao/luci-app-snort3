@@ -1,4 +1,8 @@
-# LuCI Snort3 Module for OpenWrt
+# LuCI Snort3 for OpenWrt
+
+Modern LuCI web interface for **Snort3 IDS/IPS** on OpenWrt. The application is
+implemented as a **JavaScript LuCI frontend** backed by an **rpcd/ucode** service;
+the old Lua implementation is preserved under `legacy/` for reference.
 
 [English](#english) | [Français](#français)
 
@@ -6,320 +10,317 @@
 
 ## English
 
-### 📋 Description
+### Overview
 
-Complete LuCI web interface module for Snort3 IDS/IPS on OpenWrt. This module provides an intuitive web interface to configure, monitor, and manage Snort3 directly from your OpenWrt router's LuCI interface.
+This module gives Snort3 a native place in LuCI:
 
-### ✨ Features
+- live service status, PID, memory use, uptime, interface, IDS/IPS mode and DAQ method;
+- start, stop, restart, enable and disable controls;
+- recent alerts and system log excerpts, refreshed every 5 seconds;
+- rules update with progress log, symbolic-link repair and temporary-file cleanup;
+- complete UCI settings for service, logging, rules, OpenAppID and NFQ;
+- English source strings and a complete French catalog.
 
-- **Real-time Status Dashboard**
-  - Service status (running/stopped)
-  - Process ID and memory usage
-  - System memory monitoring
-  - Alert counter
-  - Network interface monitoring
+The browser never runs privileged commands. All service, file and log access is
+performed by the rpcd/ucode backend through a small allow-listed RPC surface.
 
-- **Complete Configuration Interface**
-  - Network interface selection
-  - Operating mode (IDS/IPS)
-  - DAQ method configuration
-  - Rule management
-  - Custom Snort configuration
+### Requirements
 
-- **Alert Management**
-  - View recent alerts (last 50)
-  - System log monitoring
-  - Auto-refresh every 5 seconds
-  - Alert statistics
+- OpenWrt **23.05 or newer** (24.10 LTS recommended) with the JavaScript LuCI runtime;
+- `luci-base`;
+- `rpcd-mod-ucode` (the `luci.snort` rpcd plugin);
+- `snort3` and its init script at `/etc/init.d/snort`;
+- optional: an executable rules updater at `/usr/bin/snort-rules`;
+- optional: `luci-i18n-base-fr` if you also want the standard LuCI interface in French.
 
-- **Service Controls**
-  - Start/Stop/Restart Snort
-  - Enable/Disable auto-start
-  - Rules update with progress monitoring
-  - Symbolic link management for rules
-
-- **Bilingual Interface**
-  - Full French support
-  - Full English support
-
-#---
-
-## 📖 Project History & Motivation
-
-### The Problem
-
-When Snort3 was initially available on OpenWrt, there was **no web interface** to manage it. Users had to:
-- Configure everything via command line
-- Edit configuration files manually through SSH
-- Monitor alerts by tailing log files
-- Restart the service using init scripts
-
-This made Snort3 **difficult to use** for most OpenWrt users, especially those not comfortable with command-line tools.
-
-### The Solution Evolution
-
-**Version 0.5 (CGI Interface)** - *First Attempt (Early 2025)*
-- Created a simple CGI script for basic web management
-- Provided start/stop/restart controls
-- Displayed alerts and system status
-- Lightweight and **useful as a temporary solution**
-- But lacked proper integration with OpenWrt
-- See [legacy/v0-cgi-interface](legacy/v0-cgi-interface) for the original version
-
-**Version 3.0+ (Full LuCI Module)** - *Preferred Solution (2025)*
-- Complete integration with OpenWrt's LuCI framework
-- **Proper integration with the OpenWrt ecosystem**
-- UCI-based configuration system
-- Advanced features (rules management, real-time monitoring)
-- Bilingual support (French/English)
-- Professional interface following LuCI standards
-
-### Why This Project Matters
-
-This module fills a **critical gap** in the OpenWrt ecosystem by making Snort3 accessible to everyone, not just command-line experts. While the CGI script was useful initially, a **properly integrated LuCI module** was necessary for a professional, maintainable solution. It transforms Snort3 from a powerful but complex tool into a user-friendly security solution that fits naturally within OpenWrt's interface.
-
-### 🎓 Project Status & Motivation
-
-**Personal Journey:**  
-This project was initially created to meet a **personal need** - I wanted an easy way to manage Snort3 on my own OpenWrt router. It started as a learning experience to understand LuCI development and OpenWrt integration.
-
-**Sharing with the Community:**  
-Since no such module existed, I decided to **share it with the OpenWrt community** so others facing the same challenge could benefit from it.
-
-**Maintenance & Future:**  
-- ✅ The module is **functional and usable** as-is
-- 🐛 **Bug fixes** may be provided if critical issues are found
-- ⚠️ **Long-term maintenance is not guaranteed** - this was primarily a learning project
-- 🤝 **Community contributions are welcome** if others want to enhance or maintain it
-
-**Bottom line:** This is a working solution shared freely, but it was created for personal use and learning, not as a long-term commitment. Use it, enjoy it, and feel free to fork it if you want to take it further!
-
----
-
-## ⚠️ Project Status & Disclaimer
-
-### 📌 Important Information
-
-This project was created to **solve a personal need** - managing Snort3 on my OpenWrt router without command-line tools. It also served as a **learning experience** for LuCI development and OpenWrt integration.
-
-### 🎯 Current Status
-
-- ✅ **Fully functional** - The module works as intended
-- ✅ **Production ready** - You can use it on your router
-- ✅ **Well documented** - Complete guides provided
-- 🐛 **Bug fixes possible** - Critical issues may be addressed
-- ⚠️ **Limited maintenance** - Long-term active development not guaranteed
-
-### 🤝 Community Approach
-
-This module is **shared freely with the OpenWrt community** because it might help others facing the same challenges. 
-
-**What this means:**
-- Use it, modify it, fork it - it's yours!
-- Contributions are welcome if you want to improve it
-- No guarantee of long-term maintenance or feature additions
-- Created as a personal/learning project, not a commercial product
-
-### 💡 For Users
-
-If this module solves your problem, great! If you need additional features or long-term support, feel free to:
-- Fork the project and maintain your own version
-- Submit pull requests with improvements
-- Create your own derivative work
-
-**Bottom line:** This is a working tool shared in the spirit of open source. Use at your own risk, contribute if you wish, and enjoy! 🚀
-
----
-
-## 📦 Requirements
-
-- OpenWrt 21.02 or later
-- Snort3 installed (`snort` package)
-- LuCI web interface
-- Root access
-
-### 🚀 Quick Installation
-
-```bash
-# Download the installation script
-wget https://raw.githubusercontent.com/dddavid51/luci-snort3/main/install.sh
-
-# Make it executable
-chmod +x install.sh
-
-# Run as root
-./install.sh
+```sh
+opkg update
+opkg install luci-base rpcd-mod-ucode snort3
 ```
 
-### 📖 Detailed Documentation
+### Installation
 
-- [Installation Guide](docs/INSTALLATION.md)
-- [Usage Guide](docs/USAGE.md)
+#### Direct installation on a router
 
-### 🔧 Manual Installation
+The installer copies the JavaScript views, the ucode RPC plugin, the menu/ACL
+definitions, the default UCI file and the prebuilt French catalog. It keeps an
+existing `/etc/config/snort`, removes old Lua module files, and reloads rpcd.
 
-If you prefer to install files manually, see the [detailed installation guide](docs/INSTALLATION.md).
+```sh
+# From a downloaded/cloned repository
+sh install.sh
 
-### 📂 File Structure
-
-```
-/usr/lib/lua/luci/
-├── controller/
-│   └── snort.lua                    # Main controller
-├── model/cbi/snort/
-│   └── config.lua                   # Configuration interface
-├── view/snort/
-│   ├── status.htm                   # Status widget
-│   ├── status_page.htm              # Full status page
-│   ├── control.htm                  # Service controls
-│   ├── alerts.htm                   # Alerts page
-│   └── recent_alerts.htm            # Recent alerts widget
-└── i18n/
-    ├── snort.fr.po / snort.fr.lmo  # French translations
-    └── snort.en.po / snort.en.lmo  # English translations
+# Or download and run the installer directly
+wget -O /tmp/install-snort3.sh \
+  https://raw.githubusercontent.com/dddavid51/luci-snort3-openwrt/main/install.sh
+sh /tmp/install-snort3.sh
 ```
 
-### 🌐 Accessing the Interface
+The installer can compile `po/fr/snort.po` with the system `po2lmo`, otherwise it
+installs `dist/lmo/snort.fr.lmo`.
 
-After installation, access the interface via:
+#### OpenWrt package build
 
-**Services → Snort IDS/IPS**
+Copy this directory to `feeds/luci/applications/luci-app-snort3`, enable
+`luci-app-snort3` (and optionally `luci-i18n-snort3-fr`) in `menuconfig`, then
+build the package normally. `luci.mk` installs the files under `root/`, the views
+under `htdocs/`, and creates the translation package from `po/fr/snort.po`.
 
-### 🔄 Post-Installation Steps
+#### Manual installation
 
-1. **Reconnect to LuCI** (logout and login again)
-2. **Clear browser cache** (Ctrl+Shift+R or Cmd+Shift+R)
-3. **Change language if needed** (System → System → Language)
-4. **Configure Snort** (Services → Snort IDS/IPS)
+See [docs/INSTALLATION.md](docs/INSTALLATION.md) for the file list and manual
+steps.
 
-### 📝 Configuration
+### Access
 
-The module integrates with OpenWrt's UCI configuration system. Configuration file: `/etc/config/snort`
+Open LuCI and go to **Services → Snort IDS/IPS**.
 
-### 🐛 Troubleshooting
+- **Overview** — status cards, service controls, rules management, update log and
+  recent alerts.
+- **Settings** — service, logging, rules, advanced and NFQ options.
+- **Alerts** — the 50 most recent alerts and the 20 most recent Snort syslog
+  lines.
 
-**Interface doesn't appear:**
-- Clear LuCI cache: `rm -rf /tmp/luci-*`
-- Restart uhttpd: `/etc/init.d/uhttpd restart`
-- Clear browser cache
+### Configuration
 
-**Translations not working:**
-- Check if po2lmo is installed
-- Verify translation files in `/usr/lib/lua/luci/i18n/`
-- Restart LuCI
+Settings are stored in `/etc/config/snort` and read by the OpenWrt Snort3 init
+script. The main sections are:
 
-**Rules update fails:**
-- Check network connectivity
-- Verify Oinkcode if using official rules
-- Check logs: `logread | grep snort`
+```uci
+config snort 'snort'
+	option enabled '0'
+	option manual '1'
+	option interface 'br-lan'
+	option mode 'ids'
+	option method 'pcap'
 
-### 🤝 Contributing
+config nfq 'nfq'
+	option queue_count '4'
+	option queue_start '4'
+	option chain_type 'input'
+```
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+### Rules management
 
-### 📄 License
+The Overview page reads `/etc/snort/rules` and the temporary rules directory
+(`/var/snort.d/rules` by default). It can:
 
-GPL v2 - Compatible with OpenWrt and LuCI
+- launch `/usr/bin/snort-rules` in the background and display its update log;
+- replace a real rules directory with a symbolic link after making a backup;
+- repair a broken symbolic link;
+- remove downloaded `.tar.gz` archives and update lock/log files.
 
-### 👤 Author
+Only start, stop, restart, enable and disable are accepted as service actions,
+and configured paths are restricted to clean absolute paths by the backend.
 
-**David Dzieciol**  
-Email: david.dzieciol51100@gmail.com  
-GitHub: https://github.com/dddavid51/luci-snort3
+### Project layout
 
-### 🙏 Acknowledgments
+```text
+htdocs/luci-static/resources/view/snort/   LuCI JavaScript pages
+htdocs/luci-static/resources/snort/        API, helpers and shared styles
+root/usr/share/rpcd/ucode/luci.snort.uc    privileged rpcd backend
+root/usr/share/luci/menu.d/                menu entries
+root/usr/share/rpcd/acl.d/                 RPC/UCI permissions
+root/etc/uci-defaults/                     one-shot rules-link repair
+dist/config/snort                          default UCI template for direct installs
+dist/lmo/snort.fr.lmo                      prebuilt catalog for direct installs
+po/fr/snort.po                             French catalog
+po/templates/snort.pot                     translation template
+legacy/lua-v3/                             previous Lua implementation
+legacy/v0-cgi-interface/                   original CGI prototype
+```
 
-- OpenWrt project
-- LuCI developers
-- Snort3 team
+### Development
+
+Node.js 18 or newer is recommended for the local checks.
+
+```sh
+npm test                 # pure JavaScript helper and LMO tests
+npm run check:js         # syntax-check every JavaScript file
+npm run check:i18n       # compare UI strings with po/fr/snort.po
+npm run build:lmo        # regenerate dist/lmo/snort.fr.lmo
+npm run check:ucode      # validate the rpcd plugin with ucode-lsp
+npm run check            # JS + tests + i18n
+```
+
+Regenerate the translation template after changing a visible string:
+
+```sh
+node scripts/check-i18n.js --write-pot
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for implementation notes.
+
+### Troubleshooting
+
+- **The menu entry is missing** — check that `/etc/config/snort` exists, then
+  clear `/tmp/luci-indexcache*` and `/tmp/luci-modulecache` and reload LuCI.
+- **`luci.snort` is not registered** — install `rpcd-mod-ucode`, verify that
+  `/usr/share/rpcd/ucode/luci.snort.uc` exists, and restart rpcd:
+  `/etc/init.d/rpcd restart`.
+- **Rules update is disabled** — install or create `/usr/bin/snort-rules`; the
+  button is disabled when the updater is absent.
+- **French texts do not appear** — check
+  `/usr/lib/lua/luci/i18n/snort.fr.lmo`, log out and back in, and make sure the
+  LuCI language is French.
+- **The service action fails** — check that `/etc/init.d/snort` exists and is
+  executable, then inspect `logread | grep -i snort`.
+
+Run `sh verify.sh` on the router for a file, dependency and ubus check.
+
+### Legacy versions
+
+The Lua CBI/controller implementation and its original installer are kept in
+`legacy/lua-v3/`; the first CGI prototype is in `legacy/v0-cgi-interface/`.
+They are not installed by the current package.
+
+### License
+
+GPL-2.0. See [LICENSE](LICENSE).
+
+**Author:** David Dzieciol `<david.dzieciol51100@gmail.com>`
 
 ---
 
 ## Français
 
-### 📋 Description
+### Présentation
 
-Module d'interface web LuCI complet pour Snort3 IDS/IPS sur OpenWrt. Ce module fournit une interface web intuitive pour configurer, surveiller et gérer Snort3 directement depuis l'interface LuCI de votre routeur OpenWrt.
+Cette application fournit une interface LuCI moderne pour **Snort3 IDS/IPS** sur
+OpenWrt. Le frontend est écrit en **JavaScript LuCI** et repose sur un service
+**rpcd/ucode**. L'ancienne implémentation Lua est conservée dans `legacy/`.
 
-### ✨ Fonctionnalités
+Fonctionnalités :
 
-- **Tableau de bord en temps réel**
-  - État du service (en cours/arrêté)
-  - ID du processus et utilisation mémoire
-  - Surveillance de la mémoire système
-  - Compteur d'alertes
-  - Surveillance de l'interface réseau
+- état du service, PID, mémoire, disponibilité, interface, mode IDS/IPS et
+  méthode DAQ en temps réel ;
+- démarrage, arrêt, redémarrage, activation et désactivation au boot ;
+- alertes récentes et extraits des journaux système, actualisés toutes les
+  5 secondes ;
+- mise à jour des règles avec journal de progression, réparation du lien
+  symbolique et nettoyage des fichiers temporaires ;
+- configuration UCI complète : service, journalisation, règles, OpenAppID et NFQ ;
+- interface source en anglais et catalogue français complet.
 
-- **Interface de configuration complète**
-  - Sélection de l'interface réseau
-  - Mode de fonctionnement (IDS/IPS)
-  - Configuration de la méthode DAQ
-  - Gestion des règles
-  - Configuration Snort personnalisée
+Le navigateur n'exécute aucune commande privilégiée : le backend rpcd/ucode
+contrôle les actions autorisées, les chemins et l'accès aux fichiers.
 
-- **Gestion des alertes**
-  - Visualisation des alertes récentes (50 dernières)
-  - Surveillance des logs système
-  - Auto-actualisation toutes les 5 secondes
-  - Statistiques des alertes
+### Prérequis
 
-- **Contrôles du service**
-  - Démarrer/Arrêter/Redémarrer Snort
-  - Activer/Désactiver le démarrage automatique
-  - Mise à jour des règles avec suivi de progression
-  - Gestion des liens symboliques pour les règles
+- OpenWrt **23.05 ou ultérieur** (24.10 LTS recommandé) avec LuCI JavaScript ;
+- `luci-base` ;
+- `rpcd-mod-ucode` ;
+- `snort3` et son script `/etc/init.d/snort` ;
+- facultatif : `/usr/bin/snort-rules` pour la mise à jour des règles ;
+- facultatif : `luci-i18n-base-fr` pour l'interface LuCI standard en français.
 
-- **Interface bilingue**
-  - Support complet du français
-  - Support complet de l'anglais
-
-### 📦 Prérequis
-
-- OpenWrt 21.02 ou ultérieur
-- Snort3 installé (paquet `snort`)
-- Interface web LuCI
-- Accès root
-
-### 🚀 Installation rapide
-
-```bash
-# Télécharger le script d'installation
-wget https://raw.githubusercontent.com/dddavid51/luci-snort3/main/install.sh
-
-# Le rendre exécutable
-chmod +x install.sh
-
-# Exécuter en tant que root
-./install.sh
+```sh
+opkg update
+opkg install luci-base rpcd-mod-ucode snort3
 ```
 
-### 📖 Documentation détaillée
+### Installation
 
-- [Guide d'installation](docs/INSTALLATION.md)
-- [Guide d'utilisation](docs/USAGE.md)
+#### Installation directe sur le routeur
 
-### 🌐 Accès à l'interface
+```sh
+# Depuis un dépôt cloné
+sh install.sh
 
-Après l'installation, accédez à l'interface via :
+# Ou téléchargement direct
+wget -O /tmp/install-snort3.sh \
+  https://raw.githubusercontent.com/dddavid51/luci-snort3-openwrt/main/install.sh
+sh /tmp/install-snort3.sh
+```
 
-**Services → Snort IDS/IPS**
+Le script installe les vues JavaScript, le plugin rpcd ucode, le menu, les ACL,
+la configuration UCI par défaut et le catalogue français précompilé. Il conserve
+un `/etc/config/snort` existant et supprime les anciens fichiers Lua.
 
-### 🔄 Étapes post-installation
+#### Compilation du paquet OpenWrt
 
-1. **Reconnectez-vous à LuCI** (déconnexion puis reconnexion)
-2. **Videz le cache du navigateur** (Ctrl+Shift+R ou Cmd+Shift+R)
-3. **Changez la langue si nécessaire** (Système → Système → Langue)
-4. **Configurez Snort** (Services → Snort IDS/IPS)
+Copiez ce répertoire dans `feeds/luci/applications/luci-app-snort3`, activez
+`luci-app-snort3` (et éventuellement `luci-i18n-snort3-fr`) dans `menuconfig`,
+puis compilez normalement. Les fichiers de `root/` et `htdocs/` sont installés par
+`luci.mk`, et le paquet de traduction est généré depuis `po/fr/snort.po`.
 
-### 🤝 Contribution
+#### Installation manuelle
 
-Les contributions sont les bienvenues ! N'hésitez pas à soumettre une Pull Request.
+Voir [docs/INSTALLATION.md](docs/INSTALLATION.md).
 
-### 📄 Licence
+### Utilisation
 
-GPL v2 - Compatible avec OpenWrt et LuCI
+Ouvrez **Services → Snort IDS/IPS** dans LuCI.
 
----
+- **Vue d'ensemble** : état, contrôles du service, gestion des règles, journal de
+  mise à jour et alertes récentes.
+- **Paramètres** : options du service, journalisation, règles, avancé et NFQ.
+- **Alertes** : 50 alertes récentes et 20 dernières lignes syslog Snort.
 
-**Version:** 3.6  
-**Last Update:** November 2025
+Les réglages sont stockés dans `/etc/config/snort`. Le bouton de mise à jour des
+règles est désactivé si `/usr/bin/snort-rules` est absent. La réparation du lien
+symbolique crée une sauvegarde de l'ancien répertoire avant de le remplacer.
+
+### Structure du projet
+
+```text
+htdocs/luci-static/resources/view/snort/   pages LuCI JavaScript
+htdocs/luci-static/resources/snort/        API, utilitaires et styles
+root/usr/share/rpcd/ucode/luci.snort.uc    backend rpcd privilégié
+root/usr/share/luci/menu.d/                entrées de menu
+root/usr/share/rpcd/acl.d/                 permissions RPC/UCI
+root/etc/uci-defaults/                     réparation ponctuelle du lien de règles
+dist/config/snort                          modèle UCI par défaut pour l'installation directe
+dist/lmo/snort.fr.lmo                      catalogue précompilé
+po/fr/snort.po                             catalogue français
+po/templates/snort.pot                     modèle de traduction
+legacy/lua-v3/                             ancienne implémentation Lua
+legacy/v0-cgi-interface/                   prototype CGI d'origine
+```
+
+### Développement
+
+```sh
+npm test                 # tests JavaScript et LMO
+npm run check:js         # vérification syntaxique JavaScript
+npm run check:i18n       # couverture des chaînes françaises
+npm run build:lmo        # régénère dist/lmo/snort.fr.lmo
+npm run check:ucode      # validation du plugin avec ucode-lsp
+npm run check            # JS + tests + i18n
+```
+
+Après modification d'un libellé :
+
+```sh
+node scripts/check-i18n.js --write-pot
+```
+
+Voir [CONTRIBUTING.md](CONTRIBUTING.md) pour les détails d'implémentation.
+
+### Dépannage
+
+- **Entrée de menu absente** : vérifiez `/etc/config/snort`, supprimez
+  `/tmp/luci-indexcache*` et `/tmp/luci-modulecache`, puis rechargez LuCI.
+- **`luci.snort` introuvable** : installez `rpcd-mod-ucode`, vérifiez
+  `/usr/share/rpcd/ucode/luci.snort.uc`, puis redémarrez rpcd.
+- **Mise à jour des règles désactivée** : installez `/usr/bin/snort-rules`.
+- **Traduction française absente** : vérifiez
+  `/usr/lib/lua/luci/i18n/snort.fr.lmo`, reconnectez-vous à LuCI et choisissez
+  le français.
+- **Action de service en échec** : vérifiez `/etc/init.d/snort` et consultez
+  `logread | grep -i snort`.
+
+Exécutez `sh verify.sh` sur le routeur pour contrôler les fichiers, dépendances
+et l'objet ubus.
+
+### Anciennes versions
+
+L'implémentation Lua et son installateur sont conservés dans `legacy/lua-v3/`.
+Le prototype CGI initial se trouve dans `legacy/v0-cgi-interface/`. Ces fichiers
+ne sont pas installés par le paquet actuel.
+
+### Licence
+
+GPL-2.0. Voir [LICENSE](LICENSE).
+
+**Auteur :** David Dzieciol `<david.dzieciol51100@gmail.com>`

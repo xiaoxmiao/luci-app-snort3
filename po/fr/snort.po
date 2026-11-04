@@ -1,0 +1,437 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: fr\n"
+"Plural-Forms: nplurals=2; plural=n > 1;\n"
+
+msgid "Snort IDS/IPS"
+msgstr "Snort IDS/IPS"
+
+msgid "Settings"
+msgstr "Paramètres"
+
+msgid "Snort is an open source intrusion detection and prevention system."
+msgstr "Snort est un système de détection et de prévention d'intrusions open source."
+
+msgid "Real-time status, service control and rules management."
+msgstr "État en temps réel, contrôle du service et gestion des règles."
+
+msgid "Loading..."
+msgstr "Chargement..."
+
+msgid "Running"
+msgstr "En cours d'exécution"
+
+msgid "Stopped"
+msgstr "Arrêté"
+
+msgid "Unavailable"
+msgstr "Indisponible"
+
+msgid "Enabled"
+msgstr "Activé"
+
+msgid "Disabled"
+msgstr "Désactivé"
+
+msgid "Auto-start"
+msgstr "Démarrage automatique"
+
+msgid "Service"
+msgstr "Service"
+
+msgid "Alerts"
+msgstr "Alertes"
+
+msgid "Memory"
+msgstr "Mémoire"
+
+msgid "Interface"
+msgstr "Interface"
+
+msgid "Mode"
+msgstr "Mode"
+
+msgid "PID"
+msgstr "PID"
+
+msgid "System uptime"
+msgstr "Durée de fonctionnement du système"
+
+msgid "Total alerts"
+msgstr "Total des alertes"
+
+msgid "Snort memory"
+msgstr "Mémoire Snort"
+
+msgid "System memory"
+msgstr "Mémoire système"
+
+msgid "Service control"
+msgstr "Contrôle du service"
+
+msgid "Start"
+msgstr "Démarrer"
+
+msgid "Stop"
+msgstr "Arrêter"
+
+msgid "Restart"
+msgstr "Redémarrer"
+
+msgid "Enable at boot"
+msgstr "Activer au démarrage"
+
+msgid "Disable at boot"
+msgstr "Désactiver au démarrage"
+
+msgid "In progress..."
+msgstr "En cours..."
+
+msgid "Snort init script not found"
+msgstr "Script d'initialisation Snort introuvable"
+
+msgid "Rules management"
+msgstr "Gestion des règles"
+
+msgid "Active symbolic link"
+msgstr "Lien symbolique actif"
+
+msgid "Broken symbolic link"
+msgstr "Lien symbolique cassé"
+
+msgid "Rules are in"
+msgstr "Les règles sont dans"
+
+msgid "Configuration rules path is a directory"
+msgstr "Le chemin des règles de configuration est un répertoire"
+
+msgid "No rules directory found"
+msgstr "Aucun répertoire de règles trouvé"
+
+msgid "Rule files:"
+msgstr "Fichiers de règles :"
+
+msgid "Temporary rules:"
+msgstr "Règles temporaires :"
+
+msgid "Update rules"
+msgstr "Mettre à jour les règles"
+
+msgid "Create symbolic link"
+msgstr "Créer le lien symbolique"
+
+msgid "Cleanup temporary files"
+msgstr "Nettoyer les fichiers temporaires"
+
+msgid "Update status"
+msgstr "Statut de la mise à jour"
+
+msgid "Idle"
+msgstr "Inactif"
+
+msgid "Update in progress..."
+msgstr "Mise à jour en cours..."
+
+msgid "Update completed!"
+msgstr "Mise à jour terminée !"
+
+msgid "No update log yet."
+msgstr "Aucun journal de mise à jour pour le moment."
+
+msgid "Recent alerts"
+msgstr "Alertes récentes"
+
+msgid "View all alerts"
+msgstr "Voir toutes les alertes"
+
+msgid "No recent alerts - Your network is secure"
+msgstr "Aucune alerte récente - Votre réseau est sécurisé"
+
+msgid "Auto-refresh every 5 seconds"
+msgstr "Actualisation automatique toutes les 5 secondes"
+
+msgid "Snort - Alerts and Logs"
+msgstr "Snort - Alertes et journaux"
+
+msgid "Recent alerts (50 most recent)"
+msgstr "Alertes récentes (50 plus récentes)"
+
+msgid "Refresh"
+msgstr "Actualiser"
+
+msgid "Alert file"
+msgstr "Fichier d'alertes"
+
+msgid "Snort system logs (20 most recent)"
+msgstr "Journaux système Snort (20 plus récents)"
+
+msgid "No alerts recorded"
+msgstr "Aucune alerte enregistrée"
+
+msgid "No logs"
+msgstr "Aucun journal"
+
+msgid "Actions"
+msgstr "Actions"
+
+msgid "View detailed reports via SSH with the command:"
+msgstr "Consultez les rapports détaillés via SSH avec la commande :"
+
+msgid "Log files:"
+msgstr "Fichiers de journaux :"
+
+msgid "Fast alerts"
+msgstr "Alertes rapides"
+
+msgid "Detailed JSON alerts"
+msgstr "Alertes JSON détaillées"
+
+msgid "Service settings"
+msgstr "Paramètres du service"
+
+msgid "Enable Snort"
+msgstr "Activer Snort"
+
+msgid "Enable or disable Snort service"
+msgstr "Active ou désactive le service Snort"
+
+msgid "Manual mode"
+msgstr "Mode manuel"
+
+msgid "Use manual configuration (snort.lua)"
+msgstr "Utiliser la configuration manuelle (snort.lua)"
+
+msgid "Network interface"
+msgstr "Interface réseau"
+
+msgid "Network interface to monitor (e.g. br-lan, eth0)"
+msgstr "Interface réseau à surveiller (ex. br-lan, eth0)"
+
+msgid "Local network"
+msgstr "Réseau local"
+
+msgid "IP address range to protect"
+msgstr "Plage d'adresses IP à protéger"
+
+msgid "External network"
+msgstr "Réseau externe"
+
+msgid "External IP address range"
+msgstr "Plage d'adresses IP externes"
+
+msgid "Operating mode"
+msgstr "Mode de fonctionnement"
+
+msgid "IDS = Detection only, IPS = Active prevention"
+msgstr "IDS = Détection uniquement, IPS = Prévention active"
+
+msgid "IDS (Detection)"
+msgstr "IDS (Détection)"
+
+msgid "IPS (Prevention)"
+msgstr "IPS (Prévention)"
+
+msgid "DAQ method"
+msgstr "Méthode DAQ"
+
+msgid "Packet acquisition method"
+msgstr "Méthode d'acquisition des paquets"
+
+msgid "PCAP (Recommended)"
+msgstr "PCAP (Recommandé)"
+
+msgid "NFQ (for IPS)"
+msgstr "NFQ (pour IPS)"
+
+msgid "Capture Length"
+msgstr "Taille de capture"
+
+msgid "Maximum packet capture size"
+msgstr "Taille maximale de capture des paquets"
+
+msgid "Logging configuration"
+msgstr "Configuration de la journalisation"
+
+msgid "Enable logging"
+msgstr "Activer la journalisation"
+
+msgid "Enable event logging"
+msgstr "Activer la journalisation des événements"
+
+msgid "Log directory"
+msgstr "Répertoire des journaux"
+
+msgid "Path where logs will be stored"
+msgstr "Chemin où les journaux seront stockés"
+
+msgid "Configuration directory"
+msgstr "Répertoire de configuration"
+
+msgid "Snort configuration directory path"
+msgstr "Chemin du répertoire de configuration Snort"
+
+msgid "Temporary directory"
+msgstr "Répertoire temporaire"
+
+msgid "Directory for temporary files and downloaded rules"
+msgstr "Répertoire des fichiers temporaires et des règles téléchargées"
+
+msgid "Rule updates and symbolic link repair are available on the overview page."
+msgstr "La mise à jour des règles et la réparation du lien symbolique sont disponibles sur la page d'aperçu."
+
+msgid "Oinkcode"
+msgstr "Oinkcode"
+
+msgid "Access code to download official Snort rules (optional)"
+msgstr "Code d'accès pour télécharger les règles officielles Snort (facultatif)"
+
+msgid "Enter your Oinkcode if you have one"
+msgstr "Saisissez votre Oinkcode si vous en avez un"
+
+msgid "Rule action"
+msgstr "Action des règles"
+
+msgid "Default action for rules"
+msgstr "Action par défaut des règles"
+
+msgid "Default"
+msgstr "Par défaut"
+
+msgid "Alert"
+msgstr "Alerte"
+
+msgid "Block"
+msgstr "Bloquer"
+
+msgid "Drop"
+msgstr "Rejeter"
+
+msgid "Reject"
+msgstr "Refuser"
+
+msgid "Advanced"
+msgstr "Avancé"
+
+msgid "OpenAppID"
+msgstr "OpenAppID"
+
+msgid "Enable application detection with the OpenAppID package"
+msgstr "Activer la détection d'applications avec le paquet OpenAppID"
+
+msgid "User configuration include"
+msgstr "Fichier de configuration utilisateur à inclure"
+
+msgid "Optional Snort configuration file appended to the generated snort.lua"
+msgstr "Fichier de configuration Snort facultatif ajouté au snort.lua généré"
+
+msgid "NFQ settings"
+msgstr "Paramètres NFQ"
+
+msgid "Netfilter queue settings used when the DAQ method is NFQ."
+msgstr "Paramètres de file Netfilter utilisés lorsque la méthode DAQ est NFQ."
+
+msgid "Queue count"
+msgstr "Nombre de files"
+
+msgid "Number of NFQ queues, usually 2 to 8"
+msgstr "Nombre de files NFQ, généralement de 2 à 8"
+
+msgid "First queue number"
+msgstr "Premier numéro de file"
+
+msgid "Maximum queue length"
+msgstr "Longueur maximale de la file"
+
+msgid "Fanout type"
+msgstr "Type de répartition"
+
+msgid "Kernel load balancing algorithm"
+msgstr "Algorithme d'équilibrage de charge du noyau"
+
+msgid "Packet thread count"
+msgstr "Nombre de threads de paquets"
+
+msgid "Maximum number of packet threads, 0 uses the number of CPU cores"
+msgstr "Nombre maximal de threads de paquets, 0 utilise le nombre de cœurs CPU"
+
+msgid "Chain type"
+msgstr "Type de chaîne"
+
+msgid "nftables chain type used for IPS mode"
+msgstr "Type de chaîne nftables utilisé en mode IPS"
+
+msgid "Chain priority"
+msgstr "Priorité de chaîne"
+
+msgid "NFQ rules include"
+msgstr "Règles NFQ à inclure"
+
+msgid "Full path to user-defined extra rules included in the queue chain"
+msgstr "Chemin complet des règles supplémentaires incluses dans la chaîne de files"
+
+msgid "Snort started"
+msgstr "Snort démarré"
+
+msgid "Snort stopped"
+msgstr "Snort arrêté"
+
+msgid "Snort restarted"
+msgstr "Snort redémarré"
+
+msgid "Auto-start enabled"
+msgstr "Démarrage automatique activé"
+
+msgid "Auto-start disabled"
+msgstr "Démarrage automatique désactivé"
+
+msgid "Invalid action"
+msgstr "Action invalide"
+
+msgid "Service action failed"
+msgstr "L'action sur le service a échoué"
+
+msgid "Update launched in background. Monitoring starts automatically."
+msgstr "Mise à jour lancée en arrière-plan. Le suivi démarre automatiquement."
+
+msgid "Update already in progress..."
+msgstr "Mise à jour déjà en cours..."
+
+msgid "Rules updater not found: /usr/bin/snort-rules"
+msgstr "Programme de mise à jour des règles introuvable : /usr/bin/snort-rules"
+
+msgid "Unable to start the rules update"
+msgstr "Impossible de démarrer la mise à jour des règles"
+
+msgid "Symbolic link created successfully"
+msgstr "Lien symbolique créé avec succès"
+
+msgid "Old directory backed up. Symbolic link created successfully"
+msgstr "Ancien répertoire sauvegardé. Lien symbolique créé avec succès"
+
+msgid "Directory does not exist:"
+msgstr "Le répertoire n'existe pas :"
+
+msgid "Unable to back up the old rules directory"
+msgstr "Impossible de sauvegarder l'ancien répertoire de règles"
+
+msgid "Error creating symbolic link"
+msgstr "Erreur lors de la création du lien symbolique"
+
+msgid "Existing rules path is not a directory"
+msgstr "Le chemin des règles existant n'est pas un répertoire"
+
+msgid "Temporary files cleaned"
+msgstr "Fichiers temporaires nettoyés"
+
+msgid "Unable to clean temporary files"
+msgstr "Impossible de nettoyer les fichiers temporaires"
+
+msgid "Unknown error"
+msgstr "Erreur inconnue"
+
+msgid "Create a symbolic link from /var/snort.d/rules to /etc/snort/rules?"
+msgstr "Créer un lien symbolique de /var/snort.d/rules vers /etc/snort/rules ?"
+
+msgid "RPC request failed"
+msgstr "La requête RPC a échoué"
