@@ -92,9 +92,12 @@ cp -a /path/to/luci-app-snort3 feeds/luci/applications/
 ./scripts/feeds install -p luci luci-app-snort3 luci-base
 ```
 
-Select the application and translation packages and build them. Disable
-`CONFIG_ALL_NONSHARED` and the Lua LuCI bindings; otherwise the SDK selects
-`liblucihttp-lua` and tries to compile it without Lua development headers:
+Select the application and translation languages, then build the application
+source directory. The translation packages are hidden and are selected through
+`CONFIG_LUCI_LANG_*`, not through `CONFIG_PACKAGE_luci-i18n-*` directly.
+Disable `CONFIG_ALL_NONSHARED` and the Lua LuCI bindings; otherwise the SDK
+selects `liblucihttp-lua` and tries to compile it without Lua development
+headers:
 
 ```sh
 cat >> .config <<'EOF'
@@ -105,14 +108,12 @@ cat >> .config <<'EOF'
 # CONFIG_PACKAGE_luci-lib-base is not set
 # CONFIG_PACKAGE_luci-lua-runtime is not set
 CONFIG_PACKAGE_luci-app-snort3=y
-CONFIG_PACKAGE_luci-i18n-snort3-fr=y
-CONFIG_PACKAGE_luci-i18n-snort3-zh-cn=y
+CONFIG_LUCI_LANG_fr=y
+CONFIG_LUCI_LANG_zh_Hans=y
 EOF
 
 make defconfig
 make package/luci-app-snort3/compile V=s
-make package/luci-i18n-snort3-fr/compile V=s
-make package/luci-i18n-snort3-zh-cn/compile V=s
 ```
 
 The packages are written to:
@@ -138,11 +139,10 @@ The same feed layout and package selection work with an opkg-based SDK:
 
 ```sh
 make package/luci-app-snort3/compile V=s
-make package/luci-i18n-snort3-fr/compile V=s
-make package/luci-i18n-snort3-zh-cn/compile V=s
 ```
 
-The output is written to `bin/packages/<arch>/luci/*.ipk`.
+The same `CONFIG_LUCI_LANG_*` switches select the translation packages, and the
+output is written to `bin/packages/<arch>/luci/*.ipk`.
 
 ## 3. Direct installation (fallback)
 

@@ -113,6 +113,9 @@ jobs:
           # but the SDK does not ship the Lua development headers, so the
           # lucihttp build fails with "lua.h: No such file or directory".
           # Build only the packages needed by this JavaScript/ucode module.
+          #
+          # The translation packages are HIDDEN and are selected by the LuCI
+          # language switches, not by CONFIG_PACKAGE_luci-i18n-* directly.
           cat >> .config <<'EOF'
           # CONFIG_ALL is not set
           # CONFIG_ALL_NONSHARED is not set
@@ -124,8 +127,8 @@ jobs:
           # CONFIG_LUCI_CSSTIDY is not set
           # CONFIG_LUCI_SRCDIET is not set
           CONFIG_PACKAGE_luci-app-snort3=y
-          CONFIG_PACKAGE_luci-i18n-snort3-fr=y
-          CONFIG_PACKAGE_luci-i18n-snort3-zh-cn=y
+          CONFIG_LUCI_LANG_fr=y
+          CONFIG_LUCI_LANG_zh_Hans=y
           EOF
 
           make defconfig
@@ -146,9 +149,10 @@ jobs:
           set -euo pipefail
           cd "$SDK_DIR"
 
+          # The application Makefile defines the base package and both
+          # translation packages, so one source-level target builds all of
+          # them.  There are no separate package/<i18n>/compile targets.
           make package/luci-app-snort3/compile V=s
-          make package/luci-i18n-snort3-fr/compile V=s
-          make package/luci-i18n-snort3-zh-cn/compile V=s
 
       - name: Collect APK files
         run: |
@@ -161,6 +165,12 @@ jobs:
             -exec cp -v {} "$GITHUB_WORKSPACE/artifacts/" \;
 
           test -n "$(ls -A "$GITHUB_WORKSPACE/artifacts")"
+          for pkg in luci-app-snort3 luci-i18n-snort3-fr luci-i18n-snort3-zh-cn; do
+            test -n "$(find "$GITHUB_WORKSPACE/artifacts" -maxdepth 1 -name "$pkg-*.apk" -print -quit)" || {
+              echo "Missing $pkg APK" >&2
+              exit 1
+            }
+          done
           ls -lh "$GITHUB_WORKSPACE/artifacts"
 
       - name: Upload the APK packages
