@@ -5,13 +5,13 @@
 			"ubus": {
 				"luci.snort": [ "status", "alerts", "rules" ]
 			},
-			"uci": [ "snort" ]
+			"uci": [ "snort-web" ]
 		},
 		"write": {
 			"ubus": {
 				"luci.snort": [ "service", "rules_update", "rules_fix", "rules_cleanup" ]
 			},
-			"uci": [ "snort" ]
+			"uci": [ "snort-web" ]
 		}
 	}
 }

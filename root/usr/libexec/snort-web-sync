@@ -1,0 +1,152 @@
+#!/bin/sh
+#
+# Synchronise the LuCI Snort3 application settings from /etc/config/snort-web
+# to /etc/config/snort, which is read by the OpenWrt snort3 init script and by
+# /usr/bin/snort-rules.
+#
+# The first run also imports the existing snort3 settings once.  The
+# snort-web.internal.migrated flag prevents a later boot from overwriting
+# settings that were changed in the LuCI application after the upgrade.
+
+set -u
+
+SRC_CONFIG=snort-web
+DST_CONFIG=snort
+SNORT_SECTION=snort
+NFQ_SECTION=nfq
+INTERNAL_SECTION=internal
+
+SNORT_OPTIONS="enabled manual interface home_net external_net mode method snaplen logging log_dir config_dir temp_dir oinkcode action openappid include"
+NFQ_OPTIONS="queue_count queue_start queue_maxlen fanout_type thread_count chain_type chain_priority include"
+
+changed=0
+
+log() {
+	if command -v logger >/dev/null 2>&1; then
+		logger -t snort-web-sync "$*" 2>/dev/null || true
+	fi
+}
+
+uci_get() {
+	uci -q get "$1" 2>/dev/null
+}
+
+section_exists() {
+	uci -q get "$1" >/dev/null 2>&1
+}
+
+has_option() {
+	uci -q get "$1" >/dev/null 2>&1
+}
+
+ensure_section() {
+	if ! section_exists "$1.$2"; then
+		uci -q set "$1.$2=$3" || return 1
+	fi
+
+	return 0
+}
+
+copy_option() {
+	_src_config=$1
+	_src_section=$2
+	_dst_config=$3
+	_dst_section=$4
+	_option=$5
+
+	if ! has_option "$_src_config.$_src_section.$_option"; then
+		return 0
+	fi
+
+	_value=$(uci_get "$_src_config.$_src_section.$_option")
+	_current=$(uci_get "$_dst_config.$_dst_section.$_option")
+
+	if [ "$_value" = "$_current" ]; then
+		return 0
+	fi
+
+	uci -q set "$_dst_config.$_dst_section.$_option=$_value" || return 1
+	changed=1
+
+	return 0
+}
+
+migrate() {
+	[ -f "/etc/config/$SRC_CONFIG" ] || return 0
+
+	if [ "$(uci_get "$SRC_CONFIG.$INTERNAL_SECTION.migrated")" = "1" ]; then
+		return 0
+	fi
+
+	if [ -f "/etc/config/$DST_CONFIG" ]; then
+		ensure_section "$SRC_CONFIG" "$SNORT_SECTION" "$SNORT_SECTION" || return 1
+		ensure_section "$SRC_CONFIG" "$NFQ_SECTION" "$NFQ_SECTION" || return 1
+
+		changed=0
+
+		for option in $SNORT_OPTIONS; do
+			copy_option "$DST_CONFIG" "$SNORT_SECTION" "$SRC_CONFIG" "$SNORT_SECTION" "$option" || return 1
+		done
+
+		for option in $NFQ_OPTIONS; do
+			copy_option "$DST_CONFIG" "$NFQ_SECTION" "$SRC_CONFIG" "$NFQ_SECTION" "$option" || return 1
+		done
+
+		if [ "$changed" = "1" ]; then
+			uci -q commit "$SRC_CONFIG" || return 1
+		fi
+	fi
+
+	ensure_section "$SRC_CONFIG" "$INTERNAL_SECTION" "$INTERNAL_SECTION" || return 1
+	uci -q set "$SRC_CONFIG.$INTERNAL_SECTION.migrated=1" || return 1
+	uci -q commit "$SRC_CONFIG" || return 1
+
+	log "imported existing settings from /etc/config/$DST_CONFIG"
+	return 0
+}
+
+sync_all() {
+	[ -f "/etc/config/$SRC_CONFIG" ] || return 0
+
+	if [ "$(uci_get "$SRC_CONFIG.$INTERNAL_SECTION.migrated")" != "1" ]; then
+		migrate || return 1
+	fi
+
+	[ -f "/etc/config/$DST_CONFIG" ] || return 0
+
+	ensure_section "$DST_CONFIG" "$SNORT_SECTION" "$SNORT_SECTION" || return 1
+	ensure_section "$DST_CONFIG" "$NFQ_SECTION" "$NFQ_SECTION" || return 1
+
+	changed=0
+
+	for option in $SNORT_OPTIONS; do
+		copy_option "$SRC_CONFIG" "$SNORT_SECTION" "$DST_CONFIG" "$SNORT_SECTION" "$option" || return 1
+	done
+
+	for option in $NFQ_OPTIONS; do
+		copy_option "$SRC_CONFIG" "$NFQ_SECTION" "$DST_CONFIG" "$NFQ_SECTION" "$option" || return 1
+	done
+
+	if [ "$changed" = "1" ]; then
+		uci -q commit "$DST_CONFIG" || return 1
+		log "synchronised settings to /etc/config/$DST_CONFIG"
+	fi
+
+	return 0
+}
+
+case "${1:-}" in
+	--migrate)
+		migrate
+		;;
+	--sync|'')
+		sync_all
+		;;
+	--all)
+		migrate && sync_all
+		;;
+	*)
+		printf 'Usage: %s [--migrate|--sync|--all]\n' "$0" >&2
+		exit 1
+		;;
+esac

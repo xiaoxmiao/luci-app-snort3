@@ -56,13 +56,31 @@ check_file /www/luci-static/resources/snort/style.js
 check_file /usr/share/rpcd/ucode/luci.snort.uc
 check_file /usr/share/luci/menu.d/luci-app-snort3.json
 check_file /usr/share/rpcd/acl.d/luci-app-snort3.json
+check_file /usr/share/ucitrack/luci-app-snort3.json
+check_file /etc/config/snort-web
 check_file /etc/config/snort
 check_optional_file /usr/lib/lua/luci/i18n/snort.fr.lmo
+check_optional_file /usr/lib/lua/luci/i18n/snort.zh-cn.lmo
 
 printf '\n%s\n' "Executables:"
 check_exec /etc/init.d/snort
+check_exec /etc/init.d/snort-web
+check_exec /usr/libexec/snort-web-sync
 check_exec /usr/bin/snort
 check_optional_exec /usr/bin/snort-rules
+
+printf '\n%s\n' "Configuration:"
+if command -v uci >/dev/null 2>&1; then
+	if uci -q get snort-web.snort.enabled >/dev/null 2>&1; then
+		printf '  [OK]   /etc/config/snort-web is readable\n'
+	else
+		printf '  [FAIL] /etc/config/snort-web is missing or invalid\n'
+		failures=$((failures + 1))
+	fi
+else
+	printf '  [WARN] uci command not found\n'
+	warnings=$((warnings + 1))
+fi
 
 printf '\n%s\n' "Legacy Lua files (should be absent):"
 for file in \

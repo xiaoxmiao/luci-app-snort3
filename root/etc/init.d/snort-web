@@ -1,0 +1,20 @@
+#!/bin/sh /etc/rc.common
+#
+# Synchronise the LuCI Snort3 settings before the snort3 init script starts.
+# The ucitrack definition also invokes "reload" after a LuCI Save & Apply.
+
+START=98
+
+SYNC=/usr/libexec/snort-web-sync
+
+start() {
+	[ -x "$SYNC" ] && "$SYNC" --sync
+}
+
+reload() {
+	start
+
+	if pidof snort >/dev/null 2>&1; then
+		/etc/init.d/snort restart
+	fi
+}

@@ -6,12 +6,12 @@
 #   sh install.sh
 #
 # Or download and run it standalone; it will fetch the repository archive:
-#   wget -O /tmp/install-snort3.sh https://raw.githubusercontent.com/dddavid51/luci-snort3-openwrt/main/install.sh
+#   wget -O /tmp/install-snort3.sh https://raw.githubusercontent.com/xiaoxmiao/luci-app-snort3/main/install.sh
 #   sh /tmp/install-snort3.sh
 
 set -eu
 
-REPO_ARCHIVE="https://github.com/dddavid51/luci-snort3-openwrt/archive/refs/heads/main.tar.gz"
+REPO_ARCHIVE="https://github.com/xiaoxmiao/luci-app-snort3/archive/refs/heads/main.tar.gz"
 LUCI_I18N_DIR="/usr/lib/lua/luci/i18n"
 TMP_DIR=""
 SRC_DIR=""
@@ -101,14 +101,26 @@ mkdir -p /etc/uci-defaults
 cp -f "$SRC_DIR/root/etc/uci-defaults/80_luci-app-snort3" /etc/uci-defaults/80_luci-app-snort3
 chmod 0755 /etc/uci-defaults/80_luci-app-snort3
 
-# Keep an existing user configuration intact
-if [ ! -f /etc/config/snort ]; then
-	cp -f "$SRC_DIR/dist/config/snort" /etc/config/snort
-	chmod 0644 /etc/config/snort
-	say "Installed default /etc/config/snort."
+# Application configuration, boot-time sync and LuCI apply hook
+mkdir -p /usr/libexec /etc/init.d /usr/share/ucitrack
+cp -f "$SRC_DIR/root/usr/libexec/snort-web-sync" /usr/libexec/snort-web-sync
+cp -f "$SRC_DIR/root/etc/init.d/snort-web" /etc/init.d/snort-web
+cp -f "$SRC_DIR/root/usr/share/ucitrack/luci-app-snort3.json" /usr/share/ucitrack/luci-app-snort3.json
+chmod 0755 /usr/libexec/snort-web-sync /etc/init.d/snort-web
+chmod 0644 /usr/share/ucitrack/luci-app-snort3.json
+
+# Keep an existing application configuration intact
+if [ ! -f /etc/config/snort-web ]; then
+	cp -f "$SRC_DIR/root/etc/config/snort-web" /etc/config/snort-web
+	chmod 0644 /etc/config/snort-web
+	say "Installed default /etc/config/snort-web."
 else
-	say "Keeping existing /etc/config/snort."
+	say "Keeping existing /etc/config/snort-web."
 fi
+
+# Enable the boot-time sync and import the existing snort3 settings
+/etc/init.d/snort-web enable >/dev/null 2>&1 || warn "Unable to enable /etc/init.d/snort-web."
+/usr/libexec/snort-web-sync --sync || warn "Unable to synchronise /etc/config/snort-web to /etc/config/snort."
 
 # Remove files installed by the old Lua-based module
 rm -f /usr/lib/lua/luci/controller/snort.lua
@@ -127,9 +139,10 @@ rmdir /usr/lib/lua/luci/model/cbi/snort 2>/dev/null || true
 mkdir -p "$LUCI_I18N_DIR"
 install_lmo() {
 	lang="$1"
+	code="$2"
 	po="$SRC_DIR/po/$lang/snort.po"
-	prebuilt="$SRC_DIR/dist/lmo/snort.$lang.lmo"
-	target="$LUCI_I18N_DIR/snort.$lang.lmo"
+	prebuilt="$SRC_DIR/dist/lmo/snort.$code.lmo"
+	target="$LUCI_I18N_DIR/snort.$code.lmo"
 
 	if command -v po2lmo >/dev/null 2>&1 && [ -f "$po" ]; then
 		if po2lmo "$po" "$target" 2>/dev/null; then
@@ -147,7 +160,8 @@ install_lmo() {
 	warn "No $lang translation catalog could be installed."
 }
 
-install_lmo fr
+install_lmo fr fr
+install_lmo zh_Hans zh-cn
 
 # Apply defaults immediately so a fresh install is usable without a reboot
 /etc/uci-defaults/80_luci-app-snort3 || true

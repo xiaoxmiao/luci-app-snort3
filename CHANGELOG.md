@@ -5,6 +5,34 @@ All notable changes to the LuCI Snort3 Module will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.1.0] - 2026-11-05
+
+### Added
+- Simplified Chinese (`zh_Hans` / `zh-cn`) translation catalog and prebuilt
+  `dist/lmo/snort.zh-cn.lmo`.
+- APK build workflow using an OpenWrt 25.12.x SDK, with configurable SDK
+  version and target.
+- `/usr/libexec/snort-web-sync` to synchronise application settings to the
+  `/etc/config/snort` file read by `snort3`.
+- `/etc/init.d/snort-web` boot-time sync (`START=98`) and a ucitrack trigger
+  that applies settings and restarts Snort after **Save & Apply**.
+- One-time migration of existing `/etc/config/snort` values into the new
+  application configuration.
+
+### Changed
+- Application settings are now stored in `/etc/config/snort-web` instead of
+  writing directly to the `snort3`-owned `/etc/config/snort`.
+- The menu, ACL and rpcd backend use the `snort-web` UCI package; service and
+  rules actions synchronise the runtime configuration first.
+- The package declares `/etc/config/snort-web` as a conffile and enables the
+  sync init script in its post-install script.
+- Documentation now covers APK/IPK builds, the configuration synchronisation
+  model, Simplified Chinese, and manual recovery steps.
+
+### Fixed
+- Settings no longer conflict with the `snort3` package's configuration file
+  during firmware builds.
+
 ## [4.0.0] - 2026-11-04
 
 ### Added

@@ -59,8 +59,9 @@ alerts** for the full page.
 
 ## Settings
 
-Settings are stored in `/etc/config/snort`. Use **Save & Apply** to write the
-configuration and reload the relevant LuCI services.
+Settings are stored in `/etc/config/snort-web`. Use **Save & Apply** to write
+the configuration, synchronise it to `/etc/config/snort` (the file read by the
+`snort3` init script and rules updater) and restart Snort when it is running.
 
 ### Service settings
 
@@ -161,7 +162,10 @@ paths without `..` components or control characters.
 
 | Path | Purpose |
 | --- | --- |
-| `/etc/config/snort` | UCI settings |
+| `/etc/config/snort-web` | Application UCI settings |
+| `/etc/config/snort` | Runtime settings consumed by `snort3` (synchronised) |
+| `/usr/libexec/snort-web-sync` | Settings synchronisation helper |
+| `/etc/init.d/snort-web` | Boot-time sync before Snort starts |
 | `/etc/init.d/snort` | Service control |
 | `/usr/bin/snort-rules` | Optional rules updater |
 | `/var/log/alert_fast.txt` | Fast alerts |
@@ -179,7 +183,8 @@ paths without `..` components or control characters.
 - Configured paths must be absolute and are rejected if they contain `..` or
   control characters.
 - The ACL file grants only the seven `luci.snort` methods and UCI access to the
-  `snort` package.
+  `snort-web` package. The synchronisation helper runs as root outside the
+  browser session.
 - Rule updates run in the background as root because the updater needs to write
   to `/etc/snort` and `/var/snort.d`. Review `/usr/bin/snort-rules` before
   installing a third-party updater.
@@ -193,4 +198,6 @@ paths without `..` components or control characters.
 | Rules update stays at **In progress** | Inspect `/tmp/snort_rules_update.log` and remove a stale lock if necessary |
 | Symbolic link repair fails | Check that `/var/snort.d/rules` exists and `/etc/snort` is writable |
 | Wrong interface displayed | Update the interface in Settings and apply |
+| Settings not applied | Run `/usr/libexec/snort-web-sync --sync` and compare `uci show snort-web` with `uci show snort` |
 | French UI not translated | Install the French catalog and set the LuCI language to French |
+| Chinese UI not translated | Install the `zh-cn` catalog and set the LuCI language to Simplified Chinese |

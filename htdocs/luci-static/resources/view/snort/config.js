@@ -6,13 +6,13 @@
 
 return view.extend({
 	load: function() {
-		return uci.load('snort');
+		return uci.load('snort-web');
 	},
 
 	render: function() {
 		var m, s, o;
 
-		m = new form.Map('snort', _('Snort IDS/IPS'),
+		m = new form.Map('snort-web', _('Snort IDS/IPS'),
 			_('Snort is an open source intrusion detection and prevention system.'));
 
 		s = m.section(form.TypedSection, 'snort', _('Service settings'));

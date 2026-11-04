@@ -153,7 +153,7 @@ function writePot(strings) {
 		'msgid ""',
 		'msgstr ""',
 		'"Project-Id-Version: luci-app-snort3\\n"',
-		'"Report-Msgid-Bugs-To: https://github.com/dddavid51/luci-snort3-openwrt/issues\\n"',
+		'"Report-Msgid-Bugs-To: https://github.com/xiaoxmiao/luci-app-snort3/issues\\n"',
 		'"POT-Creation-Date: 2026-11-04 00:00+0000\\n"',
 		'"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\\n"',
 		'"Last-Translator: FULL NAME <EMAIL@ADDRESS>\\n"',

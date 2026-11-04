@@ -14,9 +14,12 @@ import { access, glob, lstat, readfile, readlink, stat, unlink, symlink,
 import { cursor } from 'uci';
 
 const INIT_SCRIPT = '/etc/init.d/snort';
+const SYNC_HELPER = '/usr/libexec/snort-web-sync';
 const RULES_UPDATER = '/usr/bin/snort-rules';
 const UPDATE_LOCK = '/tmp/snort_rules_update.lock';
 const UPDATE_LOG = '/tmp/snort_rules_update.log';
+
+const CONFIG_NAME = 'snort-web';
 
 const DEFAULT_CONFIG_DIR = '/etc/snort';
 const DEFAULT_TEMP_DIR = '/var/snort.d';
@@ -72,6 +75,13 @@ function first_value(value, fallback) {
 	return (value == null || value == '') ? fallback : value;
 }
 
+function sync_runtime_config() {
+	if (!access(SYNC_HELPER, 'x'))
+		return true;
+
+	return system([ SYNC_HELPER, '--sync' ], 30000) == 0;
+}
+
 function get_settings() {
 	let uci = null;
 
@@ -87,7 +97,7 @@ function get_settings() {
 			return fallback;
 
 		try {
-			return first_value(uci.get_first('snort', 'snort', name), fallback);
+			return first_value(uci.get_first(CONFIG_NAME, 'snort', name), fallback);
 		}
 		catch (e) {
 			return fallback;
@@ -539,6 +549,14 @@ const methods = {
 			if (!access(INIT_SCRIPT, 'x'))
 				return { success: false, ok: false, code: 'init_missing' };
 
+			/* The snort3 init script and rules updater read
+			 * /etc/config/snort.  Push the application settings there
+			 * before starting or restarting the service. */
+			if (action == 'start' || action == 'restart' || action == 'enable') {
+				if (!sync_runtime_config())
+					return { success: false, ok: false, code: 'action_failed' };
+			}
+
 			const rc = system([INIT_SCRIPT, action], 60000);
 			const ok = rc == 0;
 
@@ -579,6 +597,11 @@ const methods = {
 		call: function() {
 			if (!access(RULES_UPDATER, 'x'))
 				return { success: false, ok: false, code: 'updater_missing', path: RULES_UPDATER };
+
+			/* snort-rules reads the oinkcode and paths from the snort3
+			 * configuration file. */
+			if (!sync_runtime_config())
+				return { success: false, ok: false, code: 'update_failed' };
 
 			const settings = get_settings();
 			const state = update_state();

@@ -1,5 +1,13 @@
 #!/bin/sh
 
+# Enable the boot-time configuration sync.  This also makes the ucitrack
+# trigger active when the package is part of a firmware image.
+[ -x /etc/init.d/snort-web ] && /etc/init.d/snort-web enable
+
+# Import an existing /etc/config/snort once, then synchronise the runtime
+# configuration used by the snort3 init script and rules updater.
+[ -x /usr/libexec/snort-web-sync ] && /usr/libexec/snort-web-sync --sync
+
 # Repair the rules symlink when a previous rules update already populated the
 # temporary rules directory.  Never touch an existing /etc/snort/rules path;
 # the user can explicitly repair it from Services -> Snort IDS/IPS.

@@ -15,11 +15,39 @@ LUCI_DESCRIPTION:=Web interface for status, service control, configuration, aler
 LUCI_DEPENDS:=+luci-base +rpcd-mod-ucode +snort3
 LUCI_PKGARCH:=all
 
+PKG_VERSION:=4.1.0
+PKG_RELEASE:=1
+PKG_PO_VERSION:=$(PKG_VERSION)-r$(PKG_RELEASE)
+
 PKG_LICENSE:=GPL-2.0
 PKG_MAINTAINER:=David Dzieciol <david.dzieciol51100@gmail.com>
 
 # /etc/config/snort is provided by the snort3 package. Shipping it here as
-# well would cause a file clash during firmware builds.
+# well would cause a file clash during firmware builds. The application stores
+# its settings in /etc/config/snort-web and synchronises them to snort3 through
+# /usr/libexec/snort-web-sync.
+
+define Package/luci-app-snort3/conffiles
+/etc/config/snort-web
+endef
+
+define Package/luci-app-snort3/postinst
+#!/bin/sh
+[ -n "$${IPKG_INSTROOT}" ] || {
+	[ -x /etc/init.d/snort-web ] && /etc/init.d/snort-web enable
+	[ -x /usr/libexec/snort-web-sync ] && /usr/libexec/snort-web-sync --sync
+	rm -f /tmp/luci-indexcache.*
+	rm -rf /tmp/luci-modulecache/
+	/etc/init.d/rpcd reload 2>/dev/null
+}
+exit 0
+endef
+
+define Package/luci-app-snort3/prerm
+#!/bin/sh
+[ -n "$${IPKG_INSTROOT}" ] || /etc/init.d/snort-web disable
+exit 0
+endef
 
 include ../../luci.mk
 

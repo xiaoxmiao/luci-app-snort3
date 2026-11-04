@@ -15,13 +15,21 @@ Backend (installed under /usr/share)
   root/usr/share/rpcd/acl.d/luci-app-snort3.json        RPC and UCI permissions
 
 System integration
-  root/etc/uci-defaults/80_luci-app-snort3             one-shot rules link repair
+  root/etc/config/snort-web                            default application configuration
+  root/usr/libexec/snort-web-sync                     snort-web -> snort synchronisation
+  root/etc/init.d/snort-web                           boot-time sync before snort
+  root/usr/share/ucitrack/luci-app-snort3.json         Save & Apply trigger
+  root/etc/uci-defaults/80_luci-app-snort3             migration, sync and rules link repair
 
-Install templates
-  dist/config/snort                                    default UCI configuration
-  dist/lmo/snort.fr.lmo                                prebuilt catalog for install.sh
+Translations and prebuilt catalogs
+  dist/lmo/snort.fr.lmo                                prebuilt French catalog
+  dist/lmo/snort.zh-cn.lmo                             prebuilt Simplified Chinese catalog
   po/fr/snort.po                                       French catalog
+  po/zh_Hans/snort.po                                  Simplified Chinese catalog
   po/templates/snort.pot                               translation template
+
+Packaging
+  .github/workflows/build-apk.yml                      OpenWrt SDK APK build
 
 Build and verification
   Makefile                                             luci.mk package definition

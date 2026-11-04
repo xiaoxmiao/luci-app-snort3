@@ -1,0 +1,4 @@
+{
+	"config": "snort-web",
+	"init": "snort-web"
+}

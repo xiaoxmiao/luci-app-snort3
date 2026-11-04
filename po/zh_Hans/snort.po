@@ -1,0 +1,440 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: luci-app-snort3\n"
+"Language: zh_Hans\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+msgid "Access code to download official Snort rules (optional)"
+msgstr "下载官方 Snort 规则所需的访问代码（可选）"
+
+msgid "Actions"
+msgstr "操作"
+
+msgid "Active symbolic link"
+msgstr "有效符号链接"
+
+msgid "Advanced"
+msgstr "高级"
+
+msgid "Alert"
+msgstr "告警"
+
+msgid "Alert file"
+msgstr "告警文件"
+
+msgid "Alerts"
+msgstr "告警"
+
+msgid "Auto-refresh every 5 seconds"
+msgstr "每 5 秒自动刷新"
+
+msgid "Auto-start"
+msgstr "开机自启"
+
+msgid "Auto-start disabled"
+msgstr "已禁用开机自启"
+
+msgid "Auto-start enabled"
+msgstr "已启用开机自启"
+
+msgid "Block"
+msgstr "阻止"
+
+msgid "Broken symbolic link"
+msgstr "符号链接已损坏"
+
+msgid "Capture Length"
+msgstr "捕获长度"
+
+msgid "Chain priority"
+msgstr "链优先级"
+
+msgid "Chain type"
+msgstr "链类型"
+
+msgid "Cleanup temporary files"
+msgstr "清理临时文件"
+
+msgid "Configuration directory"
+msgstr "配置目录"
+
+msgid "Configuration rules path is a directory"
+msgstr "配置规则路径是一个目录"
+
+msgid "Create a symbolic link from /var/snort.d/rules to /etc/snort/rules?"
+msgstr "是否创建从 /var/snort.d/rules 到 /etc/snort/rules 的符号链接？"
+
+msgid "Create symbolic link"
+msgstr "创建符号链接"
+
+msgid "DAQ method"
+msgstr "DAQ 方式"
+
+msgid "Default"
+msgstr "默认"
+
+msgid "Default action for rules"
+msgstr "规则默认动作"
+
+msgid "Detailed JSON alerts"
+msgstr "详细 JSON 告警"
+
+msgid "Directory does not exist:"
+msgstr "目录不存在："
+
+msgid "Directory for temporary files and downloaded rules"
+msgstr "用于临时文件和下载规则的目录"
+
+msgid "Disable at boot"
+msgstr "开机禁用"
+
+msgid "Disabled"
+msgstr "已禁用"
+
+msgid "Drop"
+msgstr "丢弃"
+
+msgid "Enable application detection with the OpenAppID package"
+msgstr "使用 OpenAppID 包启用应用检测"
+
+msgid "Enable at boot"
+msgstr "开机启用"
+
+msgid "Enable event logging"
+msgstr "启用事件日志"
+
+msgid "Enable logging"
+msgstr "启用日志"
+
+msgid "Enable or disable Snort service"
+msgstr "启用或禁用 Snort 服务"
+
+msgid "Enable Snort"
+msgstr "启用 Snort"
+
+msgid "Enabled"
+msgstr "已启用"
+
+msgid "Enter your Oinkcode if you have one"
+msgstr "如果有 Oinkcode 请输入"
+
+msgid "Error creating symbolic link"
+msgstr "创建符号链接失败"
+
+msgid "Existing rules path is not a directory"
+msgstr "现有规则路径不是目录"
+
+msgid "External IP address range"
+msgstr "外部 IP 地址范围"
+
+msgid "External network"
+msgstr "外部网络"
+
+msgid "Fanout type"
+msgstr "Fanout 类型"
+
+msgid "Fast alerts"
+msgstr "快速告警"
+
+msgid "First queue number"
+msgstr "起始队列编号"
+
+msgid "Full path to user-defined extra rules included in the queue chain"
+msgstr "队列链中包含的用户自定义额外规则的完整路径"
+
+msgid "Idle"
+msgstr "空闲"
+
+msgid "IDS (Detection)"
+msgstr "IDS（检测）"
+
+msgid "IDS = Detection only, IPS = Active prevention"
+msgstr "IDS = 仅检测，IPS = 主动防御"
+
+msgid "In progress..."
+msgstr "进行中..."
+
+msgid "Interface"
+msgstr "接口"
+
+msgid "Invalid action"
+msgstr "无效操作"
+
+msgid "IP address range to protect"
+msgstr "要保护的 IP 地址范围"
+
+msgid "IPS (Prevention)"
+msgstr "IPS（防御）"
+
+msgid "Kernel load balancing algorithm"
+msgstr "内核负载均衡算法"
+
+msgid "Loading..."
+msgstr "正在加载..."
+
+msgid "Local network"
+msgstr "本地网络"
+
+msgid "Log directory"
+msgstr "日志目录"
+
+msgid "Log files:"
+msgstr "日志文件："
+
+msgid "Logging configuration"
+msgstr "日志配置"
+
+msgid "Manual mode"
+msgstr "手动模式"
+
+msgid "Maximum number of packet threads, 0 uses the number of CPU cores"
+msgstr "最大数据包线程数，0 表示使用 CPU 核心数"
+
+msgid "Maximum packet capture size"
+msgstr "最大数据包捕获大小"
+
+msgid "Maximum queue length"
+msgstr "最大队列长度"
+
+msgid "Memory"
+msgstr "内存"
+
+msgid "Mode"
+msgstr "模式"
+
+msgid "Netfilter queue settings used when the DAQ method is NFQ."
+msgstr "DAQ 方式为 NFQ 时使用的 Netfilter 队列设置。"
+
+msgid "Network interface"
+msgstr "网络接口"
+
+msgid "Network interface to monitor (e.g. br-lan, eth0)"
+msgstr "要监控的网络接口（例如 br-lan、eth0）"
+
+msgid "NFQ (for IPS)"
+msgstr "NFQ（用于 IPS）"
+
+msgid "NFQ rules include"
+msgstr "NFQ 规则包含文件"
+
+msgid "NFQ settings"
+msgstr "NFQ 设置"
+
+msgid "nftables chain type used for IPS mode"
+msgstr "IPS 模式使用的 nftables 链类型"
+
+msgid "No alerts recorded"
+msgstr "暂无告警记录"
+
+msgid "No logs"
+msgstr "无日志"
+
+msgid "No recent alerts - Your network is secure"
+msgstr "最近没有告警 - 您的网络安全"
+
+msgid "No rules directory found"
+msgstr "未找到规则目录"
+
+msgid "No update log yet."
+msgstr "暂无更新日志。"
+
+msgid "Number of NFQ queues, usually 2 to 8"
+msgstr "NFQ 队列数，通常为 2 到 8"
+
+msgid "Oinkcode"
+msgstr "Oinkcode"
+
+msgid "Old directory backed up. Symbolic link created successfully"
+msgstr "旧目录已备份，符号链接创建成功"
+
+msgid "OpenAppID"
+msgstr "OpenAppID"
+
+msgid "Operating mode"
+msgstr "运行模式"
+
+msgid "Optional Snort configuration file appended to the generated snort.lua"
+msgstr "追加到生成的 snort.lua 的可选 Snort 配置文件"
+
+msgid "Packet acquisition method"
+msgstr "数据包获取方式"
+
+msgid "Packet thread count"
+msgstr "数据包线程数"
+
+msgid "Path where logs will be stored"
+msgstr "日志存储路径"
+
+msgid "PCAP (Recommended)"
+msgstr "PCAP（推荐）"
+
+msgid "PID"
+msgstr "PID"
+
+msgid "Queue count"
+msgstr "队列数"
+
+msgid "Real-time status, service control and rules management."
+msgstr "实时状态、服务控制和规则管理。"
+
+msgid "Recent alerts"
+msgstr "最近告警"
+
+msgid "Recent alerts (50 most recent)"
+msgstr "最近告警（最近 50 条）"
+
+msgid "Refresh"
+msgstr "刷新"
+
+msgid "Reject"
+msgstr "拒绝"
+
+msgid "Restart"
+msgstr "重启"
+
+msgid "RPC request failed"
+msgstr "RPC 请求失败"
+
+msgid "Rule action"
+msgstr "规则动作"
+
+msgid "Rule files:"
+msgstr "规则文件："
+
+msgid "Rule updates and symbolic link repair are available on the overview page."
+msgstr "规则更新和符号链接修复可在概览页面进行。"
+
+msgid "Rules are in"
+msgstr "规则位于"
+
+msgid "Rules management"
+msgstr "规则管理"
+
+msgid "Rules updater not found: /usr/bin/snort-rules"
+msgstr "未找到规则更新程序：/usr/bin/snort-rules"
+
+msgid "Running"
+msgstr "运行中"
+
+msgid "Service"
+msgstr "服务"
+
+msgid "Service action failed"
+msgstr "服务操作失败"
+
+msgid "Service control"
+msgstr "服务控制"
+
+msgid "Service settings"
+msgstr "服务设置"
+
+msgid "Settings"
+msgstr "设置"
+
+msgid "Snort - Alerts and Logs"
+msgstr "Snort - 告警与日志"
+
+msgid "Snort configuration directory path"
+msgstr "Snort 配置目录路径"
+
+msgid "Snort IDS/IPS"
+msgstr "Snort 入侵检测/防御系统"
+
+msgid "Snort init script not found"
+msgstr "未找到 Snort 初始化脚本"
+
+msgid "Snort is an open source intrusion detection and prevention system."
+msgstr "Snort 是一个开源的入侵检测与防御系统。"
+
+msgid "Snort memory"
+msgstr "Snort 内存"
+
+msgid "Snort restarted"
+msgstr "Snort 已重启"
+
+msgid "Snort started"
+msgstr "Snort 已启动"
+
+msgid "Snort stopped"
+msgstr "Snort 已停止"
+
+msgid "Snort system logs (20 most recent)"
+msgstr "Snort 系统日志（最近 20 条）"
+
+msgid "Start"
+msgstr "启动"
+
+msgid "Stop"
+msgstr "停止"
+
+msgid "Stopped"
+msgstr "已停止"
+
+msgid "Symbolic link created successfully"
+msgstr "符号链接创建成功"
+
+msgid "System memory"
+msgstr "系统内存"
+
+msgid "System uptime"
+msgstr "系统运行时间"
+
+msgid "Temporary directory"
+msgstr "临时目录"
+
+msgid "Temporary files cleaned"
+msgstr "临时文件已清理"
+
+msgid "Temporary rules:"
+msgstr "临时规则："
+
+msgid "Total alerts"
+msgstr "告警总数"
+
+msgid "Unable to back up the old rules directory"
+msgstr "无法备份旧规则目录"
+
+msgid "Unable to clean temporary files"
+msgstr "无法清理临时文件"
+
+msgid "Unable to start the rules update"
+msgstr "无法启动规则更新"
+
+msgid "Unavailable"
+msgstr "不可用"
+
+msgid "Unknown error"
+msgstr "未知错误"
+
+msgid "Update already in progress..."
+msgstr "更新已在进行中..."
+
+msgid "Update completed!"
+msgstr "更新完成！"
+
+msgid "Update in progress..."
+msgstr "更新进行中..."
+
+msgid "Update launched in background. Monitoring starts automatically."
+msgstr "更新已在后台启动，将自动开始监控。"
+
+msgid "Update rules"
+msgstr "更新规则"
+
+msgid "Update status"
+msgstr "更新状态"
+
+msgid "Use manual configuration (snort.lua)"
+msgstr "使用手动配置（snort.lua）"
+
+msgid "User configuration include"
+msgstr "用户配置包含文件"
+
+msgid "View all alerts"
+msgstr "查看所有告警"
+
+msgid "View detailed reports via SSH with the command:"
+msgstr "通过 SSH 使用以下命令查看详细报告："

@@ -1,0 +1,119 @@
+name: Build OpenWrt APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      sdk_version:
+        description: OpenWrt SDK release
+        required: true
+        default: 25.12.6
+      target:
+        description: SDK target (for example x86/64)
+        required: true
+        default: x86/64
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build APK packages
+    runs-on: ubuntu-latest
+
+    env:
+      SDK_VERSION: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.sdk_version || '25.12.6' }}
+      SDK_TARGET: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.target || 'x86/64' }}
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential ca-certificates file python3 wget zstd
+
+      - name: Download and extract the OpenWrt SDK
+        run: |
+          set -euo pipefail
+          base="https://downloads.openwrt.org/releases/${SDK_VERSION}/targets/${SDK_TARGET}"
+          sdk_file=$(wget -qO- "$base/" |
+            grep -m1 -oE 'openwrt-sdk-[^"<>]+Linux-x86_64\.tar\.zst' || true)
+
+          if [ -z "$sdk_file" ]; then
+            echo "No x86_64 SDK found at $base" >&2
+            exit 1
+          fi
+
+          echo "Downloading $base/$sdk_file"
+          wget -q "$base/$sdk_file"
+          tar -I zstd -xf "$sdk_file"
+
+          sdk_dir=$(find "$PWD" -maxdepth 1 -type d -name 'openwrt-sdk-*' -print -quit)
+          [ -n "$sdk_dir" ] || { echo "SDK directory not found" >&2; exit 1; }
+          echo "SDK_DIR=$sdk_dir" >> "$GITHUB_ENV"
+
+      - name: Add the application to the LuCI feed
+        run: |
+          set -euo pipefail
+          cd "$SDK_DIR"
+
+          ./scripts/feeds update luci packages
+
+          mkdir -p feeds/luci/applications
+          rm -rf feeds/luci/applications/luci-app-snort3
+          cp -a "$GITHUB_WORKSPACE" feeds/luci/applications/luci-app-snort3
+          rm -rf feeds/luci/applications/luci-app-snort3/.git
+
+          # Rebuild the feed index so the new application can be installed.
+          ./scripts/feeds update -i luci
+
+          ./scripts/feeds install -p luci luci-app-snort3 luci-base
+          # rpcd-mod-ucode is part of the SDK's core packages, not a feed.
+          ./scripts/feeds install -p packages snort3
+
+      - name: Configure the build
+        run: |
+          set -euo pipefail
+          cd "$SDK_DIR"
+
+          cat >> .config <<'EOF'
+          CONFIG_PACKAGE_luci-app-snort3=y
+          CONFIG_PACKAGE_luci-i18n-snort3-fr=y
+          CONFIG_PACKAGE_luci-i18n-snort3-zh-cn=y
+          EOF
+
+          make defconfig
+
+      - name: Compile the packages
+        run: |
+          set -euo pipefail
+          cd "$SDK_DIR"
+
+          make package/luci-app-snort3/compile V=s
+          make package/luci-i18n-snort3-fr/compile V=s
+          make package/luci-i18n-snort3-zh-cn/compile V=s
+
+      - name: Collect APK files
+        run: |
+          set -euo pipefail
+          cd "$SDK_DIR"
+
+          mkdir -p "$GITHUB_WORKSPACE/artifacts"
+          find bin/packages -type f \
+            \( -name 'luci-app-snort3-*.apk' -o -name 'luci-i18n-snort3-*.apk' \) \
+            -exec cp -v {} "$GITHUB_WORKSPACE/artifacts/" \;
+
+          test -n "$(ls -A "$GITHUB_WORKSPACE/artifacts")"
+          ls -lh "$GITHUB_WORKSPACE/artifacts"
+
+      - name: Upload the APK packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: luci-app-snort3-apk
+          path: artifacts/*.apk
+          if-no-files-found: error

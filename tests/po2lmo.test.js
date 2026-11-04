@@ -106,3 +106,25 @@ test('the committed French catalog is up to date', () => {
 
 	assert.ok(translated > 100);
 });
+
+test('the committed Simplified Chinese catalog is complete and compiled', () => {
+	const root = path.join(__dirname, '..');
+	const catalog = parsePo(fs.readFileSync(path.join(root, 'po/zh_Hans/snort.po'), 'utf8'));
+	const compiled = fs.readFileSync(path.join(root, 'dist/lmo/snort.zh-cn.lmo'));
+	let translated = 0;
+
+	for (const entry of catalog) {
+		if (!entry.msgid)
+			continue;
+
+		assert.ok(entry.msgstr, 'empty translation: ' + entry.msgid);
+
+		if (entry.msgstr !== entry.msgid) {
+			assert.equal(lookup(compiled, entry.msgid), entry.msgstr, entry.msgid);
+			translated++;
+		}
+	}
+
+	assert.ok(translated > 100);
+	assert.equal(lookup(compiled, 'Settings'), '设置');
+});

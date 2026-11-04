@@ -1,6 +1,11 @@
-# Snort3 configuration for LuCI
-# Managed through Services -> Snort IDS/IPS -> Settings.
-# This file is also understood by the OpenWrt snort3 init script.
+# LuCI Snort3 application settings.
+#
+# This file is the canonical configuration for the LuCI application.
+# /usr/libexec/snort-web-sync copies the options below to
+# /etc/config/snort, which is read by the OpenWrt snort3 init script.
+#
+# Do not edit /etc/config/snort for application settings: it is owned by
+# the snort3 package and will be overwritten on the next apply or boot.
 
 config snort 'snort'
 	option enabled '0'
@@ -29,3 +34,6 @@ config nfq 'nfq'
 	option chain_type 'input'
 	option chain_priority 'filter'
 	option include ''
+
+config internal 'internal'
+	option migrated '0'
