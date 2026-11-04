@@ -80,21 +80,30 @@ tar -I zstd -xf "$SDK_FILE"
 cd openwrt-sdk-*
 ```
 
-Add the LuCI and packages feeds, then place this repository in the LuCI feed:
+Add the base, LuCI and packages feeds, then place this repository in the LuCI
+feed. The base feed supplies the OpenWrt core package sources (`ucode`, `rpcd`,
+`libucode`, ...) that the SDK does not include on its own:
 
 ```sh
-./scripts/feeds update luci packages
+./scripts/feeds update base luci packages
 mkdir -p feeds/luci/applications
 cp -a /path/to/luci-app-snort3 feeds/luci/applications/
 
 ./scripts/feeds install -p luci luci-app-snort3 luci-base
-./scripts/feeds install -p packages rpcd-mod-ucode snort3
 ```
 
-Select the application and translation packages and build them:
+Select the application and translation packages and build them. Disable
+`CONFIG_ALL_NONSHARED` and the Lua LuCI bindings; otherwise the SDK selects
+`liblucihttp-lua` and tries to compile it without Lua development headers:
 
 ```sh
 cat >> .config <<'EOF'
+# CONFIG_ALL_NONSHARED is not set
+# CONFIG_ALL_KMODS is not set
+# CONFIG_PACKAGE_lua is not set
+# CONFIG_PACKAGE_liblucihttp-lua is not set
+# CONFIG_PACKAGE_luci-lib-base is not set
+# CONFIG_PACKAGE_luci-lua-runtime is not set
 CONFIG_PACKAGE_luci-app-snort3=y
 CONFIG_PACKAGE_luci-i18n-snort3-fr=y
 CONFIG_PACKAGE_luci-i18n-snort3-zh-cn=y
