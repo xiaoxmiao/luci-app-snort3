@@ -89,7 +89,9 @@ jobs:
           set -euo pipefail
           cd "$SDK_DIR"
 
-          ./scripts/feeds update luci packages
+          # The base feed provides the OpenWrt core packages (ucode, rpcd,
+          # libucode, ...) that the SDK itself does not ship as source.
+          ./scripts/feeds update base luci packages
 
           mkdir -p feeds/luci/applications
           rm -rf feeds/luci/applications/luci-app-snort3
@@ -100,8 +102,6 @@ jobs:
           ./scripts/feeds update -i luci
 
           ./scripts/feeds install -p luci luci-app-snort3 luci-base
-          # rpcd-mod-ucode is part of the SDK's core packages, not a feed.
-          ./scripts/feeds install -p packages snort3
 
       - name: Configure the build
         run: |
@@ -116,10 +116,13 @@ jobs:
           cat >> .config <<'EOF'
           # CONFIG_ALL is not set
           # CONFIG_ALL_NONSHARED is not set
+          # CONFIG_ALL_KMODS is not set
           # CONFIG_PACKAGE_lua is not set
           # CONFIG_PACKAGE_liblucihttp-lua is not set
           # CONFIG_PACKAGE_luci-lib-base is not set
           # CONFIG_PACKAGE_luci-lua-runtime is not set
+          # CONFIG_LUCI_CSSTIDY is not set
+          # CONFIG_LUCI_SRCDIET is not set
           CONFIG_PACKAGE_luci-app-snort3=y
           CONFIG_PACKAGE_luci-i18n-snort3-fr=y
           CONFIG_PACKAGE_luci-i18n-snort3-zh-cn=y

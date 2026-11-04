@@ -12,7 +12,12 @@ include $(TOPDIR)/rules.mk
 
 LUCI_TITLE:=LuCI support for Snort3 IDS/IPS
 LUCI_DESCRIPTION:=Web interface for status, service control, configuration, alerts and rules management of Snort3.
-LUCI_DEPENDS:=+luci-base +rpcd-mod-ucode +snort3
+LUCI_DEPENDS:=+luci-base +rpcd-mod-ucode
+# Snort3 is a runtime-only dependency. Keeping it in LUCI_DEPENDS makes the
+# OpenWrt build system compile the whole Snort3 stack before this UI package,
+# which is unnecessary when only the LuCI module is being built. EXTRA_DEPENDS
+# still records the dependency in the package metadata.
+LUCI_EXTRA_DEPENDS:=snort3$(if $(CONFIG_USE_APK), (>=0))
 LUCI_PKGARCH:=all
 
 PKG_VERSION:=4.1.0
