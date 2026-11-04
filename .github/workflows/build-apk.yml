@@ -108,13 +108,35 @@ jobs:
           set -euo pipefail
           cd "$SDK_DIR"
 
+          # The SDK image ships the full release configuration, which enables
+          # every non-shared package.  That pulls in the Lua LuCI bindings,
+          # but the SDK does not ship the Lua development headers, so the
+          # lucihttp build fails with "lua.h: No such file or directory".
+          # Build only the packages needed by this JavaScript/ucode module.
           cat >> .config <<'EOF'
+          # CONFIG_ALL is not set
+          # CONFIG_ALL_NONSHARED is not set
+          # CONFIG_PACKAGE_lua is not set
+          # CONFIG_PACKAGE_liblucihttp-lua is not set
+          # CONFIG_PACKAGE_luci-lib-base is not set
+          # CONFIG_PACKAGE_luci-lua-runtime is not set
           CONFIG_PACKAGE_luci-app-snort3=y
           CONFIG_PACKAGE_luci-i18n-snort3-fr=y
           CONFIG_PACKAGE_luci-i18n-snort3-zh-cn=y
           EOF
 
           make defconfig
+
+          echo "Selected package options:"
+          grep -E '^CONFIG_PACKAGE_(lua|liblucihttp|luci|snort)' .config || true
+
+          # If anything still selects the Lua binding, make sure lucihttp is
+          # built without it so the package compilation cannot fail.
+          if grep -qE '^CONFIG_PACKAGE_liblucihttp-lua=[ym]' .config; then
+            echo "Lua binding still selected; forcing BUILD_LUA=OFF"
+            sed -i 's/-DBUILD_LUA=[^ ]*/-DBUILD_LUA=OFF/' \
+              feeds/luci/contrib/package/lucihttp/Makefile
+          fi
 
       - name: Compile the packages
         run: |
