@@ -42,7 +42,8 @@ jobs:
           set -euo pipefail
           base="https://downloads.openwrt.org/releases/${SDK_VERSION}/targets/${SDK_TARGET}"
           sdk_file=$(wget -qO- "$base/" |
-            grep -m1 -oE 'openwrt-sdk-[^"<>]+Linux-x86_64\.tar\.zst' || true)
+            sed -n 's/.*href="\(openwrt-sdk-[^"]*Linux-x86_64\.tar\.zst\)".*/\1/p' |
+            head -n1 || true)
 
           if [ -z "$sdk_file" ]; then
             echo "No x86_64 SDK found at $base" >&2
