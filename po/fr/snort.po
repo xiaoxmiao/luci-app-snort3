@@ -447,3 +447,18 @@ msgstr "Créer un lien symbolique de /var/snort.d/rules vers /etc/snort/rules ?"
 
 msgid "RPC request failed"
 msgstr "La requête RPC a échoué"
+
+msgid "Overview"
+msgstr "Vue d'ensemble"
+
+msgid "Back to Overview"
+msgstr "Retour à la vue d'ensemble"
+
+msgid "Snort is disabled in Settings"
+msgstr "Snort est désactivé dans les paramètres"
+
+msgid "Snort failed to start"
+msgstr "Le démarrage de Snort a échoué"
+
+msgid "snort.lua not found"
+msgstr "snort.lua introuvable"

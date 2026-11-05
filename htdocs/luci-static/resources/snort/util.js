@@ -150,15 +150,21 @@ Util.serviceState = function(status) {
 	case 'running':
 		return { text: tr('Running'), tone: 'success', hint: '' };
 
-	case 'error':
-		return {
-			text: tr('Error'),
-			tone: 'danger',
-			hint: Util.msg(s.service_code || 'unknown_error')
-		};
+	case 'error': {
+		var reason = Util.msg(s.service_code || 'unknown_error');
+
+		if (s.service_message)
+			reason += ' - ' + s.service_message;
+
+		return { text: tr('Error'), tone: 'danger', hint: reason };
+	}
 
 	default:
-		return { text: tr('Stopped'), tone: 'muted', hint: '' };
+		return {
+			text: tr('Stopped'),
+			tone: 'muted',
+			hint: s.service_hint ? Util.msg(s.service_hint) : ''
+		};
 	}
 };
 
@@ -175,7 +181,10 @@ Util.updateState = function(update) {
 		return { text: tr('Update completed!'), tone: 'success' };
 
 	case 'failed':
-		return { text: Util.msg(u.code || 'rules_update_failed'), tone: 'danger' };
+		return {
+			text: Util.msg(u.code || 'rules_update_failed', u.message || u.code),
+			tone: 'danger'
+		};
 
 	default:
 		return { text: tr('Idle'), tone: 'muted' };
@@ -209,6 +218,15 @@ Util.msg = function(code, fallback) {
 
 	case 'action_failed':
 		return tr('Service action failed');
+
+	case 'service_disabled':
+		return tr('Snort is disabled in Settings');
+
+	case 'start_failed':
+		return tr('Snort failed to start');
+
+	case 'config_missing':
+		return tr('snort.lua not found');
 
 	case 'update_started':
 		return tr('Update launched in background. Monitoring starts automatically.');

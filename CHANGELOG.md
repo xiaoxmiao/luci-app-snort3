@@ -5,6 +5,30 @@ All notable changes to the LuCI Snort3 Module will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.2.1] - 2026-11-05
+
+### Fixed
+- Add an explicit **Overview** child to the LuCI menu. The theme renders only
+  child nodes as tabs, so Settings and Alerts previously had no way back to the
+  dashboard. Both pages now also carry a *Back to Overview* link.
+- **Start** and **Restart** no longer report success when Snort did not start.
+  The OpenWrt init script returns 0 with `enabled=0`; the backend now captures
+  its output, waits for a stable process and reports the real reason
+  (`service_disabled`, `config_missing`, `rules_missing`, `start_failed`).
+- A stopped service now shows *why* it cannot start (disabled or missing
+  `snort.lua`) instead of a silent "Stopped" badge.
+- Remove the generic "Unknown error" dead end: every failed RPC includes a
+  human-readable `message`, notifications show backend messages / raw error
+  codes / RPC exception text, and unknown update codes are never swallowed.
+- Launch the bundled updater through `/bin/sh` so a lost executable bit cannot
+  disable rule updates; record its exit code for the legacy fallback updater,
+  which does not write a status file.
+- Detach the background updater from the RPC's stdout so the call returns
+  immediately.
+
+### Changed
+- Translation catalogs, POT and `dist/lmo/*.lmo` rebuilt (153 strings).
+
 ## [4.2.0] - 2026-11-05
 
 ### Added

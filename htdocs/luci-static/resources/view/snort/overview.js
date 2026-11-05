@@ -35,16 +35,50 @@ function card(title, children) {
 	]);
 }
 
+/* Never swallow an error: prefer the backend's explanation, then the raw
+ * error code, and only fall back to "Unknown error" when there is nothing. */
 function notification(code, result, extra) {
-	var text = util.msg(code, result && result.message);
+	var res = (result && typeof result === 'object') ? result : {};
+	var reason = res.message || res.error || code ||
+		(result != null && typeof result !== 'object' ? String(result) : '');
+	var text = util.msg(code, reason);
 
-	if (result && result.path)
-		text += ' ' + result.path;
+	/* If we still ended up at the generic message, attach the raw reply so a
+	 * broken backend never turns into an unexplainable "Unknown error". */
+	if (text === util.translate('Unknown error')) {
+		var dump;
+
+		try {
+			dump = JSON.stringify(result);
+		}
+		catch (e) {
+			dump = String(result);
+		}
+
+		text += ' - ' + (dump && dump !== '{}' && dump !== 'undefined'
+			? dump.substring(0, 200) : 'no error code in RPC reply');
+	}
+
+	if (res.path)
+		text += ' ' + res.path;
+
+	if (res.log && code === 'update_started')
+		text += ' ' + res.log;
 
 	if (extra)
 		text += ' ' + extra;
 
-	ui.addNotification(null, E('p', {}, text), (result && result.ok === false) ? 'danger' : 'info');
+	var failed = res.ok === false || res.success === false;
+	ui.addNotification(null, E('p', {}, text), failed ? 'danger' : 'info');
+}
+
+function rpcError(err) {
+	var text = util.translate('RPC request failed');
+
+	if (err && err.message)
+		text += ': ' + err.message;
+
+	ui.addNotification(null, E('p', {}, text), 'danger');
 }
 
 return view.extend({
@@ -93,10 +127,22 @@ return view.extend({
 
 		setBadge(this.nodes.serviceBadge, state.text, state.tone);
 		setBadge(this.nodes.stateBadge, state.text, state.tone);
-		setText(this.nodes.stateNote, state.hint);
 
-		if (this.nodes.stateNote)
-			this.nodes.stateNote.style.display = state.hint ? '' : 'none';
+		var note = this.nodes.stateNote;
+
+		if (note) {
+			note.textContent = state.hint || '';
+
+			if (state.hint && (status.service_hint === 'service_disabled' ||
+			                   status.service_hint === 'config_missing')) {
+				note.appendChild(document.createTextNode(' '));
+				note.appendChild(E('a', {
+					'href': L.url('admin/services/snort/settings')
+				}, util.translate('Settings')));
+			}
+
+			note.style.display = state.hint ? '' : 'none';
+		}
 
 		setText(this.nodes.pid, status.pid || 'N/A');
 		setText(this.nodes.autostart, status.autostart ? util.translate('Enabled') : util.translate('Disabled'));
@@ -199,11 +245,10 @@ return view.extend({
 		button.textContent = util.translate('In progress...');
 
 		return api.service(action).then(function(result) {
+			result = result || {};
 			notification(result.code, result);
 			return self.refresh();
-		}).catch(function() {
-			ui.addNotification(null, E('p', {}, util.translate('RPC request failed')), 'danger');
-		}).then(function() {
+		}).catch(rpcError).then(function() {
 			button.disabled = false;
 			button.textContent = original;
 		});
@@ -217,12 +262,11 @@ return view.extend({
 		button.disabled = true;
 
 		return api.rulesUpdate().then(function(result) {
+			result = result || {};
 			notification(result.code, result);
 			started = result.ok === true;
 			return self.refreshRules();
-		}).catch(function() {
-			ui.addNotification(null, E('p', {}, util.translate('RPC request failed')), 'danger');
-		}).then(function() {
+		}).catch(rpcError).then(function() {
 			if (!started)
 				button.disabled = false;
 		});
@@ -239,12 +283,11 @@ return view.extend({
 		button.disabled = true;
 
 		return api.rulesFix().then(function(result) {
+			result = result || {};
 			notification(result.code, result,
 				result.code === 'temp_missing' ? (result.path || '') : '');
 			return self.refreshRules();
-		}).catch(function() {
-			ui.addNotification(null, E('p', {}, util.translate('RPC request failed')), 'danger');
-		}).then(function() {
+		}).catch(rpcError).then(function() {
 			button.disabled = false;
 		});
 	},
@@ -256,11 +299,10 @@ return view.extend({
 		button.disabled = true;
 
 		return api.rulesCleanup().then(function(result) {
+			result = result || {};
 			notification(result.code, result);
 			return self.refreshRules();
-		}).catch(function() {
-			ui.addNotification(null, E('p', {}, util.translate('RPC request failed')), 'danger');
-		}).then(function() {
+		}).catch(rpcError).then(function() {
 			button.disabled = false;
 		});
 	},

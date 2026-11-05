@@ -236,8 +236,17 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for implementation notes.
   `/usr/share/rpcd/ucode/luci.snort.uc` exists, and restart rpcd:
   `/etc/init.d/rpcd restart`.
 - **Rules update is disabled** — check that
-  `/usr/libexec/snort-web-rules-update` exists and is executable; the button is
-  disabled when neither the bundled nor the `snort3` updater is available.
+  `/usr/libexec/snort-web-rules-update` exists (it is run through `/bin/sh`, so
+  no executable bit is required); the button is disabled when neither the
+  bundled nor the `snort3` updater is available. The notification shows the
+  reason, and `/tmp/snort_rules_update.log` contains the full output.
+- **Start reports an error / Snort stays stopped** — enable *Enable Snort* in
+  Settings first. The OpenWrt init script exits 0 without starting anything
+  when `enabled=0`; this application verifies that a process actually appears
+  and shows the reason (disabled, missing `snort.lua`, no rules, or init script
+  output). See `logread | grep -i snort` and `snort-mgr check`.
+- **No Overview tab** — upgrade to 4.2.1 or clear `/tmp/luci-indexcache*` and
+  `/tmp/luci-modulecache/` after installing so the new menu entry is picked up.
 - **Settings do not reach Snort** — run `/usr/libexec/snort-web-sync --sync`
   and check `uci show snort-web`, `uci show snort`, and
   `logread | grep -i snort-web`.

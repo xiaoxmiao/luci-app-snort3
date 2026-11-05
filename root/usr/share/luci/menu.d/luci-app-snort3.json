@@ -11,6 +11,18 @@
 			"uci": { "snort-web": true }
 		}
 	},
+	"admin/services/snort/overview": {
+		"title": "Overview",
+		"order": 5,
+		"action": {
+			"type": "view",
+			"path": "snort/overview"
+		},
+		"depends": {
+			"acl": [ "luci-app-snort3" ],
+			"uci": { "snort-web": true }
+		}
+	},
 	"admin/services/snort/settings": {
 		"title": "Settings",
 		"order": 10,

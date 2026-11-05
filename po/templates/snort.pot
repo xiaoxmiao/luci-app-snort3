@@ -47,6 +47,9 @@ msgstr ""
 msgid "Auto-start enabled"
 msgstr ""
 
+msgid "Back to Overview"
+msgstr ""
+
 msgid "Block"
 msgstr ""
 
@@ -272,6 +275,9 @@ msgstr ""
 msgid "Optional Snort configuration file appended to the generated snort.lua"
 msgstr ""
 
+msgid "Overview"
+msgstr ""
+
 msgid "Packet acquisition method"
 msgstr ""
 
@@ -359,6 +365,9 @@ msgstr ""
 msgid "Snort configuration directory path"
 msgstr ""
 
+msgid "Snort failed to start"
+msgstr ""
+
 msgid "Snort IDS/IPS"
 msgstr ""
 
@@ -366,6 +375,9 @@ msgid "Snort init script not found"
 msgstr ""
 
 msgid "Snort is an open source intrusion detection and prevention system."
+msgstr ""
+
+msgid "Snort is disabled in Settings"
 msgstr ""
 
 msgid "Snort memory"
@@ -381,6 +393,9 @@ msgid "Snort stopped"
 msgstr ""
 
 msgid "Snort system logs (20 most recent)"
+msgstr ""
+
+msgid "snort.lua not found"
 msgstr ""
 
 msgid "Start"

@@ -124,7 +124,13 @@ return view.extend({
 				E('h2', {}, util.translate('Snort - Alerts and Logs')),
 				this.nodes.summary
 			]),
-			E('span', { 'class': 'snort3-toolbar-note' }, util.translate('Auto-refresh every 5 seconds'))
+			E('div', { 'class': 'snort3-header-status' }, [
+				E('a', {
+					'class': 'cbi-button cbi-button-neutral',
+					'href': L.url('admin/services/snort/overview')
+				}, util.translate('Back to Overview')),
+				E('span', { 'class': 'snort3-toolbar-note' }, util.translate('Auto-refresh every 5 seconds'))
+			])
 		]);
 
 		var page = E('div', { 'class': 'snort3-page' }, [

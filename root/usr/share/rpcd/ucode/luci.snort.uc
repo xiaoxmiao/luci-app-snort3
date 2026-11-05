@@ -25,7 +25,10 @@ const RULES_UPDATER_LEGACY = '/usr/bin/snort-rules';
 const UPDATE_LOCK = '/tmp/snort_rules_update.lock';
 const UPDATE_LOG = '/tmp/snort_rules_update.log';
 const UPDATE_STATUS = '/tmp/snort_rules_update.status';
+const UPDATE_RC = '/tmp/snort_rules_update.rc';
 const SERVICE_STATUS = '/tmp/snort_service_action.status';
+const SERVICE_DETAIL = '/tmp/snort_service_action.detail';
+const SERVICE_OUTPUT = '/tmp/snort_service_action.output';
 
 const CONFIG_NAME = 'snort-web';
 
@@ -313,13 +316,22 @@ function snort_logs(limit) {
 /* Prefer the built-in free-rule updater; fall back to the snort3 package's
  * script so existing installations keep working. */
 function rules_updater() {
-	if (access(RULES_UPDATER_BUILTIN, 'x') == true)
+	/* The bundled script is a POSIX shell file.  Only readability is
+	 * required: it is launched through /bin/sh, so a package that lost its
+	 * executable bit (Windows checkouts, some apk installers) still works. */
+	if (access(RULES_UPDATER_BUILTIN, 'r') == true)
 		return RULES_UPDATER_BUILTIN;
 
 	if (access(RULES_UPDATER_LEGACY, 'x') == true)
 		return RULES_UPDATER_LEGACY;
 
 	return null;
+}
+
+function updater_command(path) {
+	return (path == RULES_UPDATER_BUILTIN)
+		? '/bin/sh ' + shell_quote(path)
+		: shell_quote(path);
 }
 
 function updater_process_alive() {
@@ -374,6 +386,19 @@ function update_state() {
 	else if (result == 'running' && !lock && !finished) {
 		result = 'failed';
 		code = 'rules_update_failed';
+	}
+	else if (result == 'running' && finished) {
+		/* The legacy /usr/bin/snort-rules does not write a status file.
+		 * Fall back to the exit code recorded by the background shell. */
+		const rc_text = trim(read_text(UPDATE_RC) || '');
+
+		if (rc_text != '' && rc_text != '0') {
+			result = 'failed';
+			code = 'rules_update_failed';
+		}
+		else {
+			result = 'finished';
+		}
 	}
 	else if (result == 'failed' && !code)
 		code = 'rules_update_failed';
@@ -525,6 +550,75 @@ function clamp_int(value, fallback, min, max) {
 	return number;
 }
 
+/* UCI values are strings, but tolerate booleans and numbers as well. */
+function is_enabled(value) {
+	const text = '' + or_default(value, '0');
+
+	return text == '1' || text == 'true' || text == 'yes' || text == 'on';
+}
+
+/* Run a command through the shell and keep its output so a failed service
+ * action can be explained instead of being reported as a bare exit code.
+ * Redirect to a regular file instead of using popen(): a daemon launched by
+ * procd would inherit the pipe's write end and read('all') would never see
+ * EOF, hanging the RPC call. */
+function capture_output(command) {
+	const rc = system(command + ' > ' + SERVICE_OUTPUT + ' 2>&1', 60000);
+	const text = read_text(SERVICE_OUTPUT);
+	let output = '';
+
+	for (let line in split(text, '\n')) {
+		const trimmed = trim(line);
+
+		if (length(trimmed) == 0)
+			continue;
+
+		output += (length(output) ? ' | ' : '') + trimmed;
+	}
+
+	if (length(output) > 400)
+		output = substr(output, 0, 400) + '...';
+
+	return { rc, output };
+}
+
+/* The snort3 procd init script exits 0 even when it declines to start the
+ * daemon ([ "$enabled" = 0 ] && return), so translate the configuration into
+ * an actionable reason whenever no process shows up. */
+function service_problem(settings, output) {
+	const rules_path = path_join(settings.config_dir, 'rules');
+	const lua_path = path_join(settings.config_dir, 'snort.lua');
+
+	if (!is_enabled(settings.enabled))
+		return {
+			code: 'service_disabled',
+			message: 'Enable Snort in Settings first (snort-web.snort.enabled=0).'
+		};
+
+	if (is_enabled(settings.manual) && !access(lua_path, 'f'))
+		return {
+			code: 'config_missing',
+			message: 'Manual mode is on but ' + lua_path +
+				' does not exist. Create it or turn off Manual mode.'
+		};
+
+	if (rule_file_count(rules_path) == 0)
+		return {
+			code: 'rules_missing',
+			message: 'No .rules files in ' + rules_path +
+				'. Run "Update rules" before starting Snort.'
+		};
+
+	if (length(output) > 0)
+		return { code: 'start_failed', message: output };
+
+	return {
+		code: 'start_failed',
+		message: 'The init script returned success but no snort process is running. ' +
+			'Check "logread | grep snort" and "snort-mgr check".'
+	};
+}
+
 function status_call() {
 	const settings = get_settings();
 	const pids = process_id_list();
@@ -539,21 +633,29 @@ function status_call() {
 	const last_failed = trim(action_lines[0] || '') == 'failed';
 	let service_state = running ? 'running' : 'stopped';
 	let service_code = '';
+	let service_hint = '';
 
-	/* Report "error" only for conditions that actually prevent Snort from
-	 * working: a missing init script, no rules at all, or a failed service
-	 * action.  A user-initiated stop remains "stopped". */
+	/* A failed service action is the most specific explanation and wins over
+	 * the generic "no rules" check.  A user-initiated stop remains "stopped". */
 	if (!init_available) {
 		service_state = 'error';
 		service_code = 'init_missing';
+	}
+	else if (!running && last_failed) {
+		service_state = 'error';
+		service_code = trim(action_lines[1] || '') || 'action_failed';
 	}
 	else if (!running && rule_count == 0) {
 		service_state = 'error';
 		service_code = 'rules_missing';
 	}
-	else if (!running && last_failed) {
-		service_state = 'error';
-		service_code = trim(action_lines[1] || '') || 'action_failed';
+	else if (!running && !is_enabled(settings.enabled)) {
+		/* Not an error yet, but explain why pressing Start would do nothing. */
+		service_hint = 'service_disabled';
+	}
+	else if (!running && is_enabled(settings.manual) &&
+	         !access(path_join(settings.config_dir, 'snort.lua'), 'f')) {
+		service_hint = 'config_missing';
 	}
 
 	return {
@@ -561,6 +663,8 @@ function status_call() {
 		running,
 		service_state,
 		service_code,
+		service_hint,
+		service_message: last_failed ? trim(read_text(SERVICE_DETAIL) || '') : '',
 		rules_available: rule_count > 0,
 		rule_count,
 		pid: running ? '' + pids[0] : '',
@@ -592,8 +696,9 @@ function status_call() {
 	};
 }
 
-function record_service_action(ok, code) {
+function record_service_action(ok, code, detail) {
 	writefile(SERVICE_STATUS, (ok ? 'ok\n' : 'failed\n') + code + '\n');
+	writefile(SERVICE_DETAIL, ok ? '' : (detail || ''));
 }
 
 const SERVICE_ACTIONS = {
@@ -623,8 +728,10 @@ const methods = {
 				return { success: false, ok: false, code: 'invalid_action' };
 
 			if (!access(INIT_SCRIPT, 'x')) {
-				record_service_action(false, 'init_missing');
-				return { success: false, ok: false, code: 'init_missing' };
+				record_service_action(false, 'init_missing', 'Init script ' +
+					INIT_SCRIPT + ' is missing. Install the snort3 package.');
+				return { success: false, ok: false, code: 'init_missing',
+				         message: 'Init script ' + INIT_SCRIPT + ' is missing.' };
 			}
 
 			/* The snort3 init script and rules updater read
@@ -632,23 +739,78 @@ const methods = {
 			 * before starting or restarting the service. */
 			if (action == 'start' || action == 'restart' || action == 'enable') {
 				if (!sync_runtime_config()) {
-					record_service_action(false, 'action_failed');
-					return { success: false, ok: false, code: 'action_failed' };
+					record_service_action(false, 'action_failed',
+						'/usr/libexec/snort-web-sync --sync failed.');
+					return { success: false, ok: false, code: 'action_failed',
+					         message: 'Unable to synchronise /etc/config/snort.' };
 				}
+			}
+
+			if (action == 'start' || action == 'restart') {
+				const settings = get_settings();
+
+				/* procd's init script silently returns 0 when enabled=0. */
+				if (!is_enabled(settings.enabled)) {
+					const problem = service_problem(settings, '');
+
+					record_service_action(false, problem.code, problem.message);
+					return { success: false, ok: false, code: problem.code,
+					         message: problem.message };
+				}
+
+				/* Capture stdout/stderr: "snort-mgr check" failures and
+				 * validation errors are otherwise lost. */
+				const run = capture_output(shell_quote(INIT_SCRIPT) + ' ' + action);
+
+				/* procd starts asynchronously; give it a few seconds and
+				 * verify a snort process actually appeared.  A restart needs
+				 * an initial grace period so the old PID is not mistaken for
+				 * the new instance. */
+				if (action == 'restart')
+					system('sleep 1', 3000);
+
+				let alive = false;
+
+				for (let i = 0; i < 6; i++) {
+					if (length(process_id_list()) > 0) {
+						alive = true;
+						break;
+					}
+
+					system('sleep 1', 3000);
+				}
+
+				/* A crash-looping daemon shows a PID briefly.  Recheck after
+				 * two seconds so a respawn is not reported as a success. */
+				if (alive) {
+					system('sleep 2', 4000);
+					alive = length(process_id_list()) > 0;
+				}
+
+				if (run.rc != 0 || !alive) {
+					const problem = service_problem(settings, run.output);
+
+					record_service_action(false, problem.code, problem.message);
+					return { success: false, ok: false, code: problem.code,
+					         message: problem.message, exit_code: run.rc };
+				}
+
+				record_service_action(true, result_code, '');
+				return { success: true, ok: true, code: result_code };
 			}
 
 			const rc = system([INIT_SCRIPT, action], 60000);
 			const ok = rc == 0;
 
-			/* Remember the outcome so the Overview page can explain why a
-			 * stopped service is in error rather than simply stopped. */
-			record_service_action(ok, ok ? result_code : 'action_failed');
+			record_service_action(ok, ok ? result_code : 'action_failed',
+				ok ? '' : 'Init script ' + action + ' returned ' + rc + '.');
 
 			return {
 				success: ok,
 				ok,
 				code: ok ? result_code : 'action_failed',
-				exit_code: rc
+				exit_code: rc,
+				message: ok ? '' : 'Init script ' + action + ' returned ' + rc + '.'
 			};
 		}
 	},
@@ -683,49 +845,65 @@ const methods = {
 
 			if (updater == null)
 				return { success: false, ok: false, code: 'updater_missing',
-				         path: RULES_UPDATER_BUILTIN };
+				         path: RULES_UPDATER_BUILTIN,
+				         message: 'Neither ' + RULES_UPDATER_BUILTIN +
+				             ' nor ' + RULES_UPDATER_LEGACY +
+				             ' is available. Reinstall this package or the snort3 package.' };
 
 			/* Both updaters read the oinkcode and paths from the snort3
 			 * configuration file. */
 			if (!sync_runtime_config())
-				return { success: false, ok: false, code: 'update_failed' };
+				return { success: false, ok: false, code: 'update_failed',
+				         message: '/usr/libexec/snort-web-sync --sync failed; check /etc/config/snort-web.' };
 
 			const settings = get_settings();
 			const state = update_state();
 
 			if (state.running)
-				return { success: false, ok: false, code: 'update_busy' };
+				return { success: false, ok: false, code: 'update_busy',
+				         message: 'A rules update is already running. See ' + UPDATE_LOG + '.' };
 
 			if (state.lock)
 				unlink(UPDATE_LOCK);
 
+			unlink(UPDATE_RC);
+
 			if (writefile(UPDATE_LOG, '') == null)
-				return { success: false, ok: false, code: 'update_failed' };
+				return { success: false, ok: false, code: 'update_failed',
+				         message: 'Unable to write ' + UPDATE_LOG + '.' };
 
 			if (writefile(UPDATE_LOCK, 'running\n') == null)
-				return { success: false, ok: false, code: 'update_failed' };
+				return { success: false, ok: false, code: 'update_failed',
+				         message: 'Unable to write ' + UPDATE_LOCK + '.' };
 
 			if (writefile(UPDATE_STATUS, 'running\n') == null)
-				return { success: false, ok: false, code: 'update_failed' };
+				return { success: false, ok: false, code: 'update_failed',
+				         message: 'Unable to write ' + UPDATE_STATUS + '.' };
 
 			/* The outer subshell keeps the complete update chain in the
 			 * background; a plain trailing "&" would only detach the last
-			 * command and block this RPC call until the updater finished. */
-			const command = '( ' + shell_quote(updater) + ' > ' + UPDATE_LOG + ' 2>&1; ' +
+			 * command and block this RPC call until the updater finished.
+			 * Redirecting the subshell itself keeps its stdout pipe closed
+			 * so the RPC returns immediately. */
+			const command = '( ' + updater_command(updater) + ' > ' + UPDATE_LOG + ' 2>&1; ' +
+				'echo $? > ' + UPDATE_RC + '; ' +
 				'rm -f ' + shell_quote(settings.temp_dir) + '/*.tar.gz /tmp/snort*.tar.gz 2>/dev/null; ' +
 				'rm -f ' + shell_quote(path_join(settings.temp_dir, 'rules')) + '/*.tar.gz 2>/dev/null; ' +
 				'rm -f ' + UPDATE_LOCK + '; ' +
-				'echo FINISHED >> ' + UPDATE_LOG + ' ) &';
+				'echo FINISHED >> ' + UPDATE_LOG + ' ) >/dev/null 2>&1 &';
 
 			const rc = system(command);
 
 			if (rc != 0) {
 				unlink(UPDATE_LOCK);
 				writefile(UPDATE_STATUS, 'failed\nrules_update_failed\n');
-				return { success: false, ok: false, code: 'update_failed', exit_code: rc };
+				return { success: false, ok: false, code: 'update_failed',
+				         exit_code: rc,
+				         message: 'Unable to launch the updater shell (exit ' + rc + ').' };
 			}
 
-			return { success: true, ok: true, code: 'update_started' };
+			return { success: true, ok: true, code: 'update_started',
+			         updater, log: UPDATE_LOG };
 		}
 	},
 

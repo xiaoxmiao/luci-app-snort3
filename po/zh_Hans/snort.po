@@ -450,3 +450,18 @@ msgstr "查看所有告警"
 
 msgid "View detailed reports via SSH with the command:"
 msgstr "通过 SSH 使用以下命令查看详细报告："
+
+msgid "Overview"
+msgstr "概览"
+
+msgid "Back to Overview"
+msgstr "返回概览"
+
+msgid "Snort is disabled in Settings"
+msgstr "设置中未启用 Snort"
+
+msgid "Snort failed to start"
+msgstr "Snort 启动失败"
+
+msgid "snort.lua not found"
+msgstr "未找到 snort.lua"

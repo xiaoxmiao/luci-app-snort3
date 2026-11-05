@@ -178,6 +178,15 @@ return view.extend({
 		o.placeholder = '/etc/snort/nfq.rules';
 		o.datatype = 'string';
 
-		return m.render();
+		return m.render().then(function(node) {
+			return E('div', {}, [
+				E('div', { 'style': 'margin:0 0 .75rem 0' },
+					E('a', {
+						'class': 'cbi-button cbi-button-neutral',
+						'href': L.url('admin/services/snort/overview')
+					}, _('Back to Overview'))),
+				node
+			]);
+		});
 	}
 });

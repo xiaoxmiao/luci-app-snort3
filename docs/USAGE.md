@@ -1,6 +1,8 @@
 # Usage Guide
 
-The module adds three pages under **Services → Snort IDS/IPS**.
+The module adds three tabs under **Services → Snort IDS/IPS**: **Overview**,
+**Settings** and **Alerts**. Each page also has a *Back to Overview* link, so the
+dashboard is always reachable.
 
 ## Overview
 
@@ -25,10 +27,18 @@ of three states, refreshed every five seconds:
 | State | Meaning |
 | --- | --- |
 | Running | A Snort process is present; the PID is shown in the Service card. |
-| Stopped | No Snort process. A normal, user-initiated stop is shown in muted grey. |
-| Error | Snort cannot work: the init script is missing, the rules directory has no `.rules` files, or the last service action failed. The reason (for example *Snort init script not found*) is shown next to the badge. |
+| Stopped | No Snort process. A normal, user-initiated stop is shown in muted grey. When Snort is disabled or the manual `snort.lua` is missing, an explanation is shown next to the badge (with a link to Settings). |
+| Error | Snort cannot work: the init script is missing, the rules directory has no `.rules` files, or the last service action failed. The reason (for example *Snort init script not found*) and, when available, the captured init script output are shown next to the badge. |
 
-An RPC failure is shown as **Unavailable** with the text *RPC request failed*.
+An RPC failure is shown as **Unavailable** with the text *RPC request failed*
+followed by the underlying error message.
+
+**Start** and **Restart** no longer trust the init script's exit code: the
+OpenWrt `snort3` init script returns 0 when `snort.snort.enabled` is 0, without
+starting anything. The backend now captures the script output, waits for a
+stable Snort process (up to about eight seconds) and reports a concrete reason
+if the process never appears: *Snort is disabled in Settings*, *snort.lua not
+found*, *No rules found*, or the init script's own error text.
 
 ### Service control
 
@@ -229,6 +239,8 @@ paths without `..` components or control characters.
 | Rules update stays at **In progress** | Inspect `/tmp/snort_rules_update.log` and remove a stale lock if necessary |
 | Update badge shows **Failed** | Inspect `/tmp/snort_rules_update.log`; check DNS, HTTPS certificates (`ca-certificates`) and free space |
 | Service state shows **Error** | Read the reason next to the badge; fix the init script or install rules, then press **Start** |
+| **Start** reports an error and nothing runs | Enable *Enable Snort* in Settings, or turn off Manual mode / create `/etc/snort/snort.lua`; run `snort-mgr check` and `logread \| grep snort` for details |
+| Update rules shows an error | The notification contains the backend reason and log path; inspect `/tmp/snort_rules_update.log` and `/tmp/snort_rules_update.status` |
 | No rules found | Run **Update rules**, then **Restart**; do not point a working link at an empty directory |
 | Symbolic link repair fails | Check that `/var/snort.d/rules` exists and `/etc/snort` is writable |
 | Wrong interface displayed | Update the interface in Settings and apply |

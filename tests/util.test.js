@@ -139,6 +139,39 @@ test('rule updater failure codes resolve to short messages', () => {
 	assert.equal(Util.msg('updater_missing'), 'Rules updater not found');
 });
 
+test('serviceState explains why a stopped service cannot start', () => {
+	assert.deepEqual(
+		Util.serviceState({ service_state: 'stopped', service_hint: 'service_disabled' }),
+		{ text: 'Stopped', tone: 'muted', hint: 'Snort is disabled in Settings' });
+
+	const error = Util.serviceState({
+		service_state: 'error',
+		service_code: 'start_failed',
+		service_message: 'Validation failed, try snort-mgr check.'
+	});
+
+	assert.equal(error.text, 'Error');
+	assert.equal(error.tone, 'danger');
+	assert.match(error.hint, /Snort failed to start/);
+	assert.match(error.hint, /snort-mgr check/);
+});
+
+test('new service failure codes have readable messages', () => {
+	assert.equal(Util.msg('service_disabled'), 'Snort is disabled in Settings');
+	assert.equal(Util.msg('start_failed'), 'Snort failed to start');
+	assert.equal(Util.msg('config_missing'), 'snort.lua not found');
+});
+
+test('updateState never hides an unknown backend reason', () => {
+	assert.equal(Util.updateState({
+		result: 'failed', code: 'weird_backend_code', message: 'disk full'
+	}).text, 'disk full');
+
+	assert.equal(Util.updateState({
+		result: 'failed', code: 'weird_backend_code'
+	}).text, 'weird_backend_code');
+});
+
 test('translate uses the LuCI global _() when present', () => {
 	const previous = global._;
 
