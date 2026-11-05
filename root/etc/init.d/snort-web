@@ -19,6 +19,13 @@ remember_action() {
 	printf '%s\n%s\n' "$1" "$2" > "$ACTION_STATUS"
 }
 
+# The daemon reports "snort3" in /proc/<pid>/comm on many builds even though
+# the executable is /usr/bin/snort.  Accept both names so Save & Apply can
+# tell a running service from a stopped one.
+snort_running() {
+	pidof snort3 >/dev/null 2>&1 || pidof snort >/dev/null 2>&1
+}
+
 # Only report syslog lines produced by THIS start.  logread keeps old entries
 # for a long time, so a plain "tail -n 8" would keep blaming an already fixed
 # local.lua/DAQ crash from a previous run.  A marker is written before the init
@@ -37,7 +44,7 @@ recent_snort_errors() {
 		else
 			cat "$logfile"
 		fi
-	} | grep -iE 'snort\[|procd.*snort' | tail -n 8
+	} | grep -iE 'snort[0-9]*\[|procd.*snort' | tail -n 8
 }
 
 reload() {
@@ -61,7 +68,7 @@ reload() {
 	case "$enabled" in
 		1|true|yes|on|TRUE|True|YES|ON)
 			logger -t snort-web 'snort-service-begin' 2>/dev/null || :
-			if pidof snort >/dev/null 2>&1; then
+			if snort_running; then
 				"$SNORT_INIT" restart
 			else
 				"$SNORT_INIT" start
@@ -70,7 +77,7 @@ reload() {
 			# procd starts asynchronously; verify the daemon really appeared.
 			sleep 3
 
-			if pidof snort >/dev/null 2>&1; then
+			if snort_running; then
 				remember_action ok started
 			else
 				remember_action failed start_failed

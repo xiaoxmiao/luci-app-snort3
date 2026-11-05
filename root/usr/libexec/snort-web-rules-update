@@ -176,7 +176,9 @@ log "Loaded ${rule_count} rule file(s) into ${rules_target} (persistent)."
 
 # snort-mgr enumerates *.rules at render time, so replacing the files alone
 # is not enough: a restart regenerates snort_conf.lua with the new includes.
-if pidof snort >/dev/null 2>&1; then
+# The daemon's comm is "snort3" on many builds even though the binary is
+# /usr/bin/snort; check both so the automatic restart really happens.
+if pidof snort3 >/dev/null 2>&1 || pidof snort >/dev/null 2>&1; then
 	log 'Restarting Snort to load the new rules.'
 	/etc/init.d/snort restart >/dev/null 2>&1 ||
 		log 'WARNING: Snort restart failed; restart it manually from the Overview page.'

@@ -5,6 +5,25 @@ All notable changes to the LuCI Snort3 Module will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.3.1] - 2026-11-06
+
+### Fixed
+- **Running Snort is now detected correctly.** On many builds the daemon is
+  `/usr/bin/snort` but `/proc/<pid>/comm` is `snort3` (busybox `ps` shows
+  `{snort3} /usr/bin/snort -q -c /var/snort.d/snort_conf.lua`). The backend
+  only accepted a comm value of exactly `snort`, so the Overview page kept
+  reporting *Snort failed to start / no snort process is running* with
+  `PID N/A` even while the daemon was running and `/etc/init.d/snort status`
+  said `running`. `process_id_list()` now accepts any `snort<digits>` comm or
+  a `/usr/bin/snort` command line, while explicitly excluding procd's
+  `rc.common` init-script wrapper (which is also named `snort`).
+- **Automatic restarts after Save & Apply and rule updates work again.** Both
+  used `pidof snort`, which never matches `snort3`; the `snort-web` init
+  script now uses a `snort_running()` helper and the rules updater checks
+  both names.
+- Syslog filtering accepts both `snort[pid]` and `snort3[pid]` tags, and
+  `status` exposes the detected `proc_comm` for future diagnostics.
+
 ## [4.3.0] - 2026-11-06
 
 ### Fixed

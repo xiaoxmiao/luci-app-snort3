@@ -139,6 +139,10 @@ function get_settings() {
 	};
 }
 
+/* The executable is /usr/bin/snort, but /proc/<pid>/comm reports "snort3"
+ * on many builds (busybox ps shows "{snort3} /usr/bin/snort ...").  procd's
+ * rc.common wrapper is also named "snort", so exclude init-script shells
+ * instead of trusting comm alone. */
 function process_id_list() {
 	const pids = [];
 	const entries = lsdir('/proc');
@@ -150,9 +154,14 @@ function process_id_list() {
 		if (!match(name, /^[0-9]+$/))
 			continue;
 
-		const comm = read_text('/proc/' + name + '/comm');
+		const comm = trim(read_text('/proc/' + name + '/comm'));
+		const cmdline = read_text('/proc/' + name + '/cmdline');
 
-		if (trim(comm) == 'snort')
+		if (index(cmdline, 'rc.common') != null ||
+		    index(cmdline, '/etc/init.d/snort') != null)
+			continue;
+
+		if (match(comm, /^snort[0-9]*$/) || index(cmdline, '/usr/bin/snort') != null)
 			push(pids, +name);
 	}
 
@@ -628,7 +637,7 @@ function snort_log_tail() {
 		if (length(trimmed) == 0)
 			continue;
 
-		if (!match(trimmed, /snort\[/) && !match(trimmed, /procd.*snort/))
+		if (!match(trimmed, /snort[0-9]*\[/) && !match(trimmed, /procd.*snort/))
 			continue;
 
 		output += (length(output) ? ' | ' : '') + trimmed;
@@ -669,7 +678,7 @@ function service_problem(settings, output) {
 
 	return {
 		code: 'start_failed',
-		message: 'The init script returned success but no snort process is running. ' +
+		message: 'The init script returned success but no snort process was found in /proc. ' +
 			(length(detail) ? detail : 'Check "logread | grep snort" and "snort-mgr check".')
 	};
 }
@@ -719,6 +728,7 @@ function status_call() {
 		rules_available: rule_count > 0,
 		rule_count,
 		pid: running ? '' + pids[0] : '',
+		proc_comm: running ? trim(read_text('/proc/' + pids[0] + '/comm')) : '',
 		pid_count: length(pids),
 		mem_kb: length(pids) > 0 ? process_rss_kb(pids[0]) : 0,
 		mem_total: memory.total,

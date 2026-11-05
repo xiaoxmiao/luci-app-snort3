@@ -122,6 +122,21 @@ test('the settings page uses a LuCI network device dropdown', () => {
 	assert.doesNotMatch(view, /form\.Value, 'interface'/);
 });
 
+test('running snort3 processes are detected and wrappers excluded', () => {
+	const backend = read('root/usr/share/rpcd/ucode/luci.snort.uc');
+	const init = read('root/etc/init.d/snort-web');
+	const updater = read('root/usr/libexec/snort-web-rules-update');
+
+	assert.match(backend, /match\(comm, \/\^snort\[0-9\]\*\$\/\)/);
+	assert.match(backend, /\/usr\/bin\/snort/);
+	assert.match(backend, /rc\.common/);
+	assert.match(backend, /proc_comm/);
+	assert.doesNotMatch(backend, /trim\(comm\) == 'snort'/);
+	assert.match(init, /snort_running\(\)/);
+	assert.match(init, /pidof snort3/);
+	assert.match(updater, /pidof snort3/);
+});
+
 test('failed starts only quote syslog lines from the current attempt', () => {
 	const backend = read('root/usr/share/rpcd/ucode/luci.snort.uc');
 	const init = read('root/etc/init.d/snort-web');
