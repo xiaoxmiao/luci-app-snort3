@@ -3,14 +3,43 @@
 'require view';
 'require form';
 'require uci';
+'require network';
+
+/* Populated by LuCI's own network.getDevices(), the same source used by the
+ * interface and firewall pages.  Values are kernel device names (br-lan,
+ * eth1, pppoe-wan) because snort-mgr writes them straight into daq.inputs;
+ * labels add the UCI logical interface name (lan, wan) for readability. */
+var deviceList = [];
+
+function deviceLabel(dev) {
+	var name = dev.getName();
+	var logical = '';
+
+	try {
+		var net = dev.getNetwork && dev.getNetwork();
+		if (net)
+			logical = net.getName();
+	}
+	catch (e) {}
+
+	return logical ? name + ' (' + logical + ')' : name;
+}
 
 return view.extend({
 	load: function() {
-		return uci.load('snort-web');
+		return Promise.all([
+			uci.load('snort-web'),
+			uci.load('network'),
+			network.getDevices().then(function(devices) {
+				deviceList = devices || [];
+			}).catch(function() {
+				deviceList = [];
+			})
+		]);
 	},
 
 	render: function() {
-		var m, s, o;
+		var m, s, o, i, dev, seen = { auto: true };
 
 		m = new form.Map('snort-web', _('Snort IDS/IPS'),
 			_('Snort is an open source intrusion detection and prevention system.'));
@@ -24,15 +53,38 @@ return view.extend({
 		o.default = '0';
 		o.rmempty = false;
 
-	o = s.option(form.Flag, 'manual', _('Manual mode'),
-		_('Use snort.lua and local.lua from the config directory; leave off for the generated configuration'));
-	o.default = '0';
-		o.rmempty = false;
+		o = s.option(form.ListValue, 'interface', _('Network interface'),
+			_('Device to monitor. Automatic follows the WAN device, then the LAN bridge, then eth0.'));
+		o.value('auto', _('Automatic (WAN, LAN, eth0)'));
 
-		o = s.option(form.Value, 'interface', _('Network interface'),
-			_('Network interface to monitor (e.g. br-lan, eth0)'));
-		o.placeholder = 'br-lan';
-		o.datatype = 'string';
+		for (i = 0; i < deviceList.length; i++) {
+			dev = deviceList[i].getName();
+			if (!dev || seen[dev])
+				continue;
+			seen[dev] = true;
+			o.value(dev, deviceLabel(deviceList[i]));
+		}
+
+		/* Fall back to UCI network sections when the device RPC is blocked. */
+		if (deviceList.length === 0) {
+			var nets = uci.sections('network', 'interface') || [];
+			for (i = 0; i < nets.length; i++) {
+				dev = nets[i].device || nets[i].ifname;
+				if (typeof dev === 'string' && dev !== '' &&
+				    dev.charAt(0) !== '@' && !seen[dev]) {
+					seen[dev] = true;
+					o.value(dev, dev + ' (' + nets[i]['.name'] + ')');
+				}
+			}
+		}
+
+		/* Never hide a saved value just because the device is currently gone. */
+		var current = uci.get('snort-web', 'snort', 'interface');
+		if (current && !seen[current])
+			o.value(current, current + ' (' + _('currently unavailable') + ')');
+
+		o.default = 'auto';
+		o.rmempty = false;
 
 		o = s.option(form.Value, 'home_net', _('Local network'),
 			_('IP address range to protect'));
@@ -93,7 +145,7 @@ return view.extend({
 		o.datatype = 'directory';
 
 		s = m.section(form.TypedSection, 'snort', _('Rules management'),
-			_('Rule updates and symbolic link repair are available on the overview page.'));
+			_('Rules are stored permanently in the configuration directory and survive reboots.'));
 		s.anonymous = true;
 		s.addremove = false;
 
@@ -119,11 +171,6 @@ return view.extend({
 			_('Enable application detection with the OpenAppID package'));
 		o.default = '0';
 		o.rmempty = false;
-
-		o = s.option(form.Value, 'include', _('User configuration include'),
-			_('Optional Snort configuration file appended to the generated snort.lua'));
-		o.placeholder = '/etc/snort/local.lua';
-		o.datatype = 'string';
 
 		s = m.section(form.TypedSection, 'nfq', _('NFQ settings'),
 			_('Netfilter queue settings used when the DAQ method is NFQ.'));
@@ -172,11 +219,6 @@ return view.extend({
 		o.value('filter', 'filter');
 		o.value('300', '300');
 		o.default = 'filter';
-
-		o = s.option(form.Value, 'include', _('NFQ rules include'),
-			_('Full path to user-defined extra rules included in the queue chain'));
-		o.placeholder = '/etc/snort/nfq.rules';
-		o.datatype = 'string';
 
 		return m.render();
 	}

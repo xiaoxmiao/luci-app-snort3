@@ -81,6 +81,22 @@ function rpcError(err) {
 	ui.addNotification(null, E('p', {}, text), 'danger');
 }
 
+/* The backend now returns a structured reply instead of an opaque ubus
+ * error when a method throws.  Show it once per refresh so a broken plugin
+ * is never mistaken for an empty/stopped Snort. */
+function reportBackendError(data) {
+	for (var i = 0; i < data.length; i++) {
+		var reply = data[i] || {};
+
+		if (reply.code === 'backend_error') {
+			notification('backend_error', reply);
+			return true;
+		}
+	}
+
+	return false;
+}
+
 return view.extend({
 	load: function() {
 		return Promise.all([
@@ -98,6 +114,7 @@ return view.extend({
 			api.rules(),
 			api.alerts(5, 0)
 		]).then(function(data) {
+			reportBackendError(data);
 			self.updateStatus(data[0] || {});
 			self.updateRules(data[1] || {});
 			self.updateAlerts(data[2] || {});
@@ -133,10 +150,7 @@ return view.extend({
 		if (note) {
 			note.textContent = state.hint || '';
 
-			if (state.hint && (status.service_hint === 'service_disabled' ||
-			                   status.service_hint === 'config_missing' ||
-			                   status.service_hint === 'manual_fallback' ||
-			                   status.service_hint === 'daq_dir_missing')) {
+			if (state.hint && status.service_hint === 'service_disabled') {
 				note.appendChild(document.createTextNode(' '));
 				note.appendChild(E('a', {
 					'href': L.url('admin/services/snort/settings')
@@ -175,21 +189,17 @@ return view.extend({
 		var stateText;
 		var stateTone;
 
-		if (rules.config_is_link && rules.link_valid) {
-			stateText = util.translate('Active symbolic link');
+		if (rules.persistent && (rules.config_rule_count || 0) > 0) {
+			stateText = util.translate('Persistent rules');
 			stateTone = 'success';
 		}
+		else if (rules.persistent) {
+			stateText = util.translate('No rules yet');
+			stateTone = 'warning';
+		}
 		else if (rules.config_is_link) {
-			stateText = util.translate('Broken symbolic link');
+			stateText = util.translate('Temporary rules - migrate to persistent storage');
 			stateTone = 'danger';
-		}
-		else if (rules.temp_exists) {
-			stateText = util.translate('Rules are in') + ' ' + (rules.temp_rules || '');
-			stateTone = 'warning';
-		}
-		else if (rules.config_exists) {
-			stateText = util.translate('Configuration rules path is a directory');
-			stateTone = 'warning';
 		}
 		else {
 			stateText = util.translate('No rules directory found');
@@ -206,7 +216,8 @@ return view.extend({
 		setText(this.nodes.rulesPath, pathText);
 		setText(this.nodes.ruleCounts,
 			util.translate('Rule files:') + ' ' + (rules.config_rule_count || 0) +
-			' / ' + util.translate('Temporary rules:') + ' ' + (rules.temp_rule_count || 0));
+			' / ' + util.translate('Storage:') + ' ' +
+			(rules.persistent ? util.translate('Persistent') : util.translate('Temporary')));
 
 		var update = rules.update || {};
 		var upd = util.updateState(update);
@@ -279,7 +290,7 @@ return view.extend({
 		var button = ev.currentTarget;
 
 		if (typeof confirm === 'function' &&
-		    !confirm(util.translate('Create a symbolic link from /var/snort.d/rules to /etc/snort/rules?')))
+		    !confirm(util.translate('Move the existing rules into the persistent /etc/snort/rules directory?')))
 			return Promise.resolve();
 
 		button.disabled = true;
@@ -287,7 +298,7 @@ return view.extend({
 		return api.rulesFix().then(function(result) {
 			result = result || {};
 			notification(result.code, result,
-				result.code === 'temp_missing' ? (result.path || '') : '');
+				result.code === 'migrate_failed' ? (result.path || '') : '');
 			return self.refreshRules();
 		}).catch(rpcError).then(function() {
 			button.disabled = false;
@@ -313,6 +324,8 @@ return view.extend({
 		var status = data[0] || {};
 		var rules = data[1] || {};
 		var alerts = data[2] || {};
+
+		reportBackendError(data);
 
 		this.nodes = {};
 
@@ -385,7 +398,7 @@ return view.extend({
 				E('button', {
 					'class': 'cbi-button cbi-button-reload',
 					'click': L.bind(this.handleRulesFix, this)
-				}, util.translate('Create symbolic link')),
+				}, util.translate('Migrate to persistent storage')),
 				E('button', {
 					'class': 'cbi-button cbi-button-reset',
 					'click': L.bind(this.handleRulesCleanup, this)

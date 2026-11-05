@@ -3,15 +3,32 @@
 		"description": "Grant access to the Snort3 status, service control, alerts and rules management",
 		"read": {
 			"ubus": {
-				"luci.snort": [ "status", "alerts", "rules" ]
+				"luci.snort": [
+					"status",
+					"alerts",
+					"rules"
+				],
+				"luci-rpc": [
+					"getNetworkDevices"
+				]
 			},
-			"uci": [ "snort-web" ]
+			"uci": [
+				"snort-web",
+				"network"
+			]
 		},
 		"write": {
 			"ubus": {
-				"luci.snort": [ "service", "rules_update", "rules_fix", "rules_cleanup" ]
+				"luci.snort": [
+					"service",
+					"rules_update",
+					"rules_fix",
+					"rules_cleanup"
+				]
 			},
-			"uci": [ "snort-web" ]
+			"uci": [
+				"snort-web"
+			]
 		}
 	}
 }

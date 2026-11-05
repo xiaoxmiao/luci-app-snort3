@@ -1,48 +1,65 @@
 #!/bin/sh
 
-# Enable the boot-time configuration sync.  This also makes the ucitrack
-# trigger active when the package is part of a firmware image.
+# Enable the boot-time configuration sync.  This also activates the ucitrack
+# trigger when the package is part of a firmware image.
 [ -x /etc/init.d/snort-web ] && /etc/init.d/snort-web enable
 
-# Releases up to 4.2.3 shipped manual=1 in /etc/config/snort-web.  That value
-# survives an upgrade, so every sync logged a "fallback" notice and the UI kept
-# showing a Manual mode hint even though the generated configuration was in
-# use.  Normalise it once when the Lua pair is incomplete.  Users who later
-# add both files can still re-enable Manual mode in Settings.
-if [ -f /etc/config/snort-web ] &&
-   [ "$(uci -q get snort-web.snort.manual 2>/dev/null)" = "1" ]; then
-	sw_conf_dir=$(uci -q get snort-web.snort.config_dir 2>/dev/null)
-	[ -n "$sw_conf_dir" ] || sw_conf_dir=/etc/snort
+[ -f /etc/config/snort-web ] || exit 0
 
-	if [ ! -f "$sw_conf_dir/snort.lua" ] || [ ! -f "$sw_conf_dir/local.lua" ]; then
-		uci -q set snort-web.snort.manual=0
-		uci -q commit snort-web
-		logger -t snort-web 'disabled unusable Manual mode (missing local.lua); using the generated configuration' 2>/dev/null || :
-	fi
+# 4.3.0 removed Manual mode (snort3's legacy --tweaks local path, which needs
+# a local.lua the package does not ship) and both user Lua include fields.
+# Clear the saved values and the runtime copy so an upgraded device cannot
+# fall back into the crash-looping legacy configuration.
+uci -q set snort-web.snort.manual=0
+uci -q delete snort-web.snort.include
+uci -q delete snort-web.nfq.include
+uci -q commit snort-web
+
+if [ -f /etc/config/snort ]; then
+	uci -q set snort.snort.manual=0
+	uci -q delete snort.snort.include
+	uci -q delete snort.nfq.include
+	uci -q commit snort
 fi
 
-# Import an existing /etc/config/snort once, then synchronise the runtime
-# configuration used by the snort3 init script and rules updater.
+# Older releases symlinked /etc/snort/rules into tmpfs, so downloaded rules
+# disappeared on every reboot.  Move anything still there into a real,
+# persistent directory before the first sync of this version.
+conf_dir=$(uci -q get snort-web.snort.config_dir 2>/dev/null)
+[ -n "$conf_dir" ] || conf_dir=/etc/snort
+temp_dir=$(uci -q get snort-web.snort.temp_dir 2>/dev/null)
+[ -n "$temp_dir" ] || temp_dir=/var/snort.d
+rules="$conf_dir/rules"
+tmp_rules="$temp_dir/rules"
+
+copy_rules_from() {
+	[ -d "$1" ] || return 0
+	for f in "$1"/*.rules; do
+		[ -f "$f" ] && cp -f "$f" "$2/"
+	done
+	return 0
+}
+
+if [ -L "$rules" ]; then
+	stage="$rules.migrate.$$"
+	if mkdir -p "$stage" 2>/dev/null; then
+		copy_rules_from "$tmp_rules" "$stage"
+		copy_rules_from "$(readlink "$rules" 2>/dev/null)" "$stage"
+		rm -f "$rules"
+		if [ -n "$(ls -A "$stage" 2>/dev/null)" ]; then
+			mv "$stage" "$rules" || mkdir -p "$rules"
+		else
+			rmdir "$stage" 2>/dev/null || :
+			mkdir -p "$rules"
+		fi
+		logger -t snort-web "migrated rules into persistent $rules" 2>/dev/null || :
+	fi
+elif [ -d "$rules" ] && ! ls "$rules"/*.rules >/dev/null 2>&1; then
+	copy_rules_from "$tmp_rules" "$rules"
+fi
+
+# Import an existing /etc/config/snort once and push the application settings
+# into the runtime configuration used by the snort3 init script.
 [ -x /usr/libexec/snort-web-sync ] && /usr/libexec/snort-web-sync --sync
-
-# Repair the rules symlink when a previous rules update already populated the
-# temporary rules directory.  snort3 ships /etc/snort/rules as an empty real
-# directory, so an upgrade may leave downloaded rules hidden from the generated
-# configuration.  Only an empty directory is replaced; anything else belongs
-# to the user and can be repaired from Services -> Snort IDS/IPS.
-
-[ -f /etc/config/snort ] || exit 0
-
-if [ -d /var/snort.d/rules ] &&
-   ls /var/snort.d/rules/*.rules >/dev/null 2>&1; then
-	if [ ! -e /etc/snort/rules ]; then
-		ln -s /var/snort.d/rules /etc/snort/rules
-	elif [ -d /etc/snort/rules ] && [ ! -L /etc/snort/rules ] &&
-	     [ -z "$(ls -A /etc/snort/rules 2>/dev/null)" ]; then
-		backup="/etc/snort/rules.backup.$(date '+%s')"
-		mv /etc/snort/rules "$backup" &&
-			ln -s /var/snort.d/rules /etc/snort/rules
-	fi
-fi
 
 exit 0

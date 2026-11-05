@@ -16,8 +16,12 @@ SNORT_SECTION=snort
 NFQ_SECTION=nfq
 INTERNAL_SECTION=internal
 
-SNORT_OPTIONS="enabled manual interface home_net external_net mode method snaplen logging log_dir config_dir temp_dir oinkcode action openappid include"
-NFQ_OPTIONS="queue_count queue_start queue_maxlen fanout_type thread_count chain_type chain_priority include"
+# manual and include are deliberately absent.  manual=1 is snort3's legacy
+# mode (--tweaks local / local.lua / no daq.module_dirs) and is never used by
+# this application.  interface is handled separately because "auto" must be
+# translated into a real kernel device name before it reaches libdaq.
+SNORT_OPTIONS="enabled home_net external_net mode method snaplen logging log_dir config_dir temp_dir oinkcode action openappid"
+NFQ_OPTIONS="queue_count queue_start queue_maxlen fanout_type thread_count chain_type chain_priority"
 
 changed=0
 
@@ -131,47 +135,52 @@ migrate() {
 	return 0
 }
 
-# Manual mode is only usable when the whole pair of files exists.  The snort3
-# init script starts manual mode with
-#   snort -c <config_dir>/snort.lua --tweaks local
-# and the stock snort.lua ends with include(tweaks .. '.lua'), so local.lua is
-# mandatory too.  A fresh snort3 package ships snort.lua but NOT local.lua,
-# which produces "cannot open ./local.lua" and an endless procd crash loop.
-# Manual mode also skips the generated daq.module_dirs, so on builds whose
-# default DAQ search path is empty it fails with "Could not find requested DAQ
-# module: pcap".
-#
-# Decide the runtime value of manual instead of copying it verbatim.  When the
-# pair is incomplete the snort-mgr generated configuration is used; name the
-# missing file(s) explicitly and make clear this is an automatic fallback that
-# needs no user action.  The application setting is left untouched: creating
-# both files restores manual mode on the next sync.
-apply_manual_fallback() {
-	_manual=$(uci_get "$SRC_CONFIG.$SNORT_SECTION.manual")
-	[ -n "$_manual" ] || _manual=0
+# The generated snort.lua puts this value straight into daq.inputs, so it
+# must be a kernel network device name (br-lan, eth1, pppoe-wan), not a UCI
+# logical interface name (lan, wan).  "auto" follows WAN -> LAN -> eth0 ->
+# first non-loopback device; every candidate is verified in sysfs.
+resolve_interface() {
+	local wanted net candidate dev
 
-	_effective=$_manual
-	_conf_dir=$(uci_get "$SRC_CONFIG.$SNORT_SECTION.config_dir")
-	[ -n "$_conf_dir" ] || _conf_dir=/etc/snort
-	_missing=""
+	wanted=$(uci_get "$SRC_CONFIG.$SNORT_SECTION.interface")
+	[ -n "$wanted" ] || wanted=auto
 
-	if [ "$_manual" = "1" ]; then
-		[ -f "$_conf_dir/snort.lua" ] || _missing="$_conf_dir/snort.lua"
-		if [ ! -f "$_conf_dir/local.lua" ]; then
-			[ -n "$_missing" ] && _missing="$_missing and "
-			_missing="$_missing$_conf_dir/local.lua"
-		fi
-
-		[ -n "$_missing" ] && _effective=0
+	if [ "$wanted" != "auto" ]; then
+		printf '%s' "$wanted"
+		return 0
 	fi
 
-	if [ "$(uci_get "$DST_CONFIG.$SNORT_SECTION.manual")" != "$_effective" ]; then
-		uci -q set "$DST_CONFIG.$SNORT_SECTION.manual=$_effective" || return 1
-		changed=1
+	for net in wan lan; do
+		dev=$(uci -q get "network.$net.device" 2>/dev/null)
+		[ -n "$dev" ] || dev=$(uci -q get "network.$net.ifname" 2>/dev/null)
+		case "$dev" in
+			''|@*|*' '*) continue ;;
+		esac
+		[ -d "/sys/class/net/$dev" ] && { printf '%s' "$dev"; return 0; }
+	done
 
-		if [ "$_manual" = "1" ] && [ "$_effective" = "0" ]; then
-			log "manual mode is unavailable ($_missing not found); using the generated snort configuration (automatic, no action needed)"
-		fi
+	[ -d /sys/class/net/eth0 ] && { printf 'eth0'; return 0; }
+
+	for candidate in /sys/class/net/*; do
+		[ -e "$candidate" ] || continue
+		dev=${candidate##*/}
+		[ "$dev" = "lo" ] && continue
+		printf '%s' "$dev"
+		return 0
+	done
+
+	return 1
+}
+
+apply_interface() {
+	local resolved current
+
+	resolved=$(resolve_interface) || return 0
+	current=$(uci_get "$DST_CONFIG.$SNORT_SECTION.interface")
+
+	if [ "$resolved" != "$current" ]; then
+		uci -q set "$DST_CONFIG.$SNORT_SECTION.interface=$resolved" || return 1
+		changed=1
 	fi
 
 	return 0
@@ -192,10 +201,6 @@ sync_all() {
 	changed=0
 
 	for option in $SNORT_OPTIONS; do
-		# manual is decided by apply_manual_fallback() below.  Copying a stale
-		# manual=1 here and flipping it back on every sync would churn the
-		# runtime config and log a fallback notice on every Save & Apply.
-		[ "$option" = "manual" ] && continue
 		copy_option "$SRC_CONFIG" "$SNORT_SECTION" "$DST_CONFIG" "$SNORT_SECTION" "$option" || return 1
 	done
 
@@ -203,7 +208,14 @@ sync_all() {
 		copy_option "$SRC_CONFIG" "$NFQ_SECTION" "$DST_CONFIG" "$NFQ_SECTION" "$option" || return 1
 	done
 
-	apply_manual_fallback || return 1
+	# manual=1 is snort3 legacy mode.  Keep the runtime configuration on the
+	# generated snort-mgr config unconditionally.
+	if [ "$(uci_get "$DST_CONFIG.$SNORT_SECTION.manual")" != "0" ]; then
+		uci -q set "$DST_CONFIG.$SNORT_SECTION.manual=0" || return 1
+		changed=1
+	fi
+
+	apply_interface || return 1
 
 	if [ "$changed" = "1" ]; then
 		uci -q commit "$DST_CONFIG" || return 1

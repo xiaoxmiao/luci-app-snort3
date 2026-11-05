@@ -17,7 +17,7 @@ This module gives Snort3 a native place in LuCI:
 - live service status, PID, memory use, uptime, interface, IDS/IPS mode and DAQ method;
 - start, stop, restart, enable and disable controls;
 - recent alerts and system log excerpts, refreshed every 5 seconds;
-- rules update with progress log, symbolic-link repair and temporary-file cleanup;
+- persistent rule updates with progress log, migration and temporary-file cleanup;
 - complete UCI settings for service, logging, rules, OpenAppID and NFQ;
 - English source strings with complete French and Simplified Chinese catalogs.
 
@@ -30,7 +30,7 @@ performed by the rpcd/ucode backend through a small allow-listed RPC surface.
 - `luci-base`;
 - `rpcd-mod-ucode` (the `luci.snort` rpcd plugin);
 - `snort3` and its init script at `/etc/init.d/snort`;
-- optional: `/usr/bin/snort-rules` from the `snort3` package; a free-rule
+- the `snort3` package (for `snort-mgr` and the init script); rules are downloaded
   updater is bundled with this application, so no extra package is required;
 - optional: `luci-i18n-base-fr` or `luci-i18n-base-zh-cn` for the standard
   LuCI interface in French or Simplified Chinese.
@@ -120,7 +120,7 @@ The LuCI application stores its settings in **`/etc/config/snort-web`**:
 config snort 'snort'
 	option enabled '0'
 	option manual '0'
-	option interface 'br-lan'
+	option interface 'auto'
 	option mode 'ids'
 	option method 'pcap'
 
@@ -133,19 +133,15 @@ config internal 'internal'
 	option migrated '0'
 ```
 
-`enabled` is the master switch: **Save & Apply** starts or stops Snort to match
-it. `manual` defaults to `0`, i.e. the `snort-mgr` generated configuration.
-That is essential on a fresh install: OpenWrt's init script starts manual mode
-with `snort -c /etc/snort/snort.lua --tweaks local`, the stock `snort.lua` ends
-with `include(tweaks .. '.lua')`, and the `snort3` package ships no
-`local.lua`. Manual mode therefore exits with `cannot open ./local.lua` and
-procd reports a crash loop; it also omits the generated
-`daq.module_dirs = { '/usr/lib/daq/' }`, causing `Could not find requested DAQ
-module: pcap`. If either file is missing, `snort-web-sync` keeps the runtime
-configuration in generated mode. To use manual mode deliberately, create both
-`config_dir/snort.lua` and `config_dir/local.lua`, and set
-`daq.module_dirs` in one of them. Boot-time start is controlled separately by
-**Enable at boot** on the Overview page.
+`enabled` is the master switch: **Save & Apply** starts or stops Snort to
+match it. The application always uses the `snort-mgr` generated configuration
+(`manual=0`): snort3's legacy manual mode passes `--tweaks local`, needs a
+`local.lua` the package does not ship, and omits `daq.module_dirs`, so it
+crash-loops on a fresh install. Manual mode and user Lua includes are no longer
+offered. `interface` defaults to `auto`, which the sync helper resolves to the
+WAN device, then the LAN bridge, then `eth0`, then the first non-loopback
+device; the Settings page offers a LuCI device dropdown for a manual choice.
+Boot-time start is controlled separately by **Enable at boot**.
 
 The OpenWrt `snort3` package still reads `/etc/config/snort`, so the application
 keeps both files in sync:
@@ -157,7 +153,7 @@ keeps both files in sync:
   reload` after **Save & Apply**; the reload starts, restarts or stops Snort to
   match the *Enable Snort* flag and records the outcome for the Overview page;
 - the rpcd backend synchronises before service start/restart and before a rules
-  update, because `/usr/bin/snort-rules` reads `/etc/config/snort`.
+  update, because `snort-mgr` reads `/etc/config/snort`.
 
 On first installation (or when upgrading from the old version that wrote
 directly to `/etc/config/snort`), the helper imports the existing settings once
@@ -168,23 +164,23 @@ overwritten on the next apply or boot.
 ### Rules management
 
 The application ships a built-in updater at
-`/usr/libexec/snort-web-rules-update`, so **Update rules** works out of the
-box without the optional `/usr/bin/snort-rules` from the `snort3` package:
+`/usr/libexec/snort-web-rules-update`, so **Update rules** works out of the box:
 
 - it downloads the free Snort 3 community ruleset, or the free registered
   snapshot when an oinkcode is configured in Settings;
-- it normalises every `*.rules` file into `/var/snort.d/rules` and points
-  `/etc/snort/rules` there, so the rules status and link repair always agree;
+- it installs every `*.rules` file into the real, persistent `/etc/snort/rules`
+  directory (not a tmpfs symlink), so rules survive reboots and `snort3`
+  upgrades. Downloading and unpacking still use tmpfs and the final rename is
+  atomic; existing symlinks are migrated on upgrade or via **Migrate**;
 - it reports **Idle / In progress / Completed / Failed** on the Overview page,
-  with the detailed reason in the update log. Restart Snort afterwards to load
-  the new rules.
+  with the detailed reason in the update log;
+- after a successful update it restarts Snort automatically, because
+  `snort-mgr` enumerates `*.rules` when rendering `snort_conf.lua`.
 
 The Overview page also shows a three-state service status (**running**,
-**stopped** or **error**, with the reason) and can repair a broken symbolic
-link or remove downloaded archives and update lock/log files.
+**stopped** or **error**, with the reason) and can clean up downloaded
+archives and stale update lock/log files.
 
-Only start, stop, restart, enable and disable are accepted as service actions,
-and configured paths are restricted to clean absolute paths by the backend.
 
 ### Project layout
 
@@ -198,7 +194,7 @@ root/etc/config/snort-web                  default application configuration
 root/usr/libexec/snort-web-sync            snort-web -> snort synchronisation
 root/etc/init.d/snort-web                  boot-time sync before snort
 root/usr/share/ucitrack/                   Save & Apply restart trigger
-root/etc/uci-defaults/                     migration, sync and rules-link repair
+root/etc/uci-defaults/                     migration, sync and persistent-rules repair
 dist/lmo/snort.fr.lmo                      prebuilt French catalog
 dist/lmo/snort.zh-cn.lmo                   prebuilt Simplified Chinese catalog
 po/fr/snort.po                             French catalog
@@ -260,23 +256,14 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for implementation notes.
   when `enabled=0`; this application verifies that a process actually appears
   and shows the reason (disabled, no rules, init script output or the syslog
   lines written by this start). See `logread | grep -i snort` and `snort-mgr check`.
-- **`snort-web-sync: manual mode is unavailable ...`** — this is an
-  informational notice, not an error. It means `local.lua` is missing and the
-  `snort-mgr` generated configuration is in use, which is exactly what a normal
-  install needs; no action is required. Upgrades from 4.2.3 or earlier normalise
-  the saved `snort-web.snort.manual=1` to `0` once, so the notice stops
-  appearing. `logread` also keeps the old `daemon.err snort[...]` crash lines
-  from before the fix for a long time: check their timestamps before assuming
-  the failure is current, and confirm with `ps | grep '[s]nort'` and
-  `logread | grep -i 'daemon.err snort' | tail -5`. A failed start detail only
-  quotes lines written *after* the latest start, so old crashes cannot be
-  mistaken for the current reason.
-- **`cannot open ./local.lua` / `Could not find requested DAQ module: pcap`** —
-  these are manual-mode failures, not application bugs. Turn off *Manual mode*
-  in Settings (or `uci set snort-web.snort.manual=0; uci commit snort-web`) and
-  apply again. To keep manual mode, create `/etc/snort/local.lua` containing
-  `daq = { module_dirs = { '/usr/lib/daq/' } }`. Verify the DAQ directory with
-  `snort --daq-dir /usr/lib/daq --daq-list`.
+- **Overview shows only N/A and the buttons do nothing** — a `backend_error`
+  notification now names the failing RPC method; the same message is written to
+  `/tmp/snort_backend_error.log`. Check `ubus call luci.snort status` and
+  `logread | grep -i rpcd` if it persists.
+- **Old `local.lua` / DAQ crash lines in `logread`** — those are historical
+  syslog entries from before 4.3.0. `logread` keeps them for a long time, so
+  check their timestamps and confirm with `ps | grep '[s]nort'`. A failed start
+  only quotes lines written *after* the latest start marker.
 - **Save & Apply does not start Snort** — the ucitrack trigger is registered by
   `/etc/init.d/ucitrack`; run `/etc/init.d/ucitrack restart` and check
   `/etc/init.d/snort-web enabled`. The package postinst does this on upgrade.
@@ -337,8 +324,7 @@ contrôle les actions autorisées, les chemins et l'accès aux fichiers.
 - `luci-base` ;
 - `rpcd-mod-ucode` ;
 - `snort3` et son script `/etc/init.d/snort` ;
-- facultatif : `/usr/bin/snort-rules` du paquet `snort3` ; un programme de
-  mise à jour des règles gratuites est fourni avec cette application ;
+- un programme de mise à jour des règles gratuites est fourni avec cette application ;
 - facultatif : `luci-i18n-base-fr` ou `luci-i18n-base-zh-cn` pour l'interface
   LuCI standard en français ou en chinois simplifié.
 
@@ -412,15 +398,15 @@ Le paquet `snort3` continuant de lire `/etc/config/snort`, le synchroniseur
 - après **Enregistrer et appliquer**, le déclencheur ucitrack synchronise puis
   démarre, redémarre ou arrête Snort selon l'option *Activer Snort* ;
 - le backend rpcd synchronise avant un démarrage/redémarrage et avant une mise
-  à jour des règles, car `/usr/bin/snort-rules` lit `/etc/config/snort`.
+  à jour des règles, car `snort-mgr` lit `/etc/config/snort`.
 
 Lors de la première installation, les réglages existants de `/etc/config/snort`
 sont importés une fois (`snort-web.internal.migrated=1`). Ensuite, seul
 `/etc/config/snort-web` fait foi. Le bouton **Mettre à jour les règles** lance
 le programme fourni `/usr/libexec/snort-web-rules-update`, qui télécharge
 gratuitement les règles communautaires Snort 3, et n'est désactivé que si aucun
-programme de mise à jour n'est disponible. La réparation du lien symbolique
-crée une sauvegarde de l'ancien répertoire avant de le remplacer.
+programme de mise à jour n'est disponible. Les règles sont installées dans `/etc/snort/rules` (répertoire réel persistant) ;
+les anciens liens symboliques sont migrés lors de la mise à niveau.
 
 ### Structure du projet
 
@@ -540,19 +526,14 @@ LuCI 应用的设置保存在 **`/etc/config/snort-web`**，而 OpenWrt 的 `sno
 
 第一次安装或从旧版本升级时，会将现有 `/etc/config/snort` 的设置导入
 `snort-web` 一次，并写入 `snort-web.internal.migrated=1`。之后请通过 LuCI
-修改设置；直接修改 `/etc/config/snort` 会在下次应用或开机时被覆盖。默认关闭手动
-模式（`manual=0`，使用 `snort-mgr` 生成的配置）：官方 `snort3` 的手动模式会带上
-`--tweaks local`，而安装包并不提供 `local.lua`，会直接报
-`cannot open ./local.lua` 并进入崩溃循环，同时缺少 `daq.module_dirs` 导致
-`Could not find requested DAQ module: pcap`。若 `snort.lua` 或 `local.lua` 缺失，
-同步脚本会自动保持生成模式。如确实需要手动模式，请同时创建这两个文件，并在其中
-设置 `daq = { module_dirs = { '/usr/lib/daq/' } }`。
-
+修改设置；直接修改 `/etc/config/snort` 会在下次应用或开机时被覆盖。默认使用 `snort-mgr` 生成的配置（`manual=0`），已移除手动模式与用户自定义 Lua
+配置入口。`interface` 默认为 `auto`：同步脚本依次取 WAN 设备、LAN 网桥、`eth0`、
+首个非 lo 设备；设置页提供 LuCI 标准设备下拉菜单供手动选择。规则下载后写入持久
+目录 `/etc/snort/rules`，重启不会丢失，更新成功后自动重启 Snort 以重新渲染配置。
 注意：`logread` 会长期保留升级前的 `daemon.err snort[...]` 崩溃日志，请按时间戳
-判断是否为当前故障；`snort-web-sync` 打印的「手动模式不可用」只是说明已自动使用
-生成配置，并非报错，无需处理。从 4.2.3 及更早版本升级时，残留的 `manual=1` 会被
-自动改为 `0`。可用 `ps | grep '[s]nort'` 确认进程是否在运行；启动失败详情只会引用
-本次启动之后新增的日志，不会把旧崩溃当成当前原因。
+判断是否为当前故障。可用 `ps | grep '[s]nort'` 确认进程是否在运行；启动失败详情
+只引用本次启动之后新增的日志。若概览页全为 N/A，页面会显示后端错误提示，详细
+原因也写在 `/tmp/snort_backend_error.log`。
 
 ### 使用
 
@@ -564,11 +545,10 @@ LuCI 应用的设置保存在 **`/etc/config/snort-web`**，而 OpenWrt 的 `sno
 - **告警**：最近 50 条告警和最近 20 条 Snort 系统日志。
 
 规则更新功能已内置：`/usr/libexec/snort-web-rules-update` 会下载免费的
-Snort 3 社区规则（填写 Oinkcode 时改用免费注册版规则），把规则统一放到
-`/var/snort.d/rules` 并维护 `/etc/snort/rules` 软链，不需要额外安装
-`snort-rules`。页面上的更新状态会显示「空闲 / 进行中 / 完成 / 失败」，
-失败时可在更新日志里看到具体原因。更新完成后请点 **Restart** 让 Snort
-重新加载规则。
+Snort 3 社区规则（填写 Oinkcode 时改用免费注册版规则），把规则写入持久目录
+`/etc/snort/rules`（重启后仍保留），不需要额外安装 `snort-rules`。页面上的
+更新状态会显示「空闲 / 进行中 / 完成 / 失败」，失败时可在更新日志里看到具体
+原因。更新成功后会自动重启 Snort，因为 `snort-mgr` 在渲染配置时会枚举规则文件。
 
 ### 构建与检查
 

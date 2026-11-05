@@ -20,9 +20,6 @@ msgstr ""
 msgid "Actions"
 msgstr ""
 
-msgid "Active symbolic link"
-msgstr ""
-
 msgid "Advanced"
 msgstr ""
 
@@ -47,10 +44,13 @@ msgstr ""
 msgid "Auto-start enabled"
 msgstr ""
 
-msgid "Block"
+msgid "Automatic (WAN, LAN, eth0)"
 msgstr ""
 
-msgid "Broken symbolic link"
+msgid "Backend error"
+msgstr ""
+
+msgid "Block"
 msgstr ""
 
 msgid "Capture Length"
@@ -68,13 +68,7 @@ msgstr ""
 msgid "Configuration directory"
 msgstr ""
 
-msgid "Configuration rules path is a directory"
-msgstr ""
-
-msgid "Create a symbolic link from /var/snort.d/rules to /etc/snort/rules?"
-msgstr ""
-
-msgid "Create symbolic link"
+msgid "currently unavailable"
 msgstr ""
 
 msgid "DAQ method"
@@ -87,6 +81,9 @@ msgid "Default action for rules"
 msgstr ""
 
 msgid "Detailed JSON alerts"
+msgstr ""
+
+msgid "Device to monitor. Automatic follows the WAN device, then the LAN bridge, then eth0."
 msgstr ""
 
 msgid "Directory does not exist:"
@@ -149,9 +146,6 @@ msgstr ""
 msgid "First queue number"
 msgstr ""
 
-msgid "Full path to user-defined extra rules included in the queue chain"
-msgstr ""
-
 msgid "Idle"
 msgstr ""
 
@@ -194,15 +188,6 @@ msgstr ""
 msgid "Logging configuration"
 msgstr ""
 
-msgid "Manual mode"
-msgstr ""
-
-msgid "Manual mode needs daq.module_dirs in local.lua (for example /usr/lib/daq/)"
-msgstr ""
-
-msgid "Manual mode is unavailable; using the generated configuration instead (no action needed)"
-msgstr ""
-
 msgid "Maximum number of packet threads, 0 uses the number of CPU cores"
 msgstr ""
 
@@ -215,7 +200,13 @@ msgstr ""
 msgid "Memory"
 msgstr ""
 
+msgid "Migrate to persistent storage"
+msgstr ""
+
 msgid "Mode"
+msgstr ""
+
+msgid "Move the existing rules into the persistent /etc/snort/rules directory?"
 msgstr ""
 
 msgid "Netfilter queue settings used when the DAQ method is NFQ."
@@ -224,13 +215,7 @@ msgstr ""
 msgid "Network interface"
 msgstr ""
 
-msgid "Network interface to monitor (e.g. br-lan, eth0)"
-msgstr ""
-
 msgid "NFQ (for IPS)"
-msgstr ""
-
-msgid "NFQ rules include"
 msgstr ""
 
 msgid "NFQ settings"
@@ -254,6 +239,9 @@ msgstr ""
 msgid "No rules found"
 msgstr ""
 
+msgid "No rules yet"
+msgstr ""
+
 msgid "No update log yet."
 msgstr ""
 
@@ -272,9 +260,6 @@ msgstr ""
 msgid "Operating mode"
 msgstr ""
 
-msgid "Optional Snort configuration file appended to the generated snort.lua"
-msgstr ""
-
 msgid "Overview"
 msgstr ""
 
@@ -288,6 +273,12 @@ msgid "Path where logs will be stored"
 msgstr ""
 
 msgid "PCAP (Recommended)"
+msgstr ""
+
+msgid "Persistent"
+msgstr ""
+
+msgid "Persistent rules"
 msgstr ""
 
 msgid "PID"
@@ -323,10 +314,7 @@ msgstr ""
 msgid "Rule files:"
 msgstr ""
 
-msgid "Rule updates and symbolic link repair are available on the overview page."
-msgstr ""
-
-msgid "Rules are in"
+msgid "Rules are stored permanently in the configuration directory and survive reboots."
 msgstr ""
 
 msgid "Rules management"
@@ -398,9 +386,6 @@ msgstr ""
 msgid "Snort system logs (20 most recent)"
 msgstr ""
 
-msgid "Manual mode needs snort.lua and local.lua"
-msgstr ""
-
 msgid "Start"
 msgstr ""
 
@@ -408,6 +393,9 @@ msgid "Stop"
 msgstr ""
 
 msgid "Stopped"
+msgstr ""
+
+msgid "Storage:"
 msgstr ""
 
 msgid "Symbolic link created successfully"
@@ -419,13 +407,16 @@ msgstr ""
 msgid "System uptime"
 msgstr ""
 
+msgid "Temporary"
+msgstr ""
+
 msgid "Temporary directory"
 msgstr ""
 
 msgid "Temporary files cleaned"
 msgstr ""
 
-msgid "Temporary rules:"
+msgid "Temporary rules - migrate to persistent storage"
 msgstr ""
 
 msgid "Total alerts"
@@ -462,12 +453,6 @@ msgid "Update rules"
 msgstr ""
 
 msgid "Update status"
-msgstr ""
-
-msgid "Use snort.lua and local.lua from the config directory; leave off for the generated configuration"
-msgstr ""
-
-msgid "User configuration include"
 msgstr ""
 
 msgid "View all alerts"

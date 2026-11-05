@@ -37,8 +37,8 @@ followed by the underlying error message.
 OpenWrt `snort3` init script returns 0 when `snort.snort.enabled` is 0, without
 starting anything. The backend now captures the script output, waits for a
 stable Snort process (up to about eight seconds) and reports a concrete reason
-if the process never appears: *Snort is disabled in Settings*, *snort.lua or
-local.lua not found*, *No rules found*, the init script's own error text, or the
+if the process never appears: *Snort is disabled in Settings*, *No rules found*,
+the init script's own error text, or the
 most recent `logread | grep -i snort` lines (procd sends the daemon's fatal
 Lua/DAQ errors to syslog, not to the init script's stdout).
 
@@ -55,42 +55,14 @@ notifications and the dashboard is refreshed immediately afterwards.
 
 ### Rules management
 
-The rules card reports whether `/etc/snort/rules` is a valid symbolic link, a
-broken link, a real directory, or missing. It also displays the rule file counts
-for the configured directory and the temporary rules directory.
+The rules card reports whether `/etc/snort/rules` is a real, persistent
+directory. Rules are stored there, so they survive reboots and `snort3`
+upgrades. **Update rules** downloads the free community ruleset (or the
+registered snapshot with an oinkcode), installs it atomically into that
+directory, and restarts Snort automatically because `snort-mgr` enumerates
+`*.rules` at render time. **Migrate to persistent storage** converts an old
+tmpfs symlink into a real directory without losing its rules.
 
-- **Update rules** starts the bundled updater
-  `/usr/libexec/snort-web-rules-update` in the background. It downloads the
-  **free Snort 3 community ruleset**; when an oinkcode is configured in
-  Settings it uses the free registered snapshot instead. Every `*.rules` file
-  is copied into `/var/snort.d/rules` (or the configured temporary directory)
-  and `/etc/snort/rules` is pointed there, so the rules status and the link
-  repair actions always agree. If the snort3 package's own
-  `/usr/bin/snort-rules` is installed and the bundled script is missing, it is
-  used as a fallback. The update log is shown below the buttons and polled
-  with the rest of the page; the button is disabled while an update runs.
-  **Restart Snort afterwards** so the new rules are loaded.
-- **Create symbolic link** points `/etc/snort/rules` to
-  `/var/snort.d/rules`. If the current rules path is a real directory, it is
-  renamed to `rules.backup` first. A confirmation dialog is shown.
-- **Cleanup temporary files** removes downloaded `.tar.gz` archives, the update
-  log, the lock and the result file. It refuses to run while an update is in
-  progress.
-
-The update badge shows four states:
-
-| State | Meaning |
-| --- | --- |
-| Idle | No update has run since the last cleanup or reboot. |
-| In progress | The updater is downloading and installing rules. |
-| Completed | The rules were installed successfully. |
-| Failed | The updater reported an error (download, extraction, empty archive or link creation). The exact reason is in the update log below. |
-
-The update state uses `/tmp/snort_rules_update.lock`,
-`/tmp/snort_rules_update.log` and `/tmp/snort_rules_update.status`; the last
-service action is recorded in `/tmp/snort_service_action.status`. A test run
-without network access is available on the command line with
-`/usr/libexec/snort-web-rules-update -t`.
 
 ### Recent alerts
 
@@ -114,8 +86,8 @@ page to create the `/etc/rc.d/S??snort` link.
 | Option | Description |
 | --- | --- |
 | Enable Snort | Save & Apply starts or stops Snort accordingly; boot start is the separate *Enable at boot* button |
-| Manual mode | Off by default. When on, uses `config_dir/snort.lua` **and** `config_dir/local.lua` (the OpenWrt init script always passes `--tweaks local`). If either is missing, the sync helper keeps the runtime configuration in `snort-mgr` generated mode and the Overview shows *Manual mode needs snort.lua and local.lua*. Generated mode is recommended: it sets `daq.module_dirs = { '/usr/lib/daq/' }` and loads the downloaded rules. In manual mode, set `daq.module_dirs` yourself or the start fails with *Could not find requested DAQ module: pcap* |
-| Network interface | Interface to monitor, for example `br-lan` or `eth0` |
+| Configuration mode | Always the `snort-mgr` generated configuration (`manual=0`). Legacy manual mode and user Lua includes were removed in 4.3.0 |
+| Network interface | LuCI device dropdown. Default `auto` resolves to the WAN device, then the LAN bridge, then `eth0`, then the first non-loopback device |
 | Local network | Protected network in CIDR notation |
 | External network | External network definition, usually `any` |
 | Operating mode | `ids` for detection only, `ips` for prevention |
@@ -214,13 +186,13 @@ paths without `..` components or control characters.
 | `/etc/init.d/snort-web` | Boot-time sync before Snort starts |
 | `/etc/init.d/snort` | Service control |
 | `/usr/libexec/snort-web-rules-update` | Bundled free-rule updater |
-| `/usr/bin/snort-rules` | Optional fallback updater from the `snort3` package |
+| `/usr/libexec/snort-web-rules-update` | Bundled updater (the only one used) |
 | `/tmp/snort_rules_update.status` | Last rules update result (`running`/`ok`/`failed` plus an error code) |
 | `/tmp/snort_service_action.status` | Last service action result |
 | `/var/log/alert_fast.txt` | Fast alerts |
 | `/var/log/<other>` | Syslog is read through `/sbin/logread` |
-| `/etc/snort/rules` | Rules path, usually a symbolic link |
-| `/var/snort.d/rules` | Temporary downloaded rules |
+| `/etc/snort/rules` | Persistent rules directory |
+| `/var/snort.d/` | Transient download/extract area and generated `snort_conf.lua` |
 | `/tmp/snort_rules_update.log` | Rules update log |
 | `/tmp/snort_rules_update.lock` | Rules update lock |
 
@@ -231,12 +203,12 @@ paths without `..` components or control characters.
 - Service actions are allow-listed.
 - Configured paths must be absolute and are rejected if they contain `..` or
   control characters.
-- The ACL file grants only the seven `luci.snort` methods and UCI access to the
-  `snort-web` package. The synchronisation helper runs as root outside the
+- The ACL file grants only the seven `luci.snort` methods, UCI access to
+  `snort-web`/`network`, and `luci-rpc getNetworkDevices` for the device list. The synchronisation helper runs as root outside the
   browser session.
 - Rule updates run in the background as root because the updater needs to write
-  to `/etc/snort` and `/var/snort.d`. Review `/usr/bin/snort-rules` before
-  installing a third-party updater.
+  to `/etc/snort` and `/var/snort.d`. Only the bundled updater is used, so no
+  third-party script can replace the persistent rules directory with a symlink.
 
 ## Troubleshooting
 
@@ -249,11 +221,11 @@ paths without `..` components or control characters.
 | **Save & Apply** does not start Snort | Check `/etc/init.d/snort-web enabled` and run `/etc/init.d/ucitrack restart` to register the config trigger (the package postinst does this on upgrade) |
 | Service state shows **Error** | Read the reason next to the badge; fix the init script or install rules, then press **Start** |
 | **Start** reports an error and nothing runs | Enable *Enable Snort* in Settings, then run **Update rules**; the reason next to the badge only includes snort syslog lines written by the latest start. Run `snort-mgr check` and `logread \| grep snort` for details |
-| `cannot open ./local.lua` / `Could not find requested DAQ module: pcap` / procd crash loop | Caused by manual mode. Turn off *Manual mode* in Settings and apply again; the generated configuration avoids both errors. To keep manual mode, create both `/etc/snort/snort.lua` and `/etc/snort/local.lua`, with `daq = { module_dirs = { '/usr/lib/daq/' } }` in one of them. Check the DAQ modules with `snort --daq-dir /usr/lib/daq --daq-list`. `logread` keeps these old crash lines for a long time — check their timestamps |
-| Overview says *Manual mode is unavailable* | Informational, not an error: the generated configuration is in use because `local.lua` is missing. Upgrades from 4.2.3 or earlier normalise the saved `manual=1` to `0` once, so the hint disappears. No action is needed |
+| Old `local.lua` / DAQ crash lines in `logread` | Historical syslog entries from releases before 4.3.0. Check their timestamps and confirm with `ps \| grep '[s]nort'`. The generated configuration always sets `daq.module_dirs` |
+| Overview shows only N/A values | Look for the *Backend error* notification; the failing method and message are also in `/tmp/snort_backend_error.log` |
 | Update rules shows an error | The notification contains the backend reason and log path; inspect `/tmp/snort_rules_update.log` and `/tmp/snort_rules_update.status` |
 | No rules found | Run **Update rules**, then **Restart**; do not point a working link at an empty directory |
-| Symbolic link repair fails | Check that `/var/snort.d/rules` exists and `/etc/snort` is writable |
+| Migration to persistent storage fails | Check that `/etc/snort` is writable and that no process holds the rules directory |
 | Wrong interface displayed | Update the interface in Settings and apply |
 | Settings not applied | Run `/usr/libexec/snort-web-sync --sync` and compare `uci show snort-web` with `uci show snort` |
 | French UI not translated | Install the French catalog and set the LuCI language to French |

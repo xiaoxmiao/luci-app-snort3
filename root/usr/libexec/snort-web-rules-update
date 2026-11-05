@@ -5,12 +5,13 @@
 # Installed as /usr/libexec/snort-web-rules-update and invoked by the
 # luci.snort rpcd backend when "Update rules" is clicked. It downloads the
 # free Snort 3 community ruleset (or the free registered ruleset when an
-# oinkcode is configured), normalises every downloaded *.rules file into
-# $temp_dir/rules and points $config_dir/rules at that directory.
+# oinkcode is configured) and installs every downloaded *.rules file into
+# the persistent $config_dir/rules directory.
 #
-# Using exactly $temp_dir/rules matters: the LuCI application's rules status
-# and "Create symbolic link" action expect that path, while the snort3
-# package's own updater uses a version-specific directory name.
+# Rules are deliberately NOT kept in tmpfs: the snort3 package's own updater
+# symlinks /etc/snort/rules into $temp_dir, which loses all rules on reboot.
+# Downloading and unpacking still happen in tmpfs; only the final staging
+# directory lives beside the target so the rename is atomic.
 #
 # The first line of /tmp/snort_rules_update.status is the state (running, ok
 # or failed); the optional second line is an error code the UI maps to a
@@ -112,10 +113,9 @@ oinkcode=$(uci_value oinkcode '')
 safe_dir "$conf_dir"
 safe_dir "$temp_dir"
 
-rules_link="$conf_dir/rules"
-rules_target="$temp_dir/rules"
+rules_target="$conf_dir/rules"
 work_dir="$temp_dir/.rules-download.$$"
-new_rules="$temp_dir/.rules-new.$$"
+new_rules="$conf_dir/.rules-new.$$"
 
 cleanup() {
 	rm -rf "$work_dir" "$new_rules"
@@ -154,27 +154,30 @@ fi
 rule_count=$(find "$new_rules" -type f -name '*.rules' | wc -l)
 [ "$rule_count" -gt 0 ] || fail 'The archive contains no .rules files' 'rules_empty'
 
-# Replace the previous rules only after everything succeeded.
-if [ -d "$rules_target" ]; then
-	rm -rf "$rules_target" || fail "Unable to replace $rules_target" 'rules_dir_failed'
+# Install into the persistent rules directory.  The staging directory is on
+# the same filesystem as the target, so the final rename is atomic.
+mkdir -p "$conf_dir" || fail "Unable to create $conf_dir" 'rules_dir_failed'
+
+if [ -L "$rules_target" ]; then
+	rm -f "$rules_target" || fail "Unable to replace the old rules symlink" 'rules_dir_failed'
+elif [ -d "$rules_target" ]; then
+	backup="${rules_target}.backup.$(date '+%s')"
+	mv "$rules_target" "$backup" || fail "Unable to back up $rules_target" 'rules_dir_failed'
+	log "Backed up the previous rules directory to $backup."
+elif [ -e "$rules_target" ]; then
+	fail "$rules_target exists and is neither a directory nor a symbolic link" 'rules_dir_failed'
 fi
+
 mv "$new_rules" "$rules_target" || fail "Unable to install rules into $rules_target" 'rules_dir_failed'
 rm -rf "$work_dir"
 
-mkdir -p "$conf_dir" || fail "Unable to create $conf_dir" 'link_failed'
-
-if [ -L "$rules_link" ]; then
-	rm -f "$rules_link" || fail "Unable to replace $rules_link" 'link_failed'
-elif [ -d "$rules_link" ]; then
-	backup="${rules_link}.backup.$(date '+%s')"
-	mv "$rules_link" "$backup" || fail "Unable to back up $rules_link" 'link_failed'
-	log "Backed up the existing rules directory to $backup."
-elif [ -e "$rules_link" ]; then
-	fail "$rules_link exists and is neither a directory nor a symbolic link" 'link_failed'
-fi
-
-ln -s "$rules_target" "$rules_link" || fail "Unable to create $rules_link" 'link_failed'
-
 set_state ok
-log "Loaded ${rule_count} rule file(s) into ${rules_target}."
-log 'Restart Snort from the Overview page to apply the new rules.'
+log "Loaded ${rule_count} rule file(s) into ${rules_target} (persistent)."
+
+# snort-mgr enumerates *.rules at render time, so replacing the files alone
+# is not enough: a restart regenerates snort_conf.lua with the new includes.
+if pidof snort >/dev/null 2>&1; then
+	log 'Restarting Snort to load the new rules.'
+	/etc/init.d/snort restart >/dev/null 2>&1 ||
+		log 'WARNING: Snort restart failed; restart it manually from the Overview page.'
+fi

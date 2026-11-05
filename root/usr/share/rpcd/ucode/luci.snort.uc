@@ -9,18 +9,17 @@
  * views only send allow-listed actions and display the returned data.
  */
 
-import { access, glob, lstat, readfile, readlink, stat, unlink, symlink,
-         rename, writefile, popen, open, lsdir } from 'fs';
+import { access, glob, lstat, readfile, readlink, stat, unlink,
+         writefile, popen, open, lsdir } from 'fs';
 import { cursor } from 'uci';
 
 const INIT_SCRIPT = '/etc/init.d/snort';
 const SYNC_HELPER = '/usr/libexec/snort-web-sync';
 
-/* The built-in updater ships with this application and downloads the free
- * community ruleset.  The snort3 package's own /usr/bin/snort-rules is used
- * as a fallback when the built-in script is missing (older installations). */
+/* Only the application's own updater is used.  The snort3 package's
+ * /usr/bin/snort-rules would replace the persistent rules directory with a
+ * tmpfs symlink and lose all downloaded rules on the next reboot. */
 const RULES_UPDATER_BUILTIN = '/usr/libexec/snort-web-rules-update';
-const RULES_UPDATER_LEGACY = '/usr/bin/snort-rules';
 
 const UPDATE_LOCK = '/tmp/snort_rules_update.lock';
 const UPDATE_LOG = '/tmp/snort_rules_update.log';
@@ -30,6 +29,7 @@ const SERVICE_STATUS = '/tmp/snort_service_action.status';
 const SERVICE_DETAIL = '/tmp/snort_service_action.detail';
 const SERVICE_OUTPUT = '/tmp/snort_service_action.output';
 const SERVICE_LOGALL = '/tmp/snort_service_action.logall';
+const BACKEND_ERROR = '/tmp/snort_backend_error.log';
 
 const CONFIG_NAME = 'snort-web';
 
@@ -47,7 +47,12 @@ function safe_path(value, fallback) {
 
 	const path = '' + value;
 
-	if (substr(path, 0, 1) != '/' || match(path, /\.\./) || match(path, /[\x00-\x1f]/))
+	/* Older ucode builds throw on "\\x" escapes inside regex literals.  That
+	 * single expression used to abort get_settings(), which made status,
+	 * rules and alerts fail with a bare "Unknown error".  These paths come
+	 * from our own UCI file, so an absolute-path and traversal check is
+	 * sufficient and works on every ucode version. */
+	if (substr(path, 0, 1) != '/' || match(path, /\.\./))
 		return fallback;
 
 	return path;
@@ -118,7 +123,6 @@ function get_settings() {
 
 	return {
 		enabled: get('enabled', '0'),
-		manual: get('manual', '0'),
 		interface: get('interface', ''),
 		home_net: get('home_net', '192.168.1.0/24'),
 		external_net: get('external_net', 'any'),
@@ -131,8 +135,7 @@ function get_settings() {
 		temp_dir: safe_path(get('temp_dir', DEFAULT_TEMP_DIR), DEFAULT_TEMP_DIR),
 		oinkcode: get('oinkcode', ''),
 		action: get('action', 'default'),
-		openappid: get('openappid', '0'),
-		include: get('include', '')
+		openappid: get('openappid', '0')
 	};
 }
 
@@ -314,25 +317,16 @@ function snort_logs(limit) {
 	return logs;
 }
 
-/* Prefer the built-in free-rule updater; fall back to the snort3 package's
- * script so existing installations keep working. */
+/* Only the bundled updater is supported: the snort3 package's own script
+ * would replace the persistent rules directory with a tmpfs symlink. */
 function rules_updater() {
-	/* The bundled script is a POSIX shell file.  Only readability is
-	 * required: it is launched through /bin/sh, so a package that lost its
-	 * executable bit (Windows checkouts, some apk installers) still works. */
-	if (access(RULES_UPDATER_BUILTIN, 'r') == true)
-		return RULES_UPDATER_BUILTIN;
-
-	if (access(RULES_UPDATER_LEGACY, 'x') == true)
-		return RULES_UPDATER_LEGACY;
-
-	return null;
+	/* Launched through /bin/sh, so only readability is required. */
+	return access(RULES_UPDATER_BUILTIN, 'r') == true
+		? RULES_UPDATER_BUILTIN : null;
 }
 
 function updater_command(path) {
-	return (path == RULES_UPDATER_BUILTIN)
-		? '/bin/sh ' + shell_quote(path)
-		: shell_quote(path);
+	return '/bin/sh ' + shell_quote(path);
 }
 
 function updater_process_alive() {
@@ -389,8 +383,8 @@ function update_state() {
 		code = 'rules_update_failed';
 	}
 	else if (result == 'running' && finished) {
-		/* The legacy /usr/bin/snort-rules does not write a status file.
-		 * Fall back to the exit code recorded by the background shell. */
+		/* Fall back to the exit code recorded by the background shell
+		 * when the updater did not report a status itself. */
 		const rc_text = trim(read_text(UPDATE_RC) || '');
 
 		if (rc_text != '' && rc_text != '0') {
@@ -465,6 +459,7 @@ function rules_state() {
 		config_rules,
 		temp_rules,
 		config_exists: config_info != null,
+		persistent: config_info != null && config_info.type == 'directory',
 		config_is_link: link,
 		link_target: target,
 		link_valid: link && target_exists,
@@ -497,46 +492,40 @@ function remove_tarballs(dir, only_snort_prefix) {
 	return removed;
 }
 
-function ensure_link(settings) {
+/* Older releases kept downloaded rules in tmpfs behind a symlink.  Replace
+ * that symlink with a real directory and copy every rule still reachable, so
+ * the rules survive the next reboot.  The "Update rules" button does the same
+ * thing with a freshly downloaded archive. */
+function migrate_rules(settings) {
 	const config_rules = path_join(settings.config_dir, 'rules');
 	const temp_rules = path_join(settings.temp_dir, 'rules');
-	const temp_info = stat(temp_rules);
-	const config_info = lstat(config_rules);
+	const info = lstat(config_rules);
 
-	if (!temp_info || temp_info.type != 'directory')
-		return { ok: false, code: 'temp_missing', path: temp_rules };
+	if (!info || info.type != 'link')
+		return { ok: true, code: 'already_persistent', path: config_rules,
+		         message: 'Rules are already stored persistently.' };
 
-	let backup = '';
+	const target = or_default(readlink(config_rules), '');
+	const stage = config_rules + '.persist';
+	const command = 'set -e; ' +
+		'rm -rf ' + shell_quote(stage) + '; ' +
+		'mkdir -p ' + shell_quote(stage) + '; ' +
+		'for d in ' + shell_quote(target) + ' ' + shell_quote(temp_rules) + '; do ' +
+		'  [ -d "$d" ] || continue; ' +
+		'  for f in "$d"/*.rules; do ' +
+		'    if [ -f "$f" ]; then cp -f "$f" ' + shell_quote(stage) + '/; fi; ' +
+		'  done; ' +
+		'done; ' +
+		'rm -f ' + shell_quote(config_rules) + '; ' +
+		'mv ' + shell_quote(stage) + ' ' + shell_quote(config_rules);
 
-	if (config_info) {
-		if (config_info.type == 'link') {
-			if (!unlink(config_rules))
-				return { ok: false, code: 'link_failed', path: config_rules };
-		}
-		else if (config_info.type == 'directory') {
-			backup = config_rules + '.backup';
+	if (system(command, 30000) != 0)
+		return { ok: false, code: 'migrate_failed', path: config_rules,
+		         message: 'Unable to migrate the rules directory.' };
 
-			if (lstat(backup) != null) {
-				backup = config_rules + '.backup.' + time();
-			}
-
-			if (!rename(config_rules, backup))
-				return { ok: false, code: 'backup_failed', path: config_rules };
-		}
-		else {
-			return { ok: false, code: 'config_not_directory', path: config_rules };
-		}
-	}
-
-	if (!symlink(temp_rules, config_rules))
-		return { ok: false, code: 'link_failed', path: config_rules };
-
-	return {
-		ok: true,
-		code: backup != '' ? 'link_created_backup' : 'link_created',
-		target: temp_rules,
-		backup
-	};
+	return { ok: true, code: 'rules_persisted', path: config_rules,
+	         count: rule_file_count(config_rules),
+	         message: 'Rules moved into the persistent directory.' };
 }
 
 function clamp_int(value, fallback, min, max) {
@@ -558,72 +547,28 @@ function is_enabled(value) {
 	return text == '1' || text == 'true' || text == 'yes' || text == 'on';
 }
 
-/* snort-web-sync falls back to a generated configuration when manual mode is
- * selected but its config files are missing.  Diagnostics must describe what
- * the init script will actually do, so read the runtime copy of the snort3
- * settings instead of the LuCI setting. */
-function runtime_manual() {
+/* The generated snort.lua is the only supported configuration.  Read the
+ * runtime interface from /etc/config/snort because the application may store
+ * "auto", which the sync helper resolves into a real kernel device name. */
+function runtime_interface(fallback) {
 	let uci = null;
 
 	try {
 		uci = cursor();
 	}
 	catch (e) {
-		return null;
+		return fallback;
 	}
 
 	if (!uci)
-		return null;
+		return fallback;
 
 	try {
-		return first_value(uci.get_first('snort', 'snort', 'manual'), null);
+		return first_value(uci.get_first('snort', 'snort', 'interface'), fallback) || fallback;
 	}
 	catch (e) {
-		return null;
+		return fallback;
 	}
-}
-
-/* Manual mode is started by snort3 with "--tweaks local", and the stock
- * snort.lua ends with include(tweaks .. '.lua').  Both snort.lua AND local.lua
- * must exist, otherwise snort exits immediately and procd reports a crash
- * loop ("cannot open ./local.lua: No such file or directory"). */
-function manual_config_ready(settings) {
-	return access(path_join(settings.config_dir, 'snort.lua'), 'f') == true &&
-		access(path_join(settings.config_dir, 'local.lua'), 'f') == true;
-}
-
-function needs_manual_config(settings) {
-	const rt = runtime_manual();
-	const manual = (rt == null) ? settings.manual : rt;
-
-	return is_enabled(manual) && !manual_config_ready(settings);
-}
-
-/* Explain the two manual-mode traps that are invisible in the UI:
- *   - the sync helper fell back to the generated configuration;
- *   - manual mode skips the generated daq.module_dirs, so builds without a
- *     compiled-in DAQ search path fail with "Could not find requested DAQ
- *     module: pcap". */
-function manual_hint(settings) {
-	const rt = runtime_manual();
-	const active = (rt == null) ? settings.manual : rt;
-
-	if (!is_enabled(settings.manual))
-		return '';
-
-	if (!is_enabled(active))
-		return 'manual_fallback';
-
-	if (!manual_config_ready(settings))
-		return 'config_missing';
-
-	const main_lua = read_text(path_join(settings.config_dir, 'snort.lua'));
-	const local_lua = read_text(path_join(settings.config_dir, 'local.lua'));
-
-	if (!match(main_lua, /module_dirs/) && !match(local_lua, /module_dirs/))
-		return 'daq_dir_missing';
-
-	return '';
 }
 
 /* Run a command through the shell and keep its output so a failed service
@@ -701,21 +646,11 @@ function snort_log_tail() {
  * an actionable reason whenever no process shows up. */
 function service_problem(settings, output) {
 	const rules_path = path_join(settings.config_dir, 'rules');
-	const lua_path = path_join(settings.config_dir, 'snort.lua');
 
 	if (!is_enabled(settings.enabled))
 		return {
 			code: 'service_disabled',
 			message: 'Enable Snort in Settings first (snort-web.snort.enabled=0).'
-		};
-
-	if (needs_manual_config(settings))
-		return {
-			code: 'config_missing',
-			message: 'Manual mode requires both ' + lua_path + ' and ' +
-				path_join(settings.config_dir, 'local.lua') +
-				'. The generated configuration is selected automatically; ' +
-				'turn off Manual mode to keep it.'
 		};
 
 	if (rule_file_count(rules_path) == 0)
@@ -751,8 +686,6 @@ function status_call() {
 	const rule_count = rule_file_count(path_join(settings.config_dir, 'rules'));
 	const action_lines = split(trim(read_text(SERVICE_STATUS) || ''), '\n');
 	const last_failed = trim(action_lines[0] || '') == 'failed';
-	const manual_hint_code = manual_hint(settings);
-	const active_manual = first_value(runtime_manual(), settings.manual);
 	let service_state = running ? 'running' : 'stopped';
 	let service_code = '';
 	let service_hint = '';
@@ -775,12 +708,6 @@ function status_call() {
 		/* Not an error yet, but explain why pressing Start would do nothing. */
 		service_hint = 'service_disabled';
 	}
-	else if (!running && length(manual_hint_code) > 0) {
-		service_hint = manual_hint_code;
-	}
-	else if (!running && needs_manual_config(settings)) {
-		service_hint = 'config_missing';
-	}
 
 	return {
 		success: true,
@@ -801,12 +728,10 @@ function status_call() {
 		mem_percent: memory.percent,
 		alert_count: count_lines(alert_file),
 		alert_file,
-		interface: settings.interface,
+		interface: runtime_interface(settings.interface),
 		mode: settings.mode,
 		method: settings.method,
 		enabled: settings.enabled,
-		manual: settings.manual,
-		config_mode: is_enabled(active_manual) ? 'manual' : 'generated',
 		logging: settings.logging,
 		action: settings.action,
 		openappid: settings.openappid,
@@ -975,12 +900,11 @@ const methods = {
 			if (updater == null)
 				return { success: false, ok: false, code: 'updater_missing',
 				         path: RULES_UPDATER_BUILTIN,
-				         message: 'Neither ' + RULES_UPDATER_BUILTIN +
-				             ' nor ' + RULES_UPDATER_LEGACY +
-				             ' is available. Reinstall this package or the snort3 package.' };
+				         message: RULES_UPDATER_BUILTIN +
+				             ' is missing. Reinstall luci-app-snort3.' };
 
-			/* Both updaters read the oinkcode and paths from the snort3
-			 * configuration file. */
+			/* The updater reads oinkcode and paths from the runtime
+			 * snort3 configuration. */
 			if (!sync_runtime_config())
 				return { success: false, ok: false, code: 'update_failed',
 				         message: '/usr/libexec/snort-web-sync --sync failed; check /etc/config/snort-web.' };
@@ -1038,7 +962,7 @@ const methods = {
 
 	rules_fix: {
 		call: function() {
-			return ensure_link(get_settings());
+			return migrate_rules(get_settings());
 		}
 	},
 
@@ -1085,5 +1009,34 @@ const methods = {
 		}
 	}
 };
+
+/* rpcd turns an uncaught ucode exception into a bare "Unknown error" and
+ * writes the stack trace to stderr, which procd does not forward to syslog.
+ * Convert any such failure into a structured reply and leave a file on the
+ * device so the failing method and its message can be read over SSH. */
+function guard(name, handler) {
+	return function(request) {
+		try {
+			return handler(request);
+		}
+		catch (e) {
+			let message = '' + e;
+
+			try {
+				if (type(e) == 'object' && e.message != null)
+					message = '' + e.message;
+			}
+			catch (ignored) {}
+
+			writefile(BACKEND_ERROR, name + ': ' + message + '\n');
+
+			return { success: false, ok: false, code: 'backend_error',
+			         method: name, message: message, log: BACKEND_ERROR };
+		}
+	};
+}
+
+for (let name in methods)
+	methods[name].call = guard(name, methods[name].call);
 
 return { 'luci.snort': methods };

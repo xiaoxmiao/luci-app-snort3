@@ -5,6 +5,38 @@ All notable changes to the LuCI Snort3 Module will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.3.0] - 2026-11-06
+
+### Fixed
+- **Overview page no longer shows empty N/A values and dead buttons.** An
+  uncaught ucode exception in `get_settings()` made `status`, `rules` and
+  `alerts` fail with `Command failed: Unknown error`. The `\x00-\x1f` regex
+  escape in `safe_path()` was the cause on older ucode builds; it has been
+  replaced with a version-independent absolute-path check. Every RPC method is
+  now wrapped so a thrown exception returns `backend_error` with the method
+  name and message (also saved to `/tmp/snort_backend_error.log`), and the
+  Overview page shows it as a notification.
+
+### Changed
+- **Rules are persistent.** Downloaded rules are installed into the real
+  `/etc/snort/rules` directory instead of a symlink into tmpfs, so they
+  survive reboots and `snort3` package upgrades. Upgrades migrate rules out
+  of an existing symlink; the Overview "Migrate" action does the same on
+  demand. A successful update restarts Snort because `snort-mgr` enumerates
+  `*.rules` at render time.
+- **Only the generated configuration is supported.** Manual mode (`manual=1`,
+  snort3's legacy `--tweaks local` path that requires an absent `local.lua`)
+  and both user Lua include fields were removed. `/etc/config/snort` is always
+  written with `manual=0`.
+- **Only the bundled rules updater is used.** The fallback to the snort3
+  package's `/usr/bin/snort-rules` was removed because that script replaces
+  `/etc/snort/rules` with a tmpfs symlink.
+- **Network interface is a LuCI device dropdown.** It lists devices from
+  `network.getDevices()` with their logical interface names as labels. The
+  default `auto` resolves at sync time to the WAN device, then the LAN bridge,
+  then `eth0`, then the first non-loopback device.
+- Translations, documentation and tests updated.
+
 ## [4.2.4] - 2026-11-05
 
 ### Fixed

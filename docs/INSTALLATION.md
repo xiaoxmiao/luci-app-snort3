@@ -204,7 +204,7 @@ The canonical application configuration is:
 /etc/config/snort-web
 ```
 
-The OpenWrt `snort3` init script, `snort-mgr` and `snort-rules` still read:
+The OpenWrt `snort3` init script and `snort-mgr` still read:
 
 ```text
 /etc/config/snort
@@ -393,8 +393,8 @@ removed.
 | Rules update disabled | `/usr/libexec/snort-web-rules-update` exists and is executable |
 | Rule download fails | network, DNS and `ca-certificates`; inspect `/tmp/snort_rules_update.log` |
 | Service state shows an error | read the reason below the badge (only syslog lines from the current start are quoted, so old `local.lua` crashes are not reused); check `/etc/init.d/snort` and `/etc/snort/rules` |
-| `cannot open ./local.lua` / DAQ `pcap` not found / procd crash loop | manual mode is enabled: set `snort-web.snort.manual=0`, commit and apply, or create `/etc/snort/local.lua` with `daq = { module_dirs = { '/usr/lib/daq/' } }`. Since 4.2.4 a stale `manual=1` is normalised automatically on upgrade |
-| `snort-web-sync: manual mode is unavailable` in `logread` | informational notice, not a failure: `local.lua` is missing and the generated configuration is in use. Check `ps \| grep '[s]nort'` to confirm the daemon is running |
+| `cannot open ./local.lua` / DAQ `pcap` not found / procd crash loop | historical log lines from before 4.3.0. The generated configuration always sets `daq.module_dirs`; check the timestamps and `ps \| grep '[s]nort'` |
+| Overview shows only N/A values | run `ubus call luci.snort status`; a structured `backend_error` reply names the failing method, also saved to `/tmp/snort_backend_error.log` |
 | No alerts | `/var/log/alert_fast.txt` exists and Snort logging is enabled |
 | French texts missing | `snort.fr.lmo` installed; LuCI language set to French |
 | Chinese texts missing | `snort.zh-cn.lmo` installed; LuCI language set to Simplified Chinese |

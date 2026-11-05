@@ -42,8 +42,11 @@ test('the default snort-web configuration matches the sync helper', () => {
 	assert.ok(snortOptions, 'SNORT_OPTIONS is defined');
 	assert.ok(nfqOptions, 'NFQ_OPTIONS is defined');
 
+	/* manual is forced to 0 and interface is resolved from "auto" by the
+	 * helper instead of being copied verbatim, so both stay in the UCI file
+	 * but not in SNORT_OPTIONS. */
 	assert.deepEqual(Object.keys(sections.snort.options).sort(),
-		snortOptions[1].split(/\s+/).sort());
+		snortOptions[1].split(/\s+/).concat([ 'manual', 'interface' ]).sort());
 	assert.deepEqual(Object.keys(sections.nfq.options).sort(),
 		nfqOptions[1].split(/\s+/).sort());
 	assert.equal(sections.internal.options.migrated, '0');
@@ -57,34 +60,66 @@ test('menu, ACL and ucitrack all target the snort-web configuration', () => {
 	for (const entry of Object.values(menu))
 		assert.deepEqual(entry.depends.uci, { 'snort-web': true });
 
-	assert.deepEqual(acl['luci-app-snort3'].read.uci, [ 'snort-web' ]);
+	assert.deepEqual(acl['luci-app-snort3'].read.uci, [ 'snort-web', 'network' ]);
 	assert.deepEqual(acl['luci-app-snort3'].write.uci, [ 'snort-web' ]);
 	assert.deepEqual(ucitrack, { config: 'snort-web', init: 'snort-web' });
 });
 
-test('manual mode is off by default and requires both Lua files', () => {
+test('legacy manual mode and user Lua includes are removed', () => {
 	const config = parseUci(read('root/etc/config/snort-web'));
 	const view = read('htdocs/luci-static/resources/view/snort/config.js');
 	const helper = read('root/usr/libexec/snort-web-sync');
 	const backend = read('root/usr/share/rpcd/ucode/luci.snort.uc');
 
 	assert.equal(config.snort.options.manual, '0');
-	assert.equal(view.match(/form\.Flag, 'manual'[\s\S]{0,300}?o\.default = '([01])'/)[1], '0');
-	assert.match(view, /snort\.lua and local\.lua/);
-	assert.equal(backend.match(/manual: get\('manual', '([01])'\)/)[1], '0');
-	assert.match(helper, /\[ ! -f "\$_conf_dir\/local\.lua" \]/);
-	assert.match(helper, /_effective=0/);
-	assert.match(helper, /no action needed/);
-	assert.match(helper, /\[ "\$option" = "manual" \] && continue/);
-	assert.match(backend, /access\(path_join\(settings\.config_dir, 'local\.lua'\), 'f'\)/);
+	assert.equal(config.snort.options.interface, 'auto');
+	assert.equal(config.snort.options.include, undefined);
+	assert.doesNotMatch(view, /form\.Flag, 'manual'/);
+	assert.doesNotMatch(view, /User configuration include|NFQ rules include/);
+	assert.doesNotMatch(view, /local\.lua/);
+	assert.doesNotMatch(backend, /RULES_UPDATER_LEGACY|runtime_manual|needs_manual_config/);
+	assert.match(helper, /manual=0/);
+	assert.doesNotMatch(helper, /apply_manual_fallback/);
 });
 
-test('upgrades normalise a stale manual=1 application setting', () => {
+test('upgrades clear legacy settings and migrate rules to persistent storage', () => {
 	const defaults = read('root/etc/uci-defaults/80_luci-app-snort3');
 
-	assert.match(defaults, /uci -q get snort-web\.snort\.manual/);
 	assert.match(defaults, /uci -q set snort-web\.snort\.manual=0/);
-	assert.match(defaults, /! -f "\$sw_conf_dir\/local\.lua"/);
+	assert.match(defaults, /uci -q delete snort-web\.snort\.include/);
+	assert.match(defaults, /uci -q delete snort-web\.nfq\.include/);
+	assert.match(defaults, /copy_rules_from/);
+	assert.match(defaults, /migrated rules into persistent/);
+});
+
+test('read-only RPC failures are reported instead of aborting the method', () => {
+	const backend = read('root/usr/share/rpcd/ucode/luci.snort.uc');
+
+	assert.match(backend, /function guard\(name, handler\)/);
+	assert.match(backend, /BACKEND_ERROR/);
+	assert.doesNotMatch(backend, /match\(path, \/\[\\x00-\\x1f\]\/\)/);
+});
+
+test('rules are persistent and a restart reloads the generated config', () => {
+	const updater = read('root/usr/libexec/snort-web-rules-update');
+	const sync = read('root/usr/libexec/snort-web-sync');
+
+	assert.match(updater, /rules_target="\$conf_dir\/rules"/);
+	assert.match(updater, /new_rules="\$conf_dir\/\.rules-new\.\$\$"/);
+	assert.doesNotMatch(updater, /ln -s/);
+	assert.match(updater, /\/etc\/init\.d\/snort restart/);
+	assert.match(sync, /resolve_interface\(\)/);
+	assert.match(sync, /network\.\$net\.device/);
+	assert.match(sync, /\/sys\/class\/net\/eth0/);
+});
+
+test('the settings page uses a LuCI network device dropdown', () => {
+	const view = read('htdocs/luci-static/resources/view/snort/config.js');
+
+	assert.match(view, /'require network'/);
+	assert.match(view, /network\.getDevices\(\)/);
+	assert.match(view, /o\.value\('auto'/);
+	assert.doesNotMatch(view, /form\.Value, 'interface'/);
 });
 
 test('failed starts only quote syslog lines from the current attempt', () => {

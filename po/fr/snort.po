@@ -94,32 +94,14 @@ msgstr "Script d'initialisation Snort introuvable"
 msgid "Rules management"
 msgstr "Gestion des règles"
 
-msgid "Active symbolic link"
-msgstr "Lien symbolique actif"
-
-msgid "Broken symbolic link"
-msgstr "Lien symbolique cassé"
-
-msgid "Rules are in"
-msgstr "Les règles sont dans"
-
-msgid "Configuration rules path is a directory"
-msgstr "Le chemin des règles de configuration est un répertoire"
-
 msgid "No rules directory found"
 msgstr "Aucun répertoire de règles trouvé"
 
 msgid "Rule files:"
 msgstr "Fichiers de règles :"
 
-msgid "Temporary rules:"
-msgstr "Règles temporaires :"
-
 msgid "Update rules"
 msgstr "Mettre à jour les règles"
-
-msgid "Create symbolic link"
-msgstr "Créer le lien symbolique"
 
 msgid "Cleanup temporary files"
 msgstr "Nettoyer les fichiers temporaires"
@@ -196,23 +178,8 @@ msgstr "Activer Snort"
 msgid "Save & Apply starts or stops Snort to match this setting"
 msgstr "« Enregistrer et appliquer » démarre ou arrête Snort selon ce réglage"
 
-msgid "Manual mode"
-msgstr "Mode manuel"
-
-msgid "Use snort.lua and local.lua from the config directory; leave off for the generated configuration"
-msgstr "Utiliser snort.lua et local.lua du répertoire de configuration ; désactiver pour utiliser la configuration générée"
-
-msgid "Manual mode is unavailable; using the generated configuration instead (no action needed)"
-msgstr "Le mode manuel est indisponible ; la configuration générée est utilisée à la place (aucune action requise)"
-
-msgid "Manual mode needs daq.module_dirs in local.lua (for example /usr/lib/daq/)"
-msgstr "Le mode manuel nécessite daq.module_dirs dans local.lua (par exemple /usr/lib/daq/)"
-
 msgid "Network interface"
 msgstr "Interface réseau"
-
-msgid "Network interface to monitor (e.g. br-lan, eth0)"
-msgstr "Interface réseau à surveiller (ex. br-lan, eth0)"
 
 msgid "Local network"
 msgstr "Réseau local"
@@ -283,9 +250,6 @@ msgstr "Répertoire temporaire"
 msgid "Directory for temporary files and downloaded rules"
 msgstr "Répertoire des fichiers temporaires et des règles téléchargées"
 
-msgid "Rule updates and symbolic link repair are available on the overview page."
-msgstr "La mise à jour des règles et la réparation du lien symbolique sont disponibles sur la page d'aperçu."
-
 msgid "Oinkcode"
 msgstr "Oinkcode"
 
@@ -325,12 +289,6 @@ msgstr "OpenAppID"
 msgid "Enable application detection with the OpenAppID package"
 msgstr "Activer la détection d'applications avec le paquet OpenAppID"
 
-msgid "User configuration include"
-msgstr "Fichier de configuration utilisateur à inclure"
-
-msgid "Optional Snort configuration file appended to the generated snort.lua"
-msgstr "Fichier de configuration Snort facultatif ajouté au snort.lua généré"
-
 msgid "NFQ settings"
 msgstr "Paramètres NFQ"
 
@@ -369,12 +327,6 @@ msgstr "Type de chaîne nftables utilisé en mode IPS"
 
 msgid "Chain priority"
 msgstr "Priorité de chaîne"
-
-msgid "NFQ rules include"
-msgstr "Règles NFQ à inclure"
-
-msgid "Full path to user-defined extra rules included in the queue chain"
-msgstr "Chemin complet des règles supplémentaires incluses dans la chaîne de files"
 
 msgid "Snort started"
 msgstr "Snort démarré"
@@ -448,9 +400,6 @@ msgstr "Impossible de nettoyer les fichiers temporaires"
 msgid "Unknown error"
 msgstr "Erreur inconnue"
 
-msgid "Create a symbolic link from /var/snort.d/rules to /etc/snort/rules?"
-msgstr "Créer un lien symbolique de /var/snort.d/rules vers /etc/snort/rules ?"
-
 msgid "RPC request failed"
 msgstr "La requête RPC a échoué"
 
@@ -463,5 +412,41 @@ msgstr "Snort est désactivé dans les paramètres"
 msgid "Snort failed to start"
 msgstr "Le démarrage de Snort a échoué"
 
-msgid "Manual mode needs snort.lua and local.lua"
-msgstr "Le mode manuel nécessite snort.lua et local.lua"
+msgid "Automatic (WAN, LAN, eth0)"
+msgstr "Automatique (WAN, LAN, eth0)"
+
+msgid "Backend error"
+msgstr "Erreur du backend"
+
+msgid "currently unavailable"
+msgstr "actuellement indisponible"
+
+msgid "Device to monitor. Automatic follows the WAN device, then the LAN bridge, then eth0."
+msgstr "Périphérique à surveiller. Le mode automatique suit le périphérique WAN, puis le pont LAN, puis eth0."
+
+msgid "Migrate to persistent storage"
+msgstr "Migrer vers le stockage persistant"
+
+msgid "Move the existing rules into the persistent /etc/snort/rules directory?"
+msgstr "Déplacer les règles existantes vers le répertoire persistant /etc/snort/rules ?"
+
+msgid "No rules yet"
+msgstr "Aucune règle"
+
+msgid "Persistent"
+msgstr "Persistant"
+
+msgid "Persistent rules"
+msgstr "Règles persistantes"
+
+msgid "Rules are stored permanently in the configuration directory and survive reboots."
+msgstr "Les règles sont stockées de façon permanente dans le répertoire de configuration et survivent aux redémarrages."
+
+msgid "Storage:"
+msgstr "Stockage :"
+
+msgid "Temporary"
+msgstr "Temporaire"
+
+msgid "Temporary rules - migrate to persistent storage"
+msgstr "Règles temporaires - migrer vers le stockage persistant"
