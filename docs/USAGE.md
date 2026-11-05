@@ -37,8 +37,10 @@ followed by the underlying error message.
 OpenWrt `snort3` init script returns 0 when `snort.snort.enabled` is 0, without
 starting anything. The backend now captures the script output, waits for a
 stable Snort process (up to about eight seconds) and reports a concrete reason
-if the process never appears: *Snort is disabled in Settings*, *snort.lua not
-found*, *No rules found*, or the init script's own error text.
+if the process never appears: *Snort is disabled in Settings*, *snort.lua or
+local.lua not found*, *No rules found*, the init script's own error text, or the
+most recent `logread | grep -i snort` lines (procd sends the daemon's fatal
+Lua/DAQ errors to syslog, not to the init script's stdout).
 
 ### Service control
 
@@ -112,7 +114,7 @@ page to create the `/etc/rc.d/S??snort` link.
 | Option | Description |
 | --- | --- |
 | Enable Snort | Save & Apply starts or stops Snort accordingly; boot start is the separate *Enable at boot* button |
-| Manual mode | Uses `config_dir/snort.lua`. If that file is missing, the sync helper automatically uses the `snort-mgr` generated configuration instead, so a fresh install can start without hand-written Lua |
+| Manual mode | Off by default. When on, uses `config_dir/snort.lua` **and** `config_dir/local.lua` (the OpenWrt init script always passes `--tweaks local`). If either is missing, the sync helper keeps the runtime configuration in `snort-mgr` generated mode and the Overview shows *Manual mode needs snort.lua and local.lua*. Generated mode is recommended: it sets `daq.module_dirs = { '/usr/lib/daq/' }` and loads the downloaded rules. In manual mode, set `daq.module_dirs` yourself or the start fails with *Could not find requested DAQ module: pcap* |
 | Network interface | Interface to monitor, for example `br-lan` or `eth0` |
 | Local network | Protected network in CIDR notation |
 | External network | External network definition, usually `any` |
@@ -246,7 +248,9 @@ paths without `..` components or control characters.
 | Update badge shows **Failed** | Inspect `/tmp/snort_rules_update.log`; check DNS, HTTPS certificates (`ca-certificates`) and free space |
 | **Save & Apply** does not start Snort | Check `/etc/init.d/snort-web enabled` and run `/etc/init.d/ucitrack restart` to register the config trigger (the package postinst does this on upgrade) |
 | Service state shows **Error** | Read the reason next to the badge; fix the init script or install rules, then press **Start** |
-| **Start** reports an error and nothing runs | Enable *Enable Snort* in Settings, or turn off Manual mode / create `/etc/snort/snort.lua`; run `snort-mgr check` and `logread \| grep snort` for details |
+| **Start** reports an error and nothing runs | Enable *Enable Snort* in Settings, then run **Update rules**; the reason next to the badge now includes the last snort syslog lines. Run `snort-mgr check` and `logread \| grep snort` for details |
+| `cannot open ./local.lua` / `Could not find requested DAQ module: pcap` / procd crash loop | Caused by manual mode. Turn off *Manual mode* in Settings and apply again; the generated configuration avoids both errors. To keep manual mode, create both `/etc/snort/snort.lua` and `/etc/snort/local.lua`, with `daq = { module_dirs = { '/usr/lib/daq/' } }` in one of them. Check the DAQ modules with `snort --daq-dir /usr/lib/daq --daq-list` |
+| Overview says *Manual mode needs snort.lua and local.lua* | The application setting is still on, but the runtime configuration was switched to generated mode. Either create both files or turn off Manual mode to remove the hint |
 | Update rules shows an error | The notification contains the backend reason and log path; inspect `/tmp/snort_rules_update.log` and `/tmp/snort_rules_update.status` |
 | No rules found | Run **Update rules**, then **Restart**; do not point a working link at an empty directory |
 | Symbolic link repair fails | Check that `/var/snort.d/rules` exists and `/etc/snort` is writable |

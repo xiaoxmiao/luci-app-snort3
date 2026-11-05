@@ -9,7 +9,11 @@
 
 config snort 'snort'
 	option enabled '0'
-	option manual '1'
+	# Keep manual mode off by default. snort3's init script always starts manual
+	# mode with "--tweaks local", which requires config_dir/local.lua and does
+	# not set daq.module_dirs. The snort-mgr generated configuration (manual=0)
+	# handles both, so it is the safe out-of-the-box setting.
+	option manual '0'
 	option interface 'br-lan'
 	option home_net '192.168.1.0/24'
 	option external_net 'any'

@@ -134,7 +134,9 @@ return view.extend({
 			note.textContent = state.hint || '';
 
 			if (state.hint && (status.service_hint === 'service_disabled' ||
-			                   status.service_hint === 'config_missing')) {
+			                   status.service_hint === 'config_missing' ||
+			                   status.service_hint === 'manual_fallback' ||
+			                   status.service_hint === 'daq_dir_missing')) {
 				note.appendChild(document.createTextNode(' '));
 				note.appendChild(E('a', {
 					'href': L.url('admin/services/snort/settings')

@@ -109,9 +109,6 @@ msgstr "启用事件日志"
 msgid "Enable logging"
 msgstr "启用日志"
 
-msgid "Save & Apply starts or stops Snort to match this setting"
-msgstr "保存并应用后会按此设置启动或停止 Snort"
-
 msgid "Enable Snort"
 msgstr "启用 Snort"
 
@@ -120,6 +117,9 @@ msgstr "已启用"
 
 msgid "Enter your Oinkcode if you have one"
 msgstr "如果有 Oinkcode 请输入"
+
+msgid "Error"
+msgstr "异常"
 
 msgid "Error creating symbolic link"
 msgstr "创建符号链接失败"
@@ -190,6 +190,12 @@ msgstr "日志配置"
 msgid "Manual mode"
 msgstr "手动模式"
 
+msgid "Manual mode needs daq.module_dirs in local.lua (for example /usr/lib/daq/)"
+msgstr "手动模式需要在 local.lua 中设置 daq.module_dirs（例如 /usr/lib/daq/）"
+
+msgid "Manual mode needs snort.lua and local.lua; using the generated configuration instead"
+msgstr "手动模式需要 snort.lua 和 local.lua；已改用生成的配置"
+
 msgid "Maximum number of packet threads, 0 uses the number of CPU cores"
 msgstr "最大数据包线程数，0 表示使用 CPU 核心数"
 
@@ -238,6 +244,9 @@ msgstr "最近没有告警 - 您的网络安全"
 msgid "No rules directory found"
 msgstr "未找到规则目录"
 
+msgid "No rules found"
+msgstr "未找到规则"
+
 msgid "No update log yet."
 msgstr "暂无更新日志。"
 
@@ -258,6 +267,9 @@ msgstr "运行模式"
 
 msgid "Optional Snort configuration file appended to the generated snort.lua"
 msgstr "追加到生成的 snort.lua 的可选 Snort 配置文件"
+
+msgid "Overview"
+msgstr "概览"
 
 msgid "Packet acquisition method"
 msgstr "数据包获取方式"
@@ -313,23 +325,17 @@ msgstr "规则位于"
 msgid "Rules management"
 msgstr "规则管理"
 
-msgid "Rules updater not found"
-msgstr "未找到规则更新程序"
-
-msgid "Error"
-msgstr "异常"
-
-msgid "No rules found"
-msgstr "未找到规则"
-
 msgid "Rules update failed"
 msgstr "规则更新失败"
 
-msgid "Service state"
-msgstr "服务状态"
+msgid "Rules updater not found"
+msgstr "未找到规则更新程序"
 
 msgid "Running"
 msgstr "运行中"
+
+msgid "Save & Apply starts or stops Snort to match this setting"
+msgstr "保存并应用后会按此设置启动或停止 Snort"
 
 msgid "Service"
 msgstr "服务"
@@ -343,6 +349,9 @@ msgstr "服务控制"
 msgid "Service settings"
 msgstr "服务设置"
 
+msgid "Service state"
+msgstr "服务状态"
+
 msgid "Settings"
 msgstr "设置"
 
@@ -352,6 +361,9 @@ msgstr "Snort - 告警与日志"
 msgid "Snort configuration directory path"
 msgstr "Snort 配置目录路径"
 
+msgid "Snort failed to start"
+msgstr "Snort 启动失败"
+
 msgid "Snort IDS/IPS"
 msgstr "Snort 入侵检测/防御系统"
 
@@ -360,6 +372,9 @@ msgstr "未找到 Snort 初始化脚本"
 
 msgid "Snort is an open source intrusion detection and prevention system."
 msgstr "Snort 是一个开源的入侵检测与防御系统。"
+
+msgid "Snort is disabled in Settings"
+msgstr "设置中未启用 Snort"
 
 msgid "Snort memory"
 msgstr "Snort 内存"
@@ -375,6 +390,9 @@ msgstr "Snort 已停止"
 
 msgid "Snort system logs (20 most recent)"
 msgstr "Snort 系统日志（最近 20 条）"
+
+msgid "snort.lua or local.lua not found"
+msgstr "未找到 snort.lua 或 local.lua"
 
 msgid "Start"
 msgstr "启动"
@@ -439,8 +457,8 @@ msgstr "更新规则"
 msgid "Update status"
 msgstr "更新状态"
 
-msgid "Use snort.lua from the config directory; falls back to a generated config if missing"
-msgstr "使用配置目录中的 snort.lua；文件不存在时自动改用生成的配置"
+msgid "Use snort.lua and local.lua from the config directory; leave off for the generated configuration"
+msgstr "使用配置目录中的 snort.lua 和 local.lua；关闭则使用生成的配置"
 
 msgid "User configuration include"
 msgstr "用户配置包含文件"
@@ -450,15 +468,3 @@ msgstr "查看所有告警"
 
 msgid "View detailed reports via SSH with the command:"
 msgstr "通过 SSH 使用以下命令查看详细报告："
-
-msgid "Overview"
-msgstr "概览"
-
-msgid "Snort is disabled in Settings"
-msgstr "设置中未启用 Snort"
-
-msgid "Snort failed to start"
-msgstr "Snort 启动失败"
-
-msgid "snort.lua not found"
-msgstr "未找到 snort.lua"

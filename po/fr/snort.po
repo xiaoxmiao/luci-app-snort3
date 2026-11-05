@@ -199,8 +199,14 @@ msgstr "« Enregistrer et appliquer » démarre ou arrête Snort selon ce régla
 msgid "Manual mode"
 msgstr "Mode manuel"
 
-msgid "Use snort.lua from the config directory; falls back to a generated config if missing"
-msgstr "Utiliser snort.lua du répertoire de configuration ; repli sur la configuration générée s'il est absent"
+msgid "Use snort.lua and local.lua from the config directory; leave off for the generated configuration"
+msgstr "Utiliser snort.lua et local.lua du répertoire de configuration ; désactiver pour utiliser la configuration générée"
+
+msgid "Manual mode needs snort.lua and local.lua; using the generated configuration instead"
+msgstr "Le mode manuel nécessite snort.lua et local.lua ; la configuration générée est utilisée à la place"
+
+msgid "Manual mode needs daq.module_dirs in local.lua (for example /usr/lib/daq/)"
+msgstr "Le mode manuel nécessite daq.module_dirs dans local.lua (par exemple /usr/lib/daq/)"
 
 msgid "Network interface"
 msgstr "Interface réseau"
@@ -457,5 +463,5 @@ msgstr "Snort est désactivé dans les paramètres"
 msgid "Snort failed to start"
 msgstr "Le démarrage de Snort a échoué"
 
-msgid "snort.lua not found"
-msgstr "snort.lua introuvable"
+msgid "snort.lua or local.lua not found"
+msgstr "snort.lua ou local.lua introuvable"

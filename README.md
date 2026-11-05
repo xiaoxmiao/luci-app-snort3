@@ -119,7 +119,7 @@ The LuCI application stores its settings in **`/etc/config/snort-web`**:
 ```uci
 config snort 'snort'
 	option enabled '0'
-	option manual '1'
+	option manual '0'
 	option interface 'br-lan'
 	option mode 'ids'
 	option method 'pcap'
@@ -134,10 +134,18 @@ config internal 'internal'
 ```
 
 `enabled` is the master switch: **Save & Apply** starts or stops Snort to match
-it. `manual` defaults to `1`; if `config_dir/snort.lua` does not exist, the sync
-helper automatically switches the runtime configuration to the `snort-mgr`
-generated config, so a fresh install needs no hand-written Lua file. Boot-time
-start is controlled separately by **Enable at boot** on the Overview page.
+it. `manual` defaults to `0`, i.e. the `snort-mgr` generated configuration.
+That is essential on a fresh install: OpenWrt's init script starts manual mode
+with `snort -c /etc/snort/snort.lua --tweaks local`, the stock `snort.lua` ends
+with `include(tweaks .. '.lua')`, and the `snort3` package ships no
+`local.lua`. Manual mode therefore exits with `cannot open ./local.lua` and
+procd reports a crash loop; it also omits the generated
+`daq.module_dirs = { '/usr/lib/daq/' }`, causing `Could not find requested DAQ
+module: pcap`. If either file is missing, `snort-web-sync` keeps the runtime
+configuration in generated mode. To use manual mode deliberately, create both
+`config_dir/snort.lua` and `config_dir/local.lua`, and set
+`daq.module_dirs` in one of them. Boot-time start is controlled separately by
+**Enable at boot** on the Overview page.
 
 The OpenWrt `snort3` package still reads `/etc/config/snort`, so the application
 keeps both files in sync:
@@ -250,8 +258,14 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for implementation notes.
 - **Start reports an error / Snort stays stopped** — enable *Enable Snort* in
   Settings first. The OpenWrt init script exits 0 without starting anything
   when `enabled=0`; this application verifies that a process actually appears
-  and shows the reason (disabled, no rules, or init script output). See
-  `logread | grep -i snort` and `snort-mgr check`.
+  and shows the reason (disabled, no rules, init script output or the last
+  `logread` lines). See `logread | grep -i snort` and `snort-mgr check`.
+- **`cannot open ./local.lua` / `Could not find requested DAQ module: pcap`** —
+  these are manual-mode failures, not application bugs. Turn off *Manual mode*
+  in Settings (or `uci set snort-web.snort.manual=0; uci commit snort-web`) and
+  apply again. To keep manual mode, create `/etc/snort/local.lua` containing
+  `daq = { module_dirs = { '/usr/lib/daq/' } }`. Verify the DAQ directory with
+  `snort --daq-dir /usr/lib/daq --daq-list`.
 - **Save & Apply does not start Snort** — the ucitrack trigger is registered by
   `/etc/init.d/ucitrack`; run `/etc/init.d/ucitrack restart` and check
   `/etc/init.d/snort-web enabled`. The package postinst does this on upgrade.
@@ -515,9 +529,13 @@ LuCI 应用的设置保存在 **`/etc/config/snort-web`**，而 OpenWrt 的 `sno
 
 第一次安装或从旧版本升级时，会将现有 `/etc/config/snort` 的设置导入
 `snort-web` 一次，并写入 `snort-web.internal.migrated=1`。之后请通过 LuCI
-修改设置；直接修改 `/etc/config/snort` 会在下次应用或开机时被覆盖。默认开启
-手动模式时若 `config_dir/snort.lua` 不存在，同步脚本会自动改用 `snort-mgr`
-生成的配置，首次使用无需手写 Lua 文件。
+修改设置；直接修改 `/etc/config/snort` 会在下次应用或开机时被覆盖。默认关闭手动
+模式（`manual=0`，使用 `snort-mgr` 生成的配置）：官方 `snort3` 的手动模式会带上
+`--tweaks local`，而安装包并不提供 `local.lua`，会直接报
+`cannot open ./local.lua` 并进入崩溃循环，同时缺少 `daq.module_dirs` 导致
+`Could not find requested DAQ module: pcap`。若 `snort.lua` 或 `local.lua` 缺失，
+同步脚本会自动保持生成模式。如确实需要手动模式，请同时创建这两个文件，并在其中
+设置 `daq = { module_dirs = { '/usr/lib/daq/' } }`。
 
 ### 使用
 

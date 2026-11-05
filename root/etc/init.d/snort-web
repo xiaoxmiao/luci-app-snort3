@@ -52,6 +52,10 @@ reload() {
 			else
 				remember_action failed start_failed
 				printf '%s\n' 'Snort did not start after Save & Apply. Check "logread | grep snort" and "snort-mgr check".' > "$ACTION_DETAIL"
+				# procd logs the daemon's fatal Lua/DAQ errors to syslog, not
+				# to the init script's stdout.  Append the recent lines so the
+				# Overview badge can explain the failure.
+				logread 2>/dev/null | grep -i snort | tail -n 8 >> "$ACTION_DETAIL"
 				logger -t snort-web 'Snort failed to start after Save & Apply'
 			fi
 			;;

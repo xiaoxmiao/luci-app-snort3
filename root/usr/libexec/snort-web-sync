@@ -131,12 +131,19 @@ migrate() {
 	return 0
 }
 
-# Manual mode requires config_dir/snort.lua.  The shipped default has
-# manual=1, but a fresh installation has no such file, so the snort3 init
-# script would run "snort -c /etc/snort/snort.lua" and immediately crash-loop.
-# Use the generated configuration in the runtime copy of the snort3 settings
-# instead.  The application setting is left untouched: creating snort.lua
-# restores manual mode on the next sync.
+# Manual mode is only usable when the whole pair of files exists.  The snort3
+# init script starts manual mode with
+#   snort -c <config_dir>/snort.lua --tweaks local
+# and the stock snort.lua ends with include(tweaks .. '.lua'), so local.lua is
+# mandatory too.  A fresh snort3 package ships snort.lua but NOT local.lua,
+# which produces "cannot open ./local.lua" and an endless procd crash loop.
+# Manual mode also skips the generated daq.module_dirs, so on builds whose
+# default DAQ search path is empty it fails with "Could not find requested DAQ
+# module: pcap".
+#
+# Fall back to the snort-mgr generated configuration (manual=0) whenever the
+# manual pair is incomplete.  The application setting is left untouched:
+# creating both files restores manual mode on the next sync.
 apply_manual_fallback() {
 	_manual=$(uci_get "$SRC_CONFIG.$SNORT_SECTION.manual")
 	[ "$_manual" = "1" ] || return 0
@@ -144,12 +151,12 @@ apply_manual_fallback() {
 	_conf_dir=$(uci_get "$SRC_CONFIG.$SNORT_SECTION.config_dir")
 	[ -n "$_conf_dir" ] || _conf_dir=/etc/snort
 
-	[ -f "$_conf_dir/snort.lua" ] && return 0
+	[ -f "$_conf_dir/snort.lua" ] && [ -f "$_conf_dir/local.lua" ] && return 0
 
 	if [ "$(uci_get "$DST_CONFIG.$SNORT_SECTION.manual")" != "0" ]; then
 		uci -q set "$DST_CONFIG.$SNORT_SECTION.manual=0" || return 1
 		changed=1
-		log "no $_conf_dir/snort.lua: using the generated snort configuration"
+		log "manual mode is not ready (snort.lua/local.lua missing in $_conf_dir): using the generated snort configuration"
 	fi
 
 	return 0

@@ -29,6 +29,7 @@ const UPDATE_RC = '/tmp/snort_rules_update.rc';
 const SERVICE_STATUS = '/tmp/snort_service_action.status';
 const SERVICE_DETAIL = '/tmp/snort_service_action.detail';
 const SERVICE_OUTPUT = '/tmp/snort_service_action.output';
+const SERVICE_LOGTAIL = '/tmp/snort_service_action.logtail';
 
 const CONFIG_NAME = 'snort-web';
 
@@ -117,7 +118,7 @@ function get_settings() {
 
 	return {
 		enabled: get('enabled', '0'),
-		manual: get('manual', '1'),
+		manual: get('manual', '0'),
 		interface: get('interface', ''),
 		home_net: get('home_net', '192.168.1.0/24'),
 		external_net: get('external_net', 'any'),
@@ -558,8 +559,9 @@ function is_enabled(value) {
 }
 
 /* snort-web-sync falls back to a generated configuration when manual mode is
- * selected but snort.lua is missing.  Diagnostics must describe what the init
- * script will actually do, so read the runtime copy of the snort3 settings. */
+ * selected but its config files are missing.  Diagnostics must describe what
+ * the init script will actually do, so read the runtime copy of the snort3
+ * settings instead of the LuCI setting. */
 function runtime_manual() {
 	let uci = null;
 
@@ -570,6 +572,9 @@ function runtime_manual() {
 		return null;
 	}
 
+	if (!uci)
+		return null;
+
 	try {
 		return first_value(uci.get_first('snort', 'snort', 'manual'), null);
 	}
@@ -578,12 +583,47 @@ function runtime_manual() {
 	}
 }
 
+/* Manual mode is started by snort3 with "--tweaks local", and the stock
+ * snort.lua ends with include(tweaks .. '.lua').  Both snort.lua AND local.lua
+ * must exist, otherwise snort exits immediately and procd reports a crash
+ * loop ("cannot open ./local.lua: No such file or directory"). */
+function manual_config_ready(settings) {
+	return access(path_join(settings.config_dir, 'snort.lua'), 'f') == true &&
+		access(path_join(settings.config_dir, 'local.lua'), 'f') == true;
+}
+
 function needs_manual_config(settings) {
 	const rt = runtime_manual();
 	const manual = (rt == null) ? settings.manual : rt;
 
-	return is_enabled(manual) &&
-		!access(path_join(settings.config_dir, 'snort.lua'), 'f');
+	return is_enabled(manual) && !manual_config_ready(settings);
+}
+
+/* Explain the two manual-mode traps that are invisible in the UI:
+ *   - the sync helper fell back to the generated configuration;
+ *   - manual mode skips the generated daq.module_dirs, so builds without a
+ *     compiled-in DAQ search path fail with "Could not find requested DAQ
+ *     module: pcap". */
+function manual_hint(settings) {
+	const rt = runtime_manual();
+	const active = (rt == null) ? settings.manual : rt;
+
+	if (!is_enabled(settings.manual))
+		return '';
+
+	if (!is_enabled(active))
+		return 'manual_fallback';
+
+	if (!manual_config_ready(settings))
+		return 'config_missing';
+
+	const main_lua = read_text(path_join(settings.config_dir, 'snort.lua'));
+	const local_lua = read_text(path_join(settings.config_dir, 'local.lua'));
+
+	if (!match(main_lua, /module_dirs/) && !match(local_lua, /module_dirs/))
+		return 'daq_dir_missing';
+
+	return '';
 }
 
 /* Run a command through the shell and keep its output so a failed service
@@ -611,6 +651,32 @@ function capture_output(command) {
 	return { rc, output };
 }
 
+/* procd sends the daemon's stderr to syslog, so a fatal Lua/DAQ error never
+ * appears in the init script's stdout.  Surface the most recent snort lines so
+ * the UI shows "cannot open ./local.lua" or "DAQ module: pcap" instead of a
+ * generic "failed to start". */
+function snort_log_tail() {
+	system('logread 2>/dev/null | grep -i snort | tail -n 8 > ' +
+		SERVICE_LOGTAIL + ' 2>/dev/null', 10000);
+
+	const text = read_text(SERVICE_LOGTAIL);
+	let output = '';
+
+	for (let line in split(text, '\n')) {
+		const trimmed = trim(line);
+
+		if (length(trimmed) == 0)
+			continue;
+
+		output += (length(output) ? ' | ' : '') + trimmed;
+	}
+
+	if (length(output) > 400)
+		output = substr(output, 0, 400) + '...';
+
+	return output;
+}
+
 /* The snort3 procd init script exits 0 even when it declines to start the
  * daemon ([ "$enabled" = 0 ] && return), so translate the configuration into
  * an actionable reason whenever no process shows up. */
@@ -627,8 +693,9 @@ function service_problem(settings, output) {
 	if (needs_manual_config(settings))
 		return {
 			code: 'config_missing',
-			message: 'Manual mode is on but ' + lua_path +
-				' does not exist. Create it or turn off Manual mode.'
+			message: 'Manual mode requires both ' + lua_path + ' and ' +
+				path_join(settings.config_dir, 'local.lua') +
+				'. Create them or turn off Manual mode.'
 		};
 
 	if (rule_file_count(rules_path) == 0)
@@ -638,13 +705,17 @@ function service_problem(settings, output) {
 				'. Run "Update rules" before starting Snort.'
 		};
 
+	const log = snort_log_tail();
+	const detail = length(log) ? 'logread: ' + log : '';
+
 	if (length(output) > 0)
-		return { code: 'start_failed', message: output };
+		return { code: 'start_failed',
+		         message: length(detail) ? output + ' | ' + detail : output };
 
 	return {
 		code: 'start_failed',
 		message: 'The init script returned success but no snort process is running. ' +
-			'Check "logread | grep snort" and "snort-mgr check".'
+			(length(detail) ? detail : 'Check "logread | grep snort" and "snort-mgr check".')
 	};
 }
 
@@ -660,6 +731,8 @@ function status_call() {
 	const rule_count = rule_file_count(path_join(settings.config_dir, 'rules'));
 	const action_lines = split(trim(read_text(SERVICE_STATUS) || ''), '\n');
 	const last_failed = trim(action_lines[0] || '') == 'failed';
+	const manual_hint_code = manual_hint(settings);
+	const active_manual = first_value(runtime_manual(), settings.manual);
 	let service_state = running ? 'running' : 'stopped';
 	let service_code = '';
 	let service_hint = '';
@@ -681,6 +754,9 @@ function status_call() {
 	else if (!running && !is_enabled(settings.enabled)) {
 		/* Not an error yet, but explain why pressing Start would do nothing. */
 		service_hint = 'service_disabled';
+	}
+	else if (!running && length(manual_hint_code) > 0) {
+		service_hint = manual_hint_code;
 	}
 	else if (!running && needs_manual_config(settings)) {
 		service_hint = 'config_missing';
@@ -710,6 +786,7 @@ function status_call() {
 		method: settings.method,
 		enabled: settings.enabled,
 		manual: settings.manual,
+		config_mode: is_enabled(active_manual) ? 'manual' : 'generated',
 		logging: settings.logging,
 		action: settings.action,
 		openappid: settings.openappid,

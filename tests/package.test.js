@@ -62,6 +62,29 @@ test('menu, ACL and ucitrack all target the snort-web configuration', () => {
 	assert.deepEqual(ucitrack, { config: 'snort-web', init: 'snort-web' });
 });
 
+test('manual mode is off by default and requires both Lua files', () => {
+	const config = parseUci(read('root/etc/config/snort-web'));
+	const view = read('htdocs/luci-static/resources/view/snort/config.js');
+	const helper = read('root/usr/libexec/snort-web-sync');
+	const backend = read('root/usr/share/rpcd/ucode/luci.snort.uc');
+
+	assert.equal(config.snort.options.manual, '0');
+	assert.equal(view.match(/form\.Flag, 'manual'[\s\S]{0,300}?o\.default = '([01])'/)[1], '0');
+	assert.match(view, /snort\.lua and local\.lua/);
+	assert.equal(backend.match(/manual: get\('manual', '([01])'\)/)[1], '0');
+	assert.match(helper, /\[ -f "\$_conf_dir\/snort\.lua" \] && \[ -f "\$_conf_dir\/local\.lua" \] && return 0/);
+	assert.match(backend, /access\(path_join\(settings\.config_dir, 'local\.lua'\), 'f'\)/);
+});
+
+test('failed starts surface the syslog tail', () => {
+	const backend = read('root/usr/share/rpcd/ucode/luci.snort.uc');
+	const init = read('root/etc/init.d/snort-web');
+
+	assert.match(backend, /function snort_log_tail\(\)/);
+	assert.match(backend, /logread 2>\/dev\/null \| grep -i snort \| tail -n 8/);
+	assert.match(init, /logread 2>\/dev\/null \| grep -i snort \| tail -n 8/);
+});
+
 test('the settings view and backend use the application configuration', () => {
 	const view = read('htdocs/luci-static/resources/view/snort/config.js');
 	const backend = read('root/usr/share/rpcd/ucode/luci.snort.uc');

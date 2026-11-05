@@ -197,6 +197,12 @@ msgstr ""
 msgid "Manual mode"
 msgstr ""
 
+msgid "Manual mode needs daq.module_dirs in local.lua (for example /usr/lib/daq/)"
+msgstr ""
+
+msgid "Manual mode needs snort.lua and local.lua; using the generated configuration instead"
+msgstr ""
+
 msgid "Maximum number of packet threads, 0 uses the number of CPU cores"
 msgstr ""
 
@@ -392,7 +398,7 @@ msgstr ""
 msgid "Snort system logs (20 most recent)"
 msgstr ""
 
-msgid "snort.lua not found"
+msgid "snort.lua or local.lua not found"
 msgstr ""
 
 msgid "Start"
@@ -458,7 +464,7 @@ msgstr ""
 msgid "Update status"
 msgstr ""
 
-msgid "Use snort.lua from the config directory; falls back to a generated config if missing"
+msgid "Use snort.lua and local.lua from the config directory; leave off for the generated configuration"
 msgstr ""
 
 msgid "User configuration include"

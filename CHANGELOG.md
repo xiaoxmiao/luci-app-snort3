@@ -5,6 +5,38 @@ All notable changes to the LuCI Snort3 Module will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.2.3] - 2026-11-05
+
+### Fixed
+- **Snort no longer crash-loops on a fresh install.** The router log showed
+  `ERROR: local.lua:1 ... cannot open ./local.lua: No such file or directory`
+  followed by `Could not find requested DAQ module: pcap` and
+  `procd: Instance snort::instance1 ... crash loop`. Both come from the
+  OpenWrt `snort3` init script's manual mode, which always runs
+  `snort -c <config_dir>/snort.lua --tweaks local`: the stock `snort.lua` ends
+  with `include(tweaks .. '.lua')`, but the package does not ship `local.lua`,
+  and manual mode skips the generated `daq.module_dirs = { '/usr/lib/daq/' }`.
+  `manual` now defaults to `0` (the `snort-mgr` generated configuration, which
+  sets the DAQ directory and loads the downloaded rules), and `snort-web-sync`
+  falls back to it whenever `snort.lua` **or** `local.lua` is missing. Users who
+  want manual mode must provide both files; the previous default silently
+  produced a crash loop.
+- **Start failures now quote the real fatal error.** procd sends the daemon's
+  stderr to syslog, not to the init script. The rpcd backend and the
+  `snort-web` reload now append the last `logread | grep -i snort` lines to the
+  failure detail, so the Overview badge shows the Lua/DAQ error instead of a
+  generic *Snort failed to start*.
+- The Overview explains a manual mode that was requested but not active
+  (`manual_fallback`) and a manual `local.lua` that lacks `daq.module_dirs`
+  (`daq_dir_missing`); the status payload also reports `config_mode`.
+- On upgrade, `/etc/uci-defaults/80_luci-app-snort3` repairs an empty
+  `/etc/snort/rules` directory left by the `snort3` package when rules were
+  already downloaded into `/var/snort.d/rules`.
+
+### Changed
+- Settings now recommend leaving Manual mode off; translation catalogs, POT and
+  both LMO files rebuilt (154 strings).
+
 ## [4.2.2] - 2026-11-05
 
 ### Fixed

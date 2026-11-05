@@ -24,9 +24,9 @@ return view.extend({
 		o.default = '0';
 		o.rmempty = false;
 
-		o = s.option(form.Flag, 'manual', _('Manual mode'),
-			_('Use snort.lua from the config directory; falls back to a generated config if missing'));
-		o.default = '1';
+	o = s.option(form.Flag, 'manual', _('Manual mode'),
+		_('Use snort.lua and local.lua from the config directory; leave off for the generated configuration'));
+	o.default = '0';
 		o.rmempty = false;
 
 		o = s.option(form.Value, 'interface', _('Network interface'),
