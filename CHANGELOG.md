@@ -5,6 +5,31 @@ All notable changes to the LuCI Snort3 Module will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.2.0] - 2026-11-05
+
+### Added
+- Bundled free-rule updater `/usr/libexec/snort-web-rules-update`. It downloads
+  the Snort 3 community ruleset (or the free registered snapshot when an
+  oinkcode is configured), normalises all `*.rules` files into
+  `$temp_dir/rules` and maintains the `/etc/snort/rules` symlink. The
+  `snort3` package's `/usr/bin/snort-rules` is kept as a fallback.
+- Three-state service status on the Overview page (running / stopped / error)
+  with a translated reason, and a four-state rules update badge (idle / in
+  progress / completed / failed) with the failure code and detailed log.
+- `/tmp/snort_rules_update.status` and `/tmp/snort_service_action.status`
+  persist the latest results across polls; an updater killed before reporting
+  is shown as failed instead of a permanent "in progress".
+- `-t` testing mode in the updater that generates synthetic rules offline.
+
+### Changed
+- **Update rules** no longer depends on the optional `/usr/bin/snort-rules`,
+  and the built-in updater always uses `$temp_dir/rules`, removing the
+  mismatch with the `snort3` package's version-specific rules directory.
+- The "Rules updater not found" message no longer hard-codes the legacy path;
+  the RPC returns the missing path and the notification shows it.
+- Translation catalogs and `dist/lmo/*.lmo` rebuilt (148 strings).
+- Version bumped to 4.2.0.
+
 ## [4.1.1] - 2026-11-05
 
 ### Fixed

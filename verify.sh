@@ -66,6 +66,7 @@ printf '\n%s\n' "Executables:"
 check_exec /etc/init.d/snort
 check_exec /etc/init.d/snort-web
 check_exec /usr/libexec/snort-web-sync
+check_exec /usr/libexec/snort-web-rules-update
 check_exec /usr/bin/snort
 check_optional_exec /usr/bin/snort-rules
 

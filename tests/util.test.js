@@ -102,6 +102,43 @@ test('message codes resolve to English source strings', () => {
 	assert.equal(Util.msg('not_a_code'), 'Unknown error');
 });
 
+test('serviceState maps the backend three-state status to a badge', () => {
+	assert.deepEqual(Util.serviceState({ service_state: 'running' }),
+		{ text: 'Running', tone: 'success', hint: '' });
+	assert.deepEqual(Util.serviceState({ service_state: 'stopped' }),
+		{ text: 'Stopped', tone: 'muted', hint: '' });
+	assert.deepEqual(Util.serviceState({}),
+		{ text: 'Stopped', tone: 'muted', hint: '' });
+
+	const initError = Util.serviceState({ service_state: 'error', service_code: 'init_missing' });
+	assert.equal(initError.text, 'Error');
+	assert.equal(initError.tone, 'danger');
+	assert.equal(initError.hint, 'Snort init script not found');
+	assert.equal(Util.serviceState({ service_state: 'error', service_code: 'rules_missing' }).hint,
+		'No rules found');
+});
+
+test('updateState maps updater results to a badge', () => {
+	assert.deepEqual(Util.updateState({ result: 'idle' }), { text: 'Idle', tone: 'muted' });
+	assert.deepEqual(Util.updateState({ result: 'running' }),
+		{ text: 'Update in progress...', tone: 'warning' });
+	assert.deepEqual(Util.updateState({ result: 'finished' }),
+		{ text: 'Update completed!', tone: 'success' });
+	assert.deepEqual(Util.updateState({ result: 'failed', code: 'download_failed' }),
+		{ text: 'Rules update failed', tone: 'danger' });
+	assert.deepEqual(Util.updateState({ result: 'failed' }),
+		{ text: 'Rules update failed', tone: 'danger' });
+});
+
+test('rule updater failure codes resolve to short messages', () => {
+	for (const code of [ 'download_failed', 'extract_failed', 'rules_empty',
+	                     'rules_dir_failed', 'invalid_path', 'rules_update_failed' ])
+		assert.equal(Util.msg(code), 'Rules update failed');
+
+	assert.equal(Util.msg('rules_missing'), 'No rules found');
+	assert.equal(Util.msg('updater_missing'), 'Rules updater not found');
+});
+
 test('translate uses the LuCI global _() when present', () => {
 	const previous = global._;
 

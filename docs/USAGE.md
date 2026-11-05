@@ -17,8 +17,18 @@ five seconds.
 | Interface | Monitored interface, IDS/IPS mode and DAQ method |
 
 The auto-start badge in the header shows whether an `/etc/rc.d/S??snort` link
-exists. If the init script is missing, a warning is displayed above the service
-buttons.
+exists.
+
+The **Service state** row in the service section and the header badge show one
+of three states, refreshed every five seconds:
+
+| State | Meaning |
+| --- | --- |
+| Running | A Snort process is present; the PID is shown in the Service card. |
+| Stopped | No Snort process. A normal, user-initiated stop is shown in muted grey. |
+| Error | Snort cannot work: the init script is missing, the rules directory has no `.rules` files, or the last service action failed. The reason (for example *Snort init script not found*) is shown next to the badge. |
+
+An RPC failure is shown as **Unavailable** with the text *RPC request failed*.
 
 ### Service control
 
@@ -37,20 +47,38 @@ The rules card reports whether `/etc/snort/rules` is a valid symbolic link, a
 broken link, a real directory, or missing. It also displays the rule file counts
 for the configured directory and the temporary rules directory.
 
-- **Update rules** starts `/usr/bin/snort-rules` in the background. The update
-  log is shown below the buttons and polled with the rest of the page. The button
-  is disabled if the updater is not executable.
+- **Update rules** starts the bundled updater
+  `/usr/libexec/snort-web-rules-update` in the background. It downloads the
+  **free Snort 3 community ruleset**; when an oinkcode is configured in
+  Settings it uses the free registered snapshot instead. Every `*.rules` file
+  is copied into `/var/snort.d/rules` (or the configured temporary directory)
+  and `/etc/snort/rules` is pointed there, so the rules status and the link
+  repair actions always agree. If the snort3 package's own
+  `/usr/bin/snort-rules` is installed and the bundled script is missing, it is
+  used as a fallback. The update log is shown below the buttons and polled
+  with the rest of the page; the button is disabled while an update runs.
+  **Restart Snort afterwards** so the new rules are loaded.
 - **Create symbolic link** points `/etc/snort/rules` to
-  `/var/snort.d/rules` (or the configured temporary directory). If the current
-  rules path is a real directory, it is renamed to `rules.backup` first. A
-  confirmation dialog is shown.
+  `/var/snort.d/rules`. If the current rules path is a real directory, it is
+  renamed to `rules.backup` first. A confirmation dialog is shown.
 - **Cleanup temporary files** removes downloaded `.tar.gz` archives, the update
-  log and the update lock. It refuses to run while an update is in progress.
+  log, the lock and the result file. It refuses to run while an update is in
+  progress.
 
-The update state uses `/tmp/snort_rules_update.lock` and
-`/tmp/snort_rules_update.log`. The updater is responsible for populating the
-temporary rules directory; this module only manages the link and the temporary
-files.
+The update badge shows four states:
+
+| State | Meaning |
+| --- | --- |
+| Idle | No update has run since the last cleanup or reboot. |
+| In progress | The updater is downloading and installing rules. |
+| Completed | The rules were installed successfully. |
+| Failed | The updater reported an error (download, extraction, empty archive or link creation). The exact reason is in the update log below. |
+
+The update state uses `/tmp/snort_rules_update.lock`,
+`/tmp/snort_rules_update.log` and `/tmp/snort_rules_update.status`; the last
+service action is recorded in `/tmp/snort_service_action.status`. A test run
+without network access is available on the command line with
+`/usr/libexec/snort-web-rules-update -t`.
 
 ### Recent alerts
 
@@ -167,7 +195,10 @@ paths without `..` components or control characters.
 | `/usr/libexec/snort-web-sync` | Settings synchronisation helper |
 | `/etc/init.d/snort-web` | Boot-time sync before Snort starts |
 | `/etc/init.d/snort` | Service control |
-| `/usr/bin/snort-rules` | Optional rules updater |
+| `/usr/libexec/snort-web-rules-update` | Bundled free-rule updater |
+| `/usr/bin/snort-rules` | Optional fallback updater from the `snort3` package |
+| `/tmp/snort_rules_update.status` | Last rules update result (`running`/`ok`/`failed` plus an error code) |
+| `/tmp/snort_service_action.status` | Last service action result |
 | `/var/log/alert_fast.txt` | Fast alerts |
 | `/var/log/<other>` | Syslog is read through `/sbin/logread` |
 | `/etc/snort/rules` | Rules path, usually a symbolic link |
@@ -196,6 +227,9 @@ paths without `..` components or control characters.
 | Dashboard shows **Unavailable** | Check `ubus list luci.snort` and restart rpcd |
 | No alerts | Check `logging` in UCI, the log directory and file permissions |
 | Rules update stays at **In progress** | Inspect `/tmp/snort_rules_update.log` and remove a stale lock if necessary |
+| Update badge shows **Failed** | Inspect `/tmp/snort_rules_update.log`; check DNS, HTTPS certificates (`ca-certificates`) and free space |
+| Service state shows **Error** | Read the reason next to the badge; fix the init script or install rules, then press **Start** |
+| No rules found | Run **Update rules**, then **Restart**; do not point a working link at an empty directory |
 | Symbolic link repair fails | Check that `/var/snort.d/rules` exists and `/etc/snort` is writable |
 | Wrong interface displayed | Update the interface in Settings and apply |
 | Settings not applied | Run `/usr/libexec/snort-web-sync --sync` and compare `uci show snort-web` with `uci show snort` |

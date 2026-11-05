@@ -30,7 +30,8 @@ performed by the rpcd/ucode backend through a small allow-listed RPC surface.
 - `luci-base`;
 - `rpcd-mod-ucode` (the `luci.snort` rpcd plugin);
 - `snort3` and its init script at `/etc/init.d/snort`;
-- optional: an executable rules updater at `/usr/bin/snort-rules`;
+- optional: `/usr/bin/snort-rules` from the `snort3` package; a free-rule
+  updater is bundled with this application, so no extra package is required;
 - optional: `luci-i18n-base-fr` or `luci-i18n-base-zh-cn` for the standard
   LuCI interface in French or Simplified Chinese.
 
@@ -151,13 +152,21 @@ overwritten on the next apply or boot.
 
 ### Rules management
 
-The Overview page reads `/etc/snort/rules` and the temporary rules directory
-(`/var/snort.d/rules` by default). It can:
+The application ships a built-in updater at
+`/usr/libexec/snort-web-rules-update`, so **Update rules** works out of the
+box without the optional `/usr/bin/snort-rules` from the `snort3` package:
 
-- launch `/usr/bin/snort-rules` in the background and display its update log;
-- replace a real rules directory with a symbolic link after making a backup;
-- repair a broken symbolic link;
-- remove downloaded `.tar.gz` archives and update lock/log files.
+- it downloads the free Snort 3 community ruleset, or the free registered
+  snapshot when an oinkcode is configured in Settings;
+- it normalises every `*.rules` file into `/var/snort.d/rules` and points
+  `/etc/snort/rules` there, so the rules status and link repair always agree;
+- it reports **Idle / In progress / Completed / Failed** on the Overview page,
+  with the detailed reason in the update log. Restart Snort afterwards to load
+  the new rules.
+
+The Overview page also shows a three-state service status (**running**,
+**stopped** or **error**, with the reason) and can repair a broken symbolic
+link or remove downloaded archives and update lock/log files.
 
 Only start, stop, restart, enable and disable are accepted as service actions,
 and configured paths are restricted to clean absolute paths by the backend.
@@ -226,8 +235,9 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for implementation notes.
 - **`luci.snort` is not registered** — install `rpcd-mod-ucode`, verify that
   `/usr/share/rpcd/ucode/luci.snort.uc` exists, and restart rpcd:
   `/etc/init.d/rpcd restart`.
-- **Rules update is disabled** — install or create `/usr/bin/snort-rules`; the
-  button is disabled when the updater is absent.
+- **Rules update is disabled** — check that
+  `/usr/libexec/snort-web-rules-update` exists and is executable; the button is
+  disabled when neither the bundled nor the `snort3` updater is available.
 - **Settings do not reach Snort** — run `/usr/libexec/snort-web-sync --sync`
   and check `uci show snort-web`, `uci show snort`, and
   `logread | grep -i snort-web`.
@@ -282,7 +292,8 @@ contrôle les actions autorisées, les chemins et l'accès aux fichiers.
 - `luci-base` ;
 - `rpcd-mod-ucode` ;
 - `snort3` et son script `/etc/init.d/snort` ;
-- facultatif : `/usr/bin/snort-rules` pour la mise à jour des règles ;
+- facultatif : `/usr/bin/snort-rules` du paquet `snort3` ; un programme de
+  mise à jour des règles gratuites est fourni avec cette application ;
 - facultatif : `luci-i18n-base-fr` ou `luci-i18n-base-zh-cn` pour l'interface
   LuCI standard en français ou en chinois simplifié.
 
@@ -360,8 +371,10 @@ Le paquet `snort3` continuant de lire `/etc/config/snort`, le synchroniseur
 
 Lors de la première installation, les réglages existants de `/etc/config/snort`
 sont importés une fois (`snort-web.internal.migrated=1`). Ensuite, seul
-`/etc/config/snort-web` fait foi. Le bouton de mise à jour des règles est
-désactivé si `/usr/bin/snort-rules` est absent. La réparation du lien symbolique
+`/etc/config/snort-web` fait foi. Le bouton **Mettre à jour les règles** lance
+le programme fourni `/usr/libexec/snort-web-rules-update`, qui télécharge
+gratuitement les règles communautaires Snort 3, et n'est désactivé que si aucun
+programme de mise à jour n'est disponible. La réparation du lien symbolique
 crée une sauvegarde de l'ancien répertoire avant de le remplacer.
 
 ### Structure du projet
@@ -414,7 +427,8 @@ Voir [CONTRIBUTING.md](CONTRIBUTING.md) pour les détails d'implémentation.
 - **Les réglages n'atteignent pas Snort** : exécutez
   `/usr/libexec/snort-web-sync --sync`, puis consultez `uci show snort-web`,
   `uci show snort` et `logread | grep -i snort-web`.
-- **Mise à jour des règles désactivée** : installez `/usr/bin/snort-rules`.
+- **Mise à jour des règles désactivée** : vérifiez que
+  `/usr/libexec/snort-web-rules-update` est présent et exécutable.
 - **Traduction française ou chinoise absente** : vérifiez
   `/usr/lib/lua/luci/i18n/snort.fr.lmo` ou `snort.zh-cn.lmo`, reconnectez-vous
   à LuCI et choisissez la langue.
@@ -486,9 +500,17 @@ LuCI 应用的设置保存在 **`/etc/config/snort-web`**，而 OpenWrt 的 `sno
 
 打开 LuCI，进入 **服务 → Snort IDS/IPS**：
 
-- **概览**：运行状态、服务控制、规则管理、更新日志和最近告警；
+- **概览**：服务状态（运行中 / 已停止 / 异常，异常会显示原因）、服务控制、
+  规则管理、更新日志和最近告警；
 - **设置**：服务、日志、规则、高级和 NFQ 选项；
 - **告警**：最近 50 条告警和最近 20 条 Snort 系统日志。
+
+规则更新功能已内置：`/usr/libexec/snort-web-rules-update` 会下载免费的
+Snort 3 社区规则（填写 Oinkcode 时改用免费注册版规则），把规则统一放到
+`/var/snort.d/rules` 并维护 `/etc/snort/rules` 软链，不需要额外安装
+`snort-rules`。页面上的更新状态会显示「空闲 / 进行中 / 完成 / 失败」，
+失败时可在更新日志里看到具体原因。更新完成后请点 **Restart** 让 Snort
+重新加载规则。
 
 ### 构建与检查
 

@@ -1,0 +1,180 @@
+#!/bin/sh
+#
+# Built-in free Snort3 rules updater for luci-app-snort3.
+#
+# Installed as /usr/libexec/snort-web-rules-update and invoked by the
+# luci.snort rpcd backend when "Update rules" is clicked. It downloads the
+# free Snort 3 community ruleset (or the free registered ruleset when an
+# oinkcode is configured), normalises every downloaded *.rules file into
+# $temp_dir/rules and points $config_dir/rules at that directory.
+#
+# Using exactly $temp_dir/rules matters: the LuCI application's rules status
+# and "Create symbolic link" action expect that path, while the snort3
+# package's own updater uses a version-specific directory name.
+#
+# The first line of /tmp/snort_rules_update.status is the state (running, ok
+# or failed); the optional second line is an error code the UI maps to a
+# translated message. Detailed diagnostics go to stdout and are captured in
+# /tmp/snort_rules_update.log by the backend.
+
+set -u
+
+STATUS_FILE=/tmp/snort_rules_update.status
+COMMUNITY_URL='https://www.snort.org/downloads/community/snort3-community-rules.tar.gz'
+SNAPSHOT_VERSION=${SNORT_RULES_SNAPSHOT:-31470}
+TESTING=0
+
+log() {
+	printf '%s %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*"
+}
+
+set_state() {
+	printf '%s\n' "$1" > "$STATUS_FILE" 2>/dev/null || true
+	if [ -n "${2:-}" ]; then
+		printf '%s\n' "$2" >> "$STATUS_FILE" 2>/dev/null || true
+	fi
+}
+
+fail() {
+	log "ERROR: $1"
+	set_state failed "$2"
+	exit 1
+}
+
+usage() {
+	cat <<USAGE
+Usage: snort-web-rules-update [-t|--testing] [-h|--help]
+
+  -t  Generate two synthetic test rules instead of downloading anything.
+  -h  Show this help.
+
+Without options the free Snort 3 community ruleset is downloaded. When
+snort.snort.oinkcode is set, the free registered snapshot is used instead.
+Set SNORT_RULES_SNAPSHOT to override the hard-coded snapshot version.
+USAGE
+}
+
+while [ "${1:-}" ]; do
+	case "$1" in
+		-t|--testing) TESTING=1 ;;
+		-h|--help) usage; exit 0 ;;
+		*) usage; exit 1 ;;
+	esac
+	shift
+done
+
+# The backend synchronises snort-web to /etc/config/snort before every update,
+# but fall back to the application config so the script also works standalone.
+uci_value() {
+	key=$1
+	default=$2
+	value=$(uci -q get "snort.snort.$key" 2>/dev/null || true)
+	[ -n "$value" ] || value=$(uci -q get "snort-web.snort.$key" 2>/dev/null || true)
+	[ -n "$value" ] || value=$default
+	printf '%s' "$value"
+}
+
+safe_dir() {
+	case "$1" in
+		/*) ;;
+		*) fail "Not an absolute path: $1" 'invalid_path' ;;
+	esac
+	case "$1" in
+		*..*) fail "Invalid path component: $1" 'invalid_path' ;;
+	esac
+}
+
+fetch() {
+	url=$1
+	out=$2
+
+	if command -v curl >/dev/null 2>&1; then
+		log 'Downloading with curl.'
+		curl -fLsS --connect-timeout 15 --max-time 180 -o "$out" "$url" && return 0
+	fi
+	if command -v uclient-fetch >/dev/null 2>&1; then
+		log 'Downloading with uclient-fetch.'
+		uclient-fetch -O "$out" "$url" && return 0
+	fi
+	if command -v wget >/dev/null 2>&1; then
+		log 'Downloading with wget.'
+		wget -O "$out" "$url" && return 0
+	fi
+
+	return 1
+}
+
+set_state running
+
+conf_dir=$(uci_value config_dir /etc/snort)
+temp_dir=$(uci_value temp_dir /var/snort.d)
+oinkcode=$(uci_value oinkcode '')
+safe_dir "$conf_dir"
+safe_dir "$temp_dir"
+
+rules_link="$conf_dir/rules"
+rules_target="$temp_dir/rules"
+work_dir="$temp_dir/.rules-download.$$"
+new_rules="$temp_dir/.rules-new.$$"
+
+cleanup() {
+	rm -rf "$work_dir" "$new_rules"
+}
+trap cleanup EXIT INT TERM
+
+mkdir -p "$temp_dir" || fail "Unable to create $temp_dir" 'rules_dir_failed'
+rm -rf "$work_dir" "$new_rules"
+mkdir -p "$work_dir" "$new_rules" || fail 'Unable to create working directories' 'rules_dir_failed'
+
+if [ "$TESTING" -eq 1 ]; then
+	log 'Generating testing rules (no network access).'
+	printf '%s\n' \
+		'alert icmp any any <> any any (msg:"TEST ALERT ICMP v4"; icode:0; itype:8; sid:99010;)' \
+		'alert icmp any any <> any any (msg:"TEST ALERT ICMP v6"; icode:0; itype:33; sid:99011;)' \
+		> "$new_rules/testing.rules"
+else
+	tarball="$work_dir/rules.tar.gz"
+
+	if [ -n "$oinkcode" ]; then
+		url="https://www.snort.org/rules/snortrules-snapshot-${SNAPSHOT_VERSION}.tar.gz?oinkcode=${oinkcode}"
+		log "Downloading registered rules (snapshot ${SNAPSHOT_VERSION})."
+	else
+		url="$COMMUNITY_URL"
+		log 'Downloading free community rules.'
+	fi
+
+	fetch "$url" "$tarball" || fail 'Unable to download rules (check network, DNS and ca-certificates)' 'download_failed'
+	[ -s "$tarball" ] || fail 'Downloaded archive is empty' 'download_failed'
+	tar -xzf "$tarball" -C "$work_dir" || fail 'Unable to extract the rules archive' 'extract_failed'
+
+	find "$work_dir" -type f -name '*.rules' ! -name 'includes.rules' \
+		-exec cp -f '{}' "$new_rules/" \; || fail 'Unable to collect rule files' 'extract_failed'
+fi
+
+rule_count=$(find "$new_rules" -type f -name '*.rules' | wc -l)
+[ "$rule_count" -gt 0 ] || fail 'The archive contains no .rules files' 'rules_empty'
+
+# Replace the previous rules only after everything succeeded.
+if [ -d "$rules_target" ]; then
+	rm -rf "$rules_target" || fail "Unable to replace $rules_target" 'rules_dir_failed'
+fi
+mv "$new_rules" "$rules_target" || fail "Unable to install rules into $rules_target" 'rules_dir_failed'
+rm -rf "$work_dir"
+
+mkdir -p "$conf_dir" || fail "Unable to create $conf_dir" 'link_failed'
+
+if [ -L "$rules_link" ]; then
+	rm -f "$rules_link" || fail "Unable to replace $rules_link" 'link_failed'
+elif [ -d "$rules_link" ]; then
+	backup="${rules_link}.backup.$(date '+%s')"
+	mv "$rules_link" "$backup" || fail "Unable to back up $rules_link" 'link_failed'
+	log "Backed up the existing rules directory to $backup."
+elif [ -e "$rules_link" ]; then
+	fail "$rules_link exists and is neither a directory nor a symbolic link" 'link_failed'
+fi
+
+ln -s "$rules_target" "$rules_link" || fail "Unable to create $rules_link" 'link_failed'
+
+set_state ok
+log "Loaded ${rule_count} rule file(s) into ${rules_target}."
+log 'Restart Snort from the Overview page to apply the new rules.'

@@ -139,6 +139,49 @@ Util.toneForState = function(running) {
 	return running ? 'success' : 'danger';
 };
 
+/* Map the backend's three-state service status to a badge and an optional
+ * explanation.  "stopped" is deliberately muted so it is visually distinct
+ * from a real "error" condition. */
+Util.serviceState = function(status) {
+	var tr = Util.translate;
+	var s = status || {};
+
+	switch (s.service_state) {
+	case 'running':
+		return { text: tr('Running'), tone: 'success', hint: '' };
+
+	case 'error':
+		return {
+			text: tr('Error'),
+			tone: 'danger',
+			hint: Util.msg(s.service_code || 'unknown_error')
+		};
+
+	default:
+		return { text: tr('Stopped'), tone: 'muted', hint: '' };
+	}
+};
+
+/* Map the rules updater result to a badge. */
+Util.updateState = function(update) {
+	var tr = Util.translate;
+	var u = update || {};
+
+	switch (u.result) {
+	case 'running':
+		return { text: tr('Update in progress...'), tone: 'warning' };
+
+	case 'finished':
+		return { text: tr('Update completed!'), tone: 'success' };
+
+	case 'failed':
+		return { text: Util.msg(u.code || 'rules_update_failed'), tone: 'danger' };
+
+	default:
+		return { text: tr('Idle'), tone: 'muted' };
+	}
+};
+
 Util.msg = function(code, fallback) {
 	var tr = Util.translate;
 
@@ -174,7 +217,20 @@ Util.msg = function(code, fallback) {
 		return tr('Update already in progress...');
 
 	case 'updater_missing':
-		return tr('Rules updater not found: /usr/bin/snort-rules');
+		return tr('Rules updater not found');
+
+	/* Rule download / extraction failures are reported with the detailed
+	 * reason in the update log; the badge shows a short generic message. */
+	case 'rules_update_failed':
+	case 'download_failed':
+	case 'extract_failed':
+	case 'rules_empty':
+	case 'rules_dir_failed':
+	case 'invalid_path':
+		return tr('Rules update failed');
+
+	case 'rules_missing':
+		return tr('No rules found');
 
 	case 'update_failed':
 		return tr('Unable to start the rules update');

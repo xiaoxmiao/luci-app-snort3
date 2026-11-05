@@ -12,7 +12,7 @@ module, see `legacy/lua-v3/docs/INSTALLATION.md`.
 | LuCI | JavaScript runtime (`luci-base`) |
 | RPC backend | `rpcd-mod-ucode` |
 | Snort | `snort3`, with `/etc/init.d/snort` and `/usr/bin/snort` |
-| Rules updater | optional `/usr/bin/snort-rules` |
+| Rules updater | bundled `/usr/libexec/snort-web-rules-update` (no extra package needed) |
 | French LuCI | optional `luci-i18n-base-fr` |
 | Chinese LuCI | optional `luci-i18n-base-zh-cn` |
 
@@ -390,7 +390,9 @@ removed.
 | `luci.snort` not registered | `rpcd-mod-ucode` installed; `luci.snort.uc` present; rpcd restarted |
 | Permission denied | ACL file present; user is logged in as an administrator |
 | Settings do not reach Snort | Run `/usr/libexec/snort-web-sync --sync`; compare `uci show snort-web` and `uci show snort`; inspect `logread -e snort-web-sync` |
-| Rules update disabled | `/usr/bin/snort-rules` exists and is executable |
+| Rules update disabled | `/usr/libexec/snort-web-rules-update` exists and is executable |
+| Rule download fails | network, DNS and `ca-certificates`; inspect `/tmp/snort_rules_update.log` |
+| Service state shows an error | read the reason below the badge; check `/etc/init.d/snort` and `/etc/snort/rules` |
 | No alerts | `/var/log/alert_fast.txt` exists and Snort logging is enabled |
 | French texts missing | `snort.fr.lmo` installed; LuCI language set to French |
 | Chinese texts missing | `snort.zh-cn.lmo` installed; LuCI language set to Simplified Chinese |

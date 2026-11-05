@@ -15,9 +15,17 @@ import { cursor } from 'uci';
 
 const INIT_SCRIPT = '/etc/init.d/snort';
 const SYNC_HELPER = '/usr/libexec/snort-web-sync';
-const RULES_UPDATER = '/usr/bin/snort-rules';
+
+/* The built-in updater ships with this application and downloads the free
+ * community ruleset.  The snort3 package's own /usr/bin/snort-rules is used
+ * as a fallback when the built-in script is missing (older installations). */
+const RULES_UPDATER_BUILTIN = '/usr/libexec/snort-web-rules-update';
+const RULES_UPDATER_LEGACY = '/usr/bin/snort-rules';
+
 const UPDATE_LOCK = '/tmp/snort_rules_update.lock';
 const UPDATE_LOG = '/tmp/snort_rules_update.log';
+const UPDATE_STATUS = '/tmp/snort_rules_update.status';
+const SERVICE_STATUS = '/tmp/snort_service_action.status';
 
 const CONFIG_NAME = 'snort-web';
 
@@ -302,6 +310,18 @@ function snort_logs(limit) {
 	return logs;
 }
 
+/* Prefer the built-in free-rule updater; fall back to the snort3 package's
+ * script so existing installations keep working. */
+function rules_updater() {
+	if (access(RULES_UPDATER_BUILTIN, 'x') == true)
+		return RULES_UPDATER_BUILTIN;
+
+	if (access(RULES_UPDATER_LEGACY, 'x') == true)
+		return RULES_UPDATER_LEGACY;
+
+	return null;
+}
+
 function updater_process_alive() {
 	const entries = lsdir('/proc');
 
@@ -312,7 +332,10 @@ function updater_process_alive() {
 		if (!match(name, /^[0-9]+$/))
 			continue;
 
-		if (index(read_text('/proc/' + name + '/cmdline'), 'snort-rules') != null)
+		const cmdline = read_text('/proc/' + name + '/cmdline');
+
+		if (index(cmdline, 'snort-rules') != null ||
+		    index(cmdline, 'snort-web-rules-update') != null)
 			return true;
 	}
 
@@ -339,6 +362,24 @@ function update_state() {
 	const alive = lock && !finished ? updater_process_alive() : false;
 	const stale = lock && !finished && !alive && age > UPDATE_STALE_GRACE;
 
+	/* The updater writes its result to UPDATE_STATUS.  A stale "running"
+	 * state without a lock means the process was killed before it could
+	 * report back, which the UI should show as a failure, not a hang. */
+	const status_lines = split(trim(read_text(UPDATE_STATUS) || ''), '\n');
+	let result = trim(status_lines[0] || '') || 'idle';
+	let code = trim(status_lines[1] || '') || '';
+
+	if (result == 'ok')
+		result = 'finished';
+	else if (result == 'running' && !lock && !finished) {
+		result = 'failed';
+		code = 'rules_update_failed';
+	}
+	else if (result == 'failed' && !code)
+		code = 'rules_update_failed';
+	else if (result == 'idle' && finished)
+		result = 'finished';
+
 	return {
 		running: lock && !finished && !stale,
 		lock,
@@ -346,7 +387,9 @@ function update_state() {
 		stale,
 		age,
 		finished,
-		log_lines
+		log_lines,
+		result,
+		code
 	};
 }
 
@@ -402,7 +445,8 @@ function rules_state() {
 		temp_exists: temp_info != null && temp_info.type == 'directory',
 		config_rule_count: rule_file_count(config_rules),
 		temp_rule_count: rule_file_count(temp_rules),
-		updater_available: access(RULES_UPDATER, 'x') == true,
+		updater_available: rules_updater() != null,
+		updater: rules_updater(),
 		update: update_state()
 	};
 }
@@ -488,11 +532,38 @@ function status_call() {
 	const alert_file = path_join(settings.log_dir, ALERT_FILE_NAME);
 	const uptime_text = trim(read_text('/proc/uptime'));
 	const uptime_parts = split(uptime_text, ' ');
+	const running = length(pids) > 0;
+	const init_available = access(INIT_SCRIPT, 'x') == true;
+	const rule_count = rule_file_count(path_join(settings.config_dir, 'rules'));
+	const action_lines = split(trim(read_text(SERVICE_STATUS) || ''), '\n');
+	const last_failed = trim(action_lines[0] || '') == 'failed';
+	let service_state = running ? 'running' : 'stopped';
+	let service_code = '';
+
+	/* Report "error" only for conditions that actually prevent Snort from
+	 * working: a missing init script, no rules at all, or a failed service
+	 * action.  A user-initiated stop remains "stopped". */
+	if (!init_available) {
+		service_state = 'error';
+		service_code = 'init_missing';
+	}
+	else if (!running && rule_count == 0) {
+		service_state = 'error';
+		service_code = 'rules_missing';
+	}
+	else if (!running && last_failed) {
+		service_state = 'error';
+		service_code = trim(action_lines[1] || '') || 'action_failed';
+	}
 
 	return {
 		success: true,
-		running: length(pids) > 0,
-		pid: length(pids) > 0 ? '' + pids[0] : '',
+		running,
+		service_state,
+		service_code,
+		rules_available: rule_count > 0,
+		rule_count,
+		pid: running ? '' + pids[0] : '',
 		pid_count: length(pids),
 		mem_kb: length(pids) > 0 ? process_rss_kb(pids[0]) : 0,
 		mem_total: memory.total,
@@ -511,13 +582,18 @@ function status_call() {
 		action: settings.action,
 		openappid: settings.openappid,
 		autostart: length(glob('/etc/rc.d/S??snort')) > 0,
-		init_available: access(INIT_SCRIPT, 'x') == true,
-		updater_available: access(RULES_UPDATER, 'x') == true,
+		init_available,
+		updater_available: rules_updater() != null,
+		updater: rules_updater(),
 		config_dir: settings.config_dir,
 		temp_dir: settings.temp_dir,
 		log_dir: settings.log_dir,
 		system_uptime: length(uptime_parts) > 0 ? int(uptime_parts[0]) : 0
 	};
+}
+
+function record_service_action(ok, code) {
+	writefile(SERVICE_STATUS, (ok ? 'ok\n' : 'failed\n') + code + '\n');
 }
 
 const SERVICE_ACTIONS = {
@@ -546,19 +622,27 @@ const methods = {
 			if (result_code == null)
 				return { success: false, ok: false, code: 'invalid_action' };
 
-			if (!access(INIT_SCRIPT, 'x'))
+			if (!access(INIT_SCRIPT, 'x')) {
+				record_service_action(false, 'init_missing');
 				return { success: false, ok: false, code: 'init_missing' };
+			}
 
 			/* The snort3 init script and rules updater read
 			 * /etc/config/snort.  Push the application settings there
 			 * before starting or restarting the service. */
 			if (action == 'start' || action == 'restart' || action == 'enable') {
-				if (!sync_runtime_config())
+				if (!sync_runtime_config()) {
+					record_service_action(false, 'action_failed');
 					return { success: false, ok: false, code: 'action_failed' };
+				}
 			}
 
 			const rc = system([INIT_SCRIPT, action], 60000);
 			const ok = rc == 0;
+
+			/* Remember the outcome so the Overview page can explain why a
+			 * stopped service is in error rather than simply stopped. */
+			record_service_action(ok, ok ? result_code : 'action_failed');
 
 			return {
 				success: ok,
@@ -595,10 +679,13 @@ const methods = {
 
 	rules_update: {
 		call: function() {
-			if (!access(RULES_UPDATER, 'x'))
-				return { success: false, ok: false, code: 'updater_missing', path: RULES_UPDATER };
+			const updater = rules_updater();
 
-			/* snort-rules reads the oinkcode and paths from the snort3
+			if (updater == null)
+				return { success: false, ok: false, code: 'updater_missing',
+				         path: RULES_UPDATER_BUILTIN };
+
+			/* Both updaters read the oinkcode and paths from the snort3
 			 * configuration file. */
 			if (!sync_runtime_config())
 				return { success: false, ok: false, code: 'update_failed' };
@@ -618,10 +705,13 @@ const methods = {
 			if (writefile(UPDATE_LOCK, 'running\n') == null)
 				return { success: false, ok: false, code: 'update_failed' };
 
+			if (writefile(UPDATE_STATUS, 'running\n') == null)
+				return { success: false, ok: false, code: 'update_failed' };
+
 			/* The outer subshell keeps the complete update chain in the
 			 * background; a plain trailing "&" would only detach the last
 			 * command and block this RPC call until the updater finished. */
-			const command = '( ' + RULES_UPDATER + ' > ' + UPDATE_LOG + ' 2>&1; ' +
+			const command = '( ' + shell_quote(updater) + ' > ' + UPDATE_LOG + ' 2>&1; ' +
 				'rm -f ' + shell_quote(settings.temp_dir) + '/*.tar.gz /tmp/snort*.tar.gz 2>/dev/null; ' +
 				'rm -f ' + shell_quote(path_join(settings.temp_dir, 'rules')) + '/*.tar.gz 2>/dev/null; ' +
 				'rm -f ' + UPDATE_LOCK + '; ' +
@@ -631,6 +721,7 @@ const methods = {
 
 			if (rc != 0) {
 				unlink(UPDATE_LOCK);
+				writefile(UPDATE_STATUS, 'failed\nrules_update_failed\n');
 				return { success: false, ok: false, code: 'update_failed', exit_code: rc };
 			}
 
@@ -673,6 +764,7 @@ const methods = {
 
 			const log_removed = unlink(UPDATE_LOG) != null;
 			const lock_removed = unlink(UPDATE_LOCK) != null;
+			const status_removed = unlink(UPDATE_STATUS) != null;
 
 			return {
 				success: true,
@@ -680,7 +772,8 @@ const methods = {
 				code: 'cleaned',
 				removed,
 				log_removed,
-				lock_removed
+				lock_removed,
+				status_removed
 			};
 		}
 	}

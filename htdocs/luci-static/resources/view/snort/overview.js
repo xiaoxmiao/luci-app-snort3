@@ -38,6 +38,9 @@ function card(title, children) {
 function notification(code, result, extra) {
 	var text = util.msg(code, result && result.message);
 
+	if (result && result.path)
+		text += ' ' + result.path;
+
 	if (extra)
 		text += ' ' + extra;
 
@@ -66,6 +69,11 @@ return view.extend({
 			self.updateAlerts(data[2] || {});
 		}).catch(function() {
 			setBadge(self.nodes.serviceBadge, util.translate('Unavailable'), 'danger');
+			setBadge(self.nodes.stateBadge, util.translate('Unavailable'), 'danger');
+			setText(self.nodes.stateNote, util.translate('RPC request failed'));
+
+			if (self.nodes.stateNote)
+				self.nodes.stateNote.style.display = '';
 		});
 	},
 
@@ -81,9 +89,15 @@ return view.extend({
 
 	updateStatus: function(status) {
 		var running = !!status.running;
+		var state = util.serviceState(status);
 
-		setBadge(this.nodes.serviceBadge, running ? util.translate('Running') : util.translate('Stopped'),
-			running ? 'success' : 'danger');
+		setBadge(this.nodes.serviceBadge, state.text, state.tone);
+		setBadge(this.nodes.stateBadge, state.text, state.tone);
+		setText(this.nodes.stateNote, state.hint);
+
+		if (this.nodes.stateNote)
+			this.nodes.stateNote.style.display = state.hint ? '' : 'none';
+
 		setText(this.nodes.pid, status.pid || 'N/A');
 		setText(this.nodes.autostart, status.autostart ? util.translate('Enabled') : util.translate('Disabled'));
 		setText(this.nodes.uptime, status.system_uptime ? util.formatDuration(status.system_uptime) : 'N/A');
@@ -107,9 +121,6 @@ return view.extend({
 		setText(this.nodes.interface, status.interface || 'N/A');
 		setText(this.nodes.mode, status.mode ? String(status.mode).toUpperCase() : 'N/A');
 		setText(this.nodes.method, status.method ? String(status.method).toUpperCase() : 'N/A');
-
-		if (this.nodes.initWarning)
-			this.nodes.initWarning.style.display = status.init_available === false ? '' : 'none';
 	},
 
 	updateRules: function(rules) {
@@ -150,16 +161,9 @@ return view.extend({
 			' / ' + util.translate('Temporary rules:') + ' ' + (rules.temp_rule_count || 0));
 
 		var update = rules.update || {};
+		var upd = util.updateState(update);
 
-		if (update.running) {
-			setBadge(this.nodes.updateBadge, util.translate('Update in progress...'), 'warning');
-		}
-		else if (update.finished) {
-			setBadge(this.nodes.updateBadge, util.translate('Update completed!'), 'success');
-		}
-		else {
-			setBadge(this.nodes.updateBadge, util.translate('Idle'), 'muted');
-		}
+		setBadge(this.nodes.updateBadge, upd.text, upd.tone);
 
 		var logLines = Array.isArray(update.log_lines) ? update.log_lines : [];
 		setText(this.nodes.updateLog, logLines.length ? util.joinLines(logLines) : util.translate('No update log yet.'));
@@ -269,6 +273,8 @@ return view.extend({
 		this.nodes = {};
 
 		this.nodes.serviceBadge = E('span', { 'class': 'snort3-badge snort3-badge-muted' }, util.translate('Loading...'));
+		this.nodes.stateBadge = E('span', { 'class': 'snort3-badge snort3-badge-muted' }, util.translate('Loading...'));
+		this.nodes.stateNote = E('span', { 'class': 'snort3-muted', 'style': 'display:none' });
 		this.nodes.alertCount = E('span', {}, '0');
 		this.nodes.pid = E('span', {}, 'N/A');
 		this.nodes.autostart = E('span', {}, 'N/A');
@@ -279,8 +285,6 @@ return view.extend({
 		this.nodes.interface = E('span', {}, 'N/A');
 		this.nodes.mode = E('span', {}, 'N/A');
 		this.nodes.method = E('span', {}, 'N/A');
-		this.nodes.initWarning = E('div', { 'class': 'snort3-muted', 'style': 'display:none' },
-			util.translate('Snort init script not found'));
 		this.nodes.rulesBadge = E('span', { 'class': 'snort3-badge snort3-badge-muted' }, util.translate('Loading...'));
 		this.nodes.rulesPath = E('code', {}, '...');
 		this.nodes.ruleCounts = E('div', { 'class': 'snort3-toolbar-note' }, '');
@@ -290,7 +294,12 @@ return view.extend({
 
 		var serviceSection = E('div', { 'class': 'snort3-section' }, [
 			E('h3', {}, util.translate('Service control')),
-			this.nodes.initWarning,
+			E('div', { 'class': 'snort3-row' }, [
+				E('span', { 'class': 'snort3-label' }, util.translate('Service state')),
+				E('span', { 'class': 'snort3-value' }, [
+					this.nodes.stateBadge, ' ', this.nodes.stateNote
+				])
+			]),
 			E('div', { 'class': 'snort3-actions' }, [
 				E('button', {
 					'class': 'cbi-button cbi-button-apply',

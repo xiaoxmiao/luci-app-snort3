@@ -128,6 +128,9 @@ msgstr ""
 msgid "Enter your Oinkcode if you have one"
 msgstr ""
 
+msgid "Error"
+msgstr ""
+
 msgid "Error creating symbolic link"
 msgstr ""
 
@@ -245,6 +248,9 @@ msgstr ""
 msgid "No rules directory found"
 msgstr ""
 
+msgid "No rules found"
+msgstr ""
+
 msgid "No update log yet."
 msgstr ""
 
@@ -320,7 +326,10 @@ msgstr ""
 msgid "Rules management"
 msgstr ""
 
-msgid "Rules updater not found: /usr/bin/snort-rules"
+msgid "Rules update failed"
+msgstr ""
+
+msgid "Rules updater not found"
 msgstr ""
 
 msgid "Running"
@@ -336,6 +345,9 @@ msgid "Service control"
 msgstr ""
 
 msgid "Service settings"
+msgstr ""
+
+msgid "Service state"
 msgstr ""
 
 msgid "Settings"

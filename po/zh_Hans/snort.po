@@ -313,8 +313,20 @@ msgstr "规则位于"
 msgid "Rules management"
 msgstr "规则管理"
 
-msgid "Rules updater not found: /usr/bin/snort-rules"
-msgstr "未找到规则更新程序：/usr/bin/snort-rules"
+msgid "Rules updater not found"
+msgstr "未找到规则更新程序"
+
+msgid "Error"
+msgstr "异常"
+
+msgid "No rules found"
+msgstr "未找到规则"
+
+msgid "Rules update failed"
+msgstr "规则更新失败"
+
+msgid "Service state"
+msgstr "服务状态"
 
 msgid "Running"
 msgstr "运行中"

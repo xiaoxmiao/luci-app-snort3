@@ -104,9 +104,10 @@ chmod 0755 /etc/uci-defaults/80_luci-app-snort3
 # Application configuration, boot-time sync and LuCI apply hook
 mkdir -p /usr/libexec /etc/init.d /usr/share/ucitrack
 cp -f "$SRC_DIR/root/usr/libexec/snort-web-sync" /usr/libexec/snort-web-sync
+cp -f "$SRC_DIR/root/usr/libexec/snort-web-rules-update" /usr/libexec/snort-web-rules-update
 cp -f "$SRC_DIR/root/etc/init.d/snort-web" /etc/init.d/snort-web
 cp -f "$SRC_DIR/root/usr/share/ucitrack/luci-app-snort3.json" /usr/share/ucitrack/luci-app-snort3.json
-chmod 0755 /usr/libexec/snort-web-sync /etc/init.d/snort-web
+chmod 0755 /usr/libexec/snort-web-sync /usr/libexec/snort-web-rules-update /etc/init.d/snort-web
 chmod 0644 /usr/share/ucitrack/luci-app-snort3.json
 
 # Keep an existing application configuration intact
