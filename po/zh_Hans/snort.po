@@ -109,8 +109,8 @@ msgstr "启用事件日志"
 msgid "Enable logging"
 msgstr "启用日志"
 
-msgid "Enable or disable Snort service"
-msgstr "启用或禁用 Snort 服务"
+msgid "Save & Apply starts or stops Snort to match this setting"
+msgstr "保存并应用后会按此设置启动或停止 Snort"
 
 msgid "Enable Snort"
 msgstr "启用 Snort"
@@ -439,8 +439,8 @@ msgstr "更新规则"
 msgid "Update status"
 msgstr "更新状态"
 
-msgid "Use manual configuration (snort.lua)"
-msgstr "使用手动配置（snort.lua）"
+msgid "Use snort.lua from the config directory; falls back to a generated config if missing"
+msgstr "使用配置目录中的 snort.lua；文件不存在时自动改用生成的配置"
 
 msgid "User configuration include"
 msgstr "用户配置包含文件"
@@ -453,9 +453,6 @@ msgstr "通过 SSH 使用以下命令查看详细报告："
 
 msgid "Overview"
 msgstr "概览"
-
-msgid "Back to Overview"
-msgstr "返回概览"
 
 msgid "Snort is disabled in Settings"
 msgstr "设置中未启用 Snort"

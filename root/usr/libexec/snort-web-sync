@@ -71,6 +71,32 @@ copy_option() {
 	return 0
 }
 
+# Import a value from the snort3 configuration only when the application has
+# no value of its own.  A first sync may happen after the user already saved
+# settings in LuCI (e.g. when the package was installed without running its
+# postinst); overwriting would silently revert those settings.
+import_option() {
+	_src_config=$1
+	_src_section=$2
+	_dst_config=$3
+	_dst_section=$4
+	_option=$5
+
+	if has_option "$_dst_config.$_dst_section.$_option"; then
+		return 0
+	fi
+
+	if ! has_option "$_src_config.$_src_section.$_option"; then
+		return 0
+	fi
+
+	_value=$(uci_get "$_src_config.$_src_section.$_option")
+	uci -q set "$_dst_config.$_dst_section.$_option=$_value" || return 1
+	changed=1
+
+	return 0
+}
+
 migrate() {
 	[ -f "/etc/config/$SRC_CONFIG" ] || return 0
 
@@ -85,11 +111,11 @@ migrate() {
 		changed=0
 
 		for option in $SNORT_OPTIONS; do
-			copy_option "$DST_CONFIG" "$SNORT_SECTION" "$SRC_CONFIG" "$SNORT_SECTION" "$option" || return 1
+			import_option "$DST_CONFIG" "$SNORT_SECTION" "$SRC_CONFIG" "$SNORT_SECTION" "$option" || return 1
 		done
 
 		for option in $NFQ_OPTIONS; do
-			copy_option "$DST_CONFIG" "$NFQ_SECTION" "$SRC_CONFIG" "$NFQ_SECTION" "$option" || return 1
+			import_option "$DST_CONFIG" "$NFQ_SECTION" "$SRC_CONFIG" "$NFQ_SECTION" "$option" || return 1
 		done
 
 		if [ "$changed" = "1" ]; then
@@ -102,6 +128,30 @@ migrate() {
 	uci -q commit "$SRC_CONFIG" || return 1
 
 	log "imported existing settings from /etc/config/$DST_CONFIG"
+	return 0
+}
+
+# Manual mode requires config_dir/snort.lua.  The shipped default has
+# manual=1, but a fresh installation has no such file, so the snort3 init
+# script would run "snort -c /etc/snort/snort.lua" and immediately crash-loop.
+# Use the generated configuration in the runtime copy of the snort3 settings
+# instead.  The application setting is left untouched: creating snort.lua
+# restores manual mode on the next sync.
+apply_manual_fallback() {
+	_manual=$(uci_get "$SRC_CONFIG.$SNORT_SECTION.manual")
+	[ "$_manual" = "1" ] || return 0
+
+	_conf_dir=$(uci_get "$SRC_CONFIG.$SNORT_SECTION.config_dir")
+	[ -n "$_conf_dir" ] || _conf_dir=/etc/snort
+
+	[ -f "$_conf_dir/snort.lua" ] && return 0
+
+	if [ "$(uci_get "$DST_CONFIG.$SNORT_SECTION.manual")" != "0" ]; then
+		uci -q set "$DST_CONFIG.$SNORT_SECTION.manual=0" || return 1
+		changed=1
+		log "no $_conf_dir/snort.lua: using the generated snort configuration"
+	fi
+
 	return 0
 }
 
@@ -126,6 +176,8 @@ sync_all() {
 	for option in $NFQ_OPTIONS; do
 		copy_option "$SRC_CONFIG" "$NFQ_SECTION" "$DST_CONFIG" "$NFQ_SECTION" "$option" || return 1
 	done
+
+	apply_manual_fallback || return 1
 
 	if [ "$changed" = "1" ]; then
 		uci -q commit "$DST_CONFIG" || return 1

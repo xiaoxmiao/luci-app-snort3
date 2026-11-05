@@ -20,12 +20,12 @@ return view.extend({
 		s.addremove = false;
 
 		o = s.option(form.Flag, 'enabled', _('Enable Snort'),
-			_('Enable or disable Snort service'));
+			_('Save & Apply starts or stops Snort to match this setting'));
 		o.default = '0';
 		o.rmempty = false;
 
 		o = s.option(form.Flag, 'manual', _('Manual mode'),
-			_('Use manual configuration (snort.lua)'));
+			_('Use snort.lua from the config directory; falls back to a generated config if missing'));
 		o.default = '1';
 		o.rmempty = false;
 
@@ -178,15 +178,6 @@ return view.extend({
 		o.placeholder = '/etc/snort/nfq.rules';
 		o.datatype = 'string';
 
-		return Promise.resolve(m.render()).then(function(node) {
-			return E('div', {}, [
-				E('div', { 'style': 'margin:0 0 .75rem 0' },
-					E('a', {
-						'class': 'cbi-button cbi-button-neutral',
-						'href': L.url('admin/services/snort/overview')
-					}, _('Back to Overview'))),
-				node
-			]);
-		});
+		return m.render();
 	}
 });

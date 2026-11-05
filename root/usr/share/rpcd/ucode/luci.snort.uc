@@ -557,6 +557,35 @@ function is_enabled(value) {
 	return text == '1' || text == 'true' || text == 'yes' || text == 'on';
 }
 
+/* snort-web-sync falls back to a generated configuration when manual mode is
+ * selected but snort.lua is missing.  Diagnostics must describe what the init
+ * script will actually do, so read the runtime copy of the snort3 settings. */
+function runtime_manual() {
+	let uci = null;
+
+	try {
+		uci = cursor();
+	}
+	catch (e) {
+		return null;
+	}
+
+	try {
+		return first_value(uci.get_first('snort', 'snort', 'manual'), null);
+	}
+	catch (e) {
+		return null;
+	}
+}
+
+function needs_manual_config(settings) {
+	const rt = runtime_manual();
+	const manual = (rt == null) ? settings.manual : rt;
+
+	return is_enabled(manual) &&
+		!access(path_join(settings.config_dir, 'snort.lua'), 'f');
+}
+
 /* Run a command through the shell and keep its output so a failed service
  * action can be explained instead of being reported as a bare exit code.
  * Redirect to a regular file instead of using popen(): a daemon launched by
@@ -595,7 +624,7 @@ function service_problem(settings, output) {
 			message: 'Enable Snort in Settings first (snort-web.snort.enabled=0).'
 		};
 
-	if (is_enabled(settings.manual) && !access(lua_path, 'f'))
+	if (needs_manual_config(settings))
 		return {
 			code: 'config_missing',
 			message: 'Manual mode is on but ' + lua_path +
@@ -653,8 +682,7 @@ function status_call() {
 		/* Not an error yet, but explain why pressing Start would do nothing. */
 		service_hint = 'service_disabled';
 	}
-	else if (!running && is_enabled(settings.manual) &&
-	         !access(path_join(settings.config_dir, 'snort.lua'), 'f')) {
+	else if (!running && needs_manual_config(settings)) {
 		service_hint = 'config_missing';
 	}
 

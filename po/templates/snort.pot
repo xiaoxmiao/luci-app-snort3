@@ -47,9 +47,6 @@ msgstr ""
 msgid "Auto-start enabled"
 msgstr ""
 
-msgid "Back to Overview"
-msgstr ""
-
 msgid "Block"
 msgstr ""
 
@@ -117,9 +114,6 @@ msgid "Enable event logging"
 msgstr ""
 
 msgid "Enable logging"
-msgstr ""
-
-msgid "Enable or disable Snort service"
 msgstr ""
 
 msgid "Enable Snort"
@@ -341,6 +335,9 @@ msgstr ""
 msgid "Running"
 msgstr ""
 
+msgid "Save & Apply starts or stops Snort to match this setting"
+msgstr ""
+
 msgid "Service"
 msgstr ""
 
@@ -461,7 +458,7 @@ msgstr ""
 msgid "Update status"
 msgstr ""
 
-msgid "Use manual configuration (snort.lua)"
+msgid "Use snort.lua from the config directory; falls back to a generated config if missing"
 msgstr ""
 
 msgid "User configuration include"

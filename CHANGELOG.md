@@ -5,6 +5,36 @@ All notable changes to the LuCI Snort3 Module will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.2.2] - 2026-11-05
+
+### Fixed
+- **Save & Apply now actually starts Snort.** `/etc/init.d/snort-web reload`
+  only restarted an already running daemon, so ticking *Enable Snort* in
+  Settings had no visible effect. The reload now starts, restarts or stops the
+  service to match `snort-web.snort.enabled`, waits for procd and records the
+  outcome (`ok/started`, `ok/stopped` or `failed/start_failed` with a detail
+  message) so the Overview badge can explain a failure.
+- Register the ucitrack `config.change` trigger on install/upgrade
+  (`/etc/init.d/ucitrack reload`). Without it a fresh install needed a reboot
+  before Save & Apply reached the init script.
+- **Fresh installs no longer crash-loop on manual mode.** The default
+  `manual=1` requires `config_dir/snort.lua`, which does not exist on a new
+  install; the snort3 init script launched `snort -c <missing file>` and the
+  daemon exited immediately. `snort-web-sync` now falls back to the
+  `snort-mgr` generated configuration in `/etc/config/snort` when the Lua file
+  is absent, restoring manual mode automatically once the file appears.
+  Backend diagnostics read the runtime `manual` value so they no longer report
+  *snort.lua not found* after the fallback.
+- The first-run migration no longer overwrites settings already saved in LuCI:
+  a value is imported from `/etc/config/snort` only when `snort-web` lacks that
+  option.
+- Remove the redundant *Back to Overview* buttons from Settings and Alerts; the
+  Overview tab is always present in the tab bar.
+
+### Changed
+- Settings descriptions explain the Save & Apply behaviour and the manual mode
+  fallback; POT, translation catalogs and both LMO files rebuilt (152 strings).
+
 ## [4.2.1] - 2026-11-05
 
 ### Fixed

@@ -133,14 +133,21 @@ config internal 'internal'
 	option migrated '0'
 ```
 
+`enabled` is the master switch: **Save & Apply** starts or stops Snort to match
+it. `manual` defaults to `1`; if `config_dir/snort.lua` does not exist, the sync
+helper automatically switches the runtime configuration to the `snort-mgr`
+generated config, so a fresh install needs no hand-written Lua file. Boot-time
+start is controlled separately by **Enable at boot** on the Overview page.
+
 The OpenWrt `snort3` package still reads `/etc/config/snort`, so the application
 keeps both files in sync:
 
 - `/usr/libexec/snort-web-sync` copies the known `snort` and `nfq` options from
   `snort-web` to `snort` and commits the result;
 - `/etc/init.d/snort-web` runs at boot before `snort` (`START=98` versus `99`);
-- `/usr/share/ucitrack/luci-app-snort3.json` triggers the same init script after
-  **Save & Apply**; if Snort is running it is restarted with the new settings;
+- `/usr/share/ucitrack/luci-app-snort3.json` triggers `/etc/init.d/snort-web
+  reload` after **Save & Apply**; the reload starts, restarts or stops Snort to
+  match the *Enable Snort* flag and records the outcome for the Overview page;
 - the rpcd backend synchronises before service start/restart and before a rules
   update, because `/usr/bin/snort-rules` reads `/etc/config/snort`.
 
@@ -243,10 +250,14 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for implementation notes.
 - **Start reports an error / Snort stays stopped** — enable *Enable Snort* in
   Settings first. The OpenWrt init script exits 0 without starting anything
   when `enabled=0`; this application verifies that a process actually appears
-  and shows the reason (disabled, missing `snort.lua`, no rules, or init script
-  output). See `logread | grep -i snort` and `snort-mgr check`.
-- **No Overview tab** — upgrade to 4.2.1 or clear `/tmp/luci-indexcache*` and
-  `/tmp/luci-modulecache/` after installing so the new menu entry is picked up.
+  and shows the reason (disabled, no rules, or init script output). See
+  `logread | grep -i snort` and `snort-mgr check`.
+- **Save & Apply does not start Snort** — the ucitrack trigger is registered by
+  `/etc/init.d/ucitrack`; run `/etc/init.d/ucitrack restart` and check
+  `/etc/init.d/snort-web enabled`. The package postinst does this on upgrade.
+- **No Overview tab** — upgrade to 4.2.1 or later, or clear
+  `/tmp/luci-indexcache*` and `/tmp/luci-modulecache/` after installing so the
+  new menu entry is picked up.
 - **Settings do not reach Snort** — run `/usr/libexec/snort-web-sync --sync`
   and check `uci show snort-web`, `uci show snort`, and
   `logread | grep -i snort-web`.
@@ -374,7 +385,7 @@ Le paquet `snort3` continuant de lire `/etc/config/snort`, le synchroniseur
 
 - au démarrage, `/etc/init.d/snort-web` s'exécute avant `snort` (`START=98`) ;
 - après **Enregistrer et appliquer**, le déclencheur ucitrack synchronise puis
-  redémarre Snort s'il est en cours d'exécution ;
+  démarre, redémarre ou arrête Snort selon l'option *Activer Snort* ;
 - le backend rpcd synchronise avant un démarrage/redémarrage et avant une mise
   à jour des règles, car `/usr/bin/snort-rules` lit `/etc/config/snort`.
 
@@ -498,12 +509,15 @@ LuCI 应用的设置保存在 **`/etc/config/snort-web`**，而 OpenWrt 的 `sno
 - `/usr/libexec/snort-web-sync` 把已知的 `snort`、`nfq` 选项复制到
   `/etc/config/snort`；
 - `/etc/init.d/snort-web` 在开机时先于 Snort 启动（`START=98`）；
-- 点击 **保存并应用** 后，ucitrack 触发同步；如果 Snort 正在运行，会自动重启；
+- 点击 **保存并应用** 后，ucitrack 触发同步，并按「启用 Snort」开关自动启动、
+  重启或停止服务；
 - 后端在启动/重启服务和更新规则前也会先同步。
 
 第一次安装或从旧版本升级时，会将现有 `/etc/config/snort` 的设置导入
 `snort-web` 一次，并写入 `snort-web.internal.migrated=1`。之后请通过 LuCI
-修改设置；直接修改 `/etc/config/snort` 会在下次应用或开机时被覆盖。
+修改设置；直接修改 `/etc/config/snort` 会在下次应用或开机时被覆盖。默认开启
+手动模式时若 `config_dir/snort.lua` 不存在，同步脚本会自动改用 `snort-mgr`
+生成的配置，首次使用无需手写 Lua 文件。
 
 ### 使用
 

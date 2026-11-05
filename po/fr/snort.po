@@ -193,14 +193,14 @@ msgstr "Paramètres du service"
 msgid "Enable Snort"
 msgstr "Activer Snort"
 
-msgid "Enable or disable Snort service"
-msgstr "Active ou désactive le service Snort"
+msgid "Save & Apply starts or stops Snort to match this setting"
+msgstr "« Enregistrer et appliquer » démarre ou arrête Snort selon ce réglage"
 
 msgid "Manual mode"
 msgstr "Mode manuel"
 
-msgid "Use manual configuration (snort.lua)"
-msgstr "Utiliser la configuration manuelle (snort.lua)"
+msgid "Use snort.lua from the config directory; falls back to a generated config if missing"
+msgstr "Utiliser snort.lua du répertoire de configuration ; repli sur la configuration générée s'il est absent"
 
 msgid "Network interface"
 msgstr "Interface réseau"
@@ -450,9 +450,6 @@ msgstr "La requête RPC a échoué"
 
 msgid "Overview"
 msgstr "Vue d'ensemble"
-
-msgid "Back to Overview"
-msgstr "Retour à la vue d'ensemble"
 
 msgid "Snort is disabled in Settings"
 msgstr "Snort est désactivé dans les paramètres"

@@ -1,20 +1,65 @@
 #!/bin/sh /etc/rc.common
 #
 # Synchronise the LuCI Snort3 settings before the snort3 init script starts.
-# The ucitrack definition also invokes "reload" after a LuCI Save & Apply.
+# The ucitrack definition invokes "reload" after a LuCI Save & Apply, so this
+# is also where the service is brought in line with the "Enable Snort" flag.
 
 START=98
 
 SYNC=/usr/libexec/snort-web-sync
+SNORT_INIT=/etc/init.d/snort
+ACTION_STATUS=/tmp/snort_service_action.status
+ACTION_DETAIL=/tmp/snort_service_action.detail
 
 start() {
 	[ -x "$SYNC" ] && "$SYNC" --sync
 }
 
+remember_action() {
+	printf '%s\n%s\n' "$1" "$2" > "$ACTION_STATUS"
+}
+
 reload() {
+	# Push snort-web settings into /etc/config/snort first; the snort3 init
+	# script reads its enabled/manual flags from there.
 	start
 
-	if pidof snort >/dev/null 2>&1; then
-		/etc/init.d/snort restart
+	: > "$ACTION_DETAIL"
+
+	[ -x "$SNORT_INIT" ] || return 0
+
+	local enabled
+	enabled=$(uci -q get snort-web.snort.enabled 2>/dev/null)
+
+	# Older configurations may use an anonymous section instead of 'snort'.
+	if [ -z "$enabled" ]; then
+		enabled=$(uci -q get snort-web.@snort[0].enabled 2>/dev/null)
 	fi
+
+	case "$enabled" in
+		1|true|yes|on|TRUE|True|YES|ON)
+			if pidof snort >/dev/null 2>&1; then
+				"$SNORT_INIT" restart
+			else
+				"$SNORT_INIT" start
+			fi
+
+			# procd starts asynchronously; verify the daemon really appeared.
+			sleep 3
+
+			if pidof snort >/dev/null 2>&1; then
+				remember_action ok started
+			else
+				remember_action failed start_failed
+				printf '%s\n' 'Snort did not start after Save & Apply. Check "logread | grep snort" and "snort-mgr check".' > "$ACTION_DETAIL"
+				logger -t snort-web 'Snort failed to start after Save & Apply'
+			fi
+			;;
+		*)
+			"$SNORT_INIT" stop >/dev/null 2>&1
+			remember_action ok stopped
+			;;
+	esac
+
+	return 0
 }

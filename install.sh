@@ -123,6 +123,14 @@ fi
 /etc/init.d/snort-web enable >/dev/null 2>&1 || warn "Unable to enable /etc/init.d/snort-web."
 /usr/libexec/snort-web-sync --sync || warn "Unable to synchronise /etc/config/snort-web to /etc/config/snort."
 
+# Register the config.change trigger now; without this a fresh install would
+# need a reboot before Save & Apply reaches /etc/init.d/snort-web reload.
+if [ -x /etc/init.d/ucitrack ]; then
+	/etc/init.d/ucitrack reload >/dev/null 2>&1 || \
+		/etc/init.d/ucitrack restart >/dev/null 2>&1 || \
+		warn "Unable to reload ucitrack; a reboot may be required."
+fi
+
 # Remove files installed by the old Lua-based module
 rm -f /usr/lib/lua/luci/controller/snort.lua
 rm -f /usr/lib/lua/luci/model/cbi/snort/config.lua

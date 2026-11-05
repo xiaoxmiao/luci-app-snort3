@@ -1,8 +1,8 @@
 # Usage Guide
 
 The module adds three tabs under **Services → Snort IDS/IPS**: **Overview**,
-**Settings** and **Alerts**. Each page also has a *Back to Overview* link, so the
-dashboard is always reachable.
+**Settings** and **Alerts**. The Overview tab is available from the tab bar on
+every page, so the dashboard is always reachable.
 
 ## Overview
 
@@ -27,7 +27,7 @@ of three states, refreshed every five seconds:
 | State | Meaning |
 | --- | --- |
 | Running | A Snort process is present; the PID is shown in the Service card. |
-| Stopped | No Snort process. A normal, user-initiated stop is shown in muted grey. When Snort is disabled or the manual `snort.lua` is missing, an explanation is shown next to the badge (with a link to Settings). |
+| Stopped | No Snort process. A normal, user-initiated stop is shown in muted grey. When Snort is disabled, an explanation is shown next to the badge (with a link to Settings). |
 | Error | Snort cannot work: the init script is missing, the rules directory has no `.rules` files, or the last service action failed. The reason (for example *Snort init script not found*) and, when available, the captured init script output are shown next to the badge. |
 
 An RPC failure is shown as **Unavailable** with the text *RPC request failed*
@@ -97,16 +97,22 @@ alerts** for the full page.
 
 ## Settings
 
-Settings are stored in `/etc/config/snort-web`. Use **Save & Apply** to write
-the configuration, synchronise it to `/etc/config/snort` (the file read by the
-`snort3` init script and rules updater) and restart Snort when it is running.
+Settings are stored in `/etc/config/snort-web`. **Save & Apply** writes the
+configuration, synchronises it to `/etc/config/snort` (the file read by the
+`snort3` init script and rules updater) and then brings the service in line with
+the **Enable Snort** flag: with the flag set Snort is started (or restarted if
+already running), with it cleared Snort is stopped. If no process appears, the
+Overview page shows a *Snort failed to start* reason.
+
+Boot-time start is a separate setting: use **Enable at boot** on the Overview
+page to create the `/etc/rc.d/S??snort` link.
 
 ### Service settings
 
 | Option | Description |
 | --- | --- |
-| Enable Snort | Enables the service at boot |
-| Manual mode | Uses a manually maintained `snort.lua` |
+| Enable Snort | Save & Apply starts or stops Snort accordingly; boot start is the separate *Enable at boot* button |
+| Manual mode | Uses `config_dir/snort.lua`. If that file is missing, the sync helper automatically uses the `snort-mgr` generated configuration instead, so a fresh install can start without hand-written Lua |
 | Network interface | Interface to monitor, for example `br-lan` or `eth0` |
 | Local network | Protected network in CIDR notation |
 | External network | External network definition, usually `any` |
@@ -238,6 +244,7 @@ paths without `..` components or control characters.
 | No alerts | Check `logging` in UCI, the log directory and file permissions |
 | Rules update stays at **In progress** | Inspect `/tmp/snort_rules_update.log` and remove a stale lock if necessary |
 | Update badge shows **Failed** | Inspect `/tmp/snort_rules_update.log`; check DNS, HTTPS certificates (`ca-certificates`) and free space |
+| **Save & Apply** does not start Snort | Check `/etc/init.d/snort-web enabled` and run `/etc/init.d/ucitrack restart` to register the config trigger (the package postinst does this on upgrade) |
 | Service state shows **Error** | Read the reason next to the badge; fix the init script or install rules, then press **Start** |
 | **Start** reports an error and nothing runs | Enable *Enable Snort* in Settings, or turn off Manual mode / create `/etc/snort/snort.lua`; run `snort-mgr check` and `logread \| grep snort` for details |
 | Update rules shows an error | The notification contains the backend reason and log path; inspect `/tmp/snort_rules_update.log` and `/tmp/snort_rules_update.status` |

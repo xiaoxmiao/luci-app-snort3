@@ -20,7 +20,7 @@ LUCI_DEPENDS:=+luci-base +rpcd-mod-ucode
 LUCI_EXTRA_DEPENDS:=snort3$(if $(CONFIG_USE_APK), (>=0))
 LUCI_PKGARCH:=all
 
-PKG_VERSION:=4.2.1
+PKG_VERSION:=4.2.2
 PKG_RELEASE:=1
 PKG_PO_VERSION:=$(PKG_VERSION)-r$(PKG_RELEASE)
 
@@ -42,6 +42,9 @@ define Package/luci-app-snort3/postinst
 	[ -x /etc/init.d/snort-web ] && /etc/init.d/snort-web enable
 	[ -x /usr/libexec/snort-web-sync ] && /usr/libexec/snort-web-sync --sync
 	chmod 0755 /usr/libexec/snort-web-rules-update 2>/dev/null
+	if [ -x /etc/init.d/ucitrack ]; then
+		/etc/init.d/ucitrack reload >/dev/null 2>&1 || /etc/init.d/ucitrack restart >/dev/null 2>&1
+	fi
 	rm -f /tmp/luci-indexcache.*
 	rm -rf /tmp/luci-modulecache/
 	/etc/init.d/rpcd reload 2>/dev/null
