@@ -4,6 +4,23 @@
 # trigger active when the package is part of a firmware image.
 [ -x /etc/init.d/snort-web ] && /etc/init.d/snort-web enable
 
+# Releases up to 4.2.3 shipped manual=1 in /etc/config/snort-web.  That value
+# survives an upgrade, so every sync logged a "fallback" notice and the UI kept
+# showing a Manual mode hint even though the generated configuration was in
+# use.  Normalise it once when the Lua pair is incomplete.  Users who later
+# add both files can still re-enable Manual mode in Settings.
+if [ -f /etc/config/snort-web ] &&
+   [ "$(uci -q get snort-web.snort.manual 2>/dev/null)" = "1" ]; then
+	sw_conf_dir=$(uci -q get snort-web.snort.config_dir 2>/dev/null)
+	[ -n "$sw_conf_dir" ] || sw_conf_dir=/etc/snort
+
+	if [ ! -f "$sw_conf_dir/snort.lua" ] || [ ! -f "$sw_conf_dir/local.lua" ]; then
+		uci -q set snort-web.snort.manual=0
+		uci -q commit snort-web
+		logger -t snort-web 'disabled unusable Manual mode (missing local.lua); using the generated configuration' 2>/dev/null || :
+	fi
+fi
+
 # Import an existing /etc/config/snort once, then synchronise the runtime
 # configuration used by the snort3 init script and rules updater.
 [ -x /usr/libexec/snort-web-sync ] && /usr/libexec/snort-web-sync --sync

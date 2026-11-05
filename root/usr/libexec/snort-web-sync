@@ -141,22 +141,37 @@ migrate() {
 # default DAQ search path is empty it fails with "Could not find requested DAQ
 # module: pcap".
 #
-# Fall back to the snort-mgr generated configuration (manual=0) whenever the
-# manual pair is incomplete.  The application setting is left untouched:
-# creating both files restores manual mode on the next sync.
+# Decide the runtime value of manual instead of copying it verbatim.  When the
+# pair is incomplete the snort-mgr generated configuration is used; name the
+# missing file(s) explicitly and make clear this is an automatic fallback that
+# needs no user action.  The application setting is left untouched: creating
+# both files restores manual mode on the next sync.
 apply_manual_fallback() {
 	_manual=$(uci_get "$SRC_CONFIG.$SNORT_SECTION.manual")
-	[ "$_manual" = "1" ] || return 0
+	[ -n "$_manual" ] || _manual=0
 
+	_effective=$_manual
 	_conf_dir=$(uci_get "$SRC_CONFIG.$SNORT_SECTION.config_dir")
 	[ -n "$_conf_dir" ] || _conf_dir=/etc/snort
+	_missing=""
 
-	[ -f "$_conf_dir/snort.lua" ] && [ -f "$_conf_dir/local.lua" ] && return 0
+	if [ "$_manual" = "1" ]; then
+		[ -f "$_conf_dir/snort.lua" ] || _missing="$_conf_dir/snort.lua"
+		if [ ! -f "$_conf_dir/local.lua" ]; then
+			[ -n "$_missing" ] && _missing="$_missing and "
+			_missing="$_missing$_conf_dir/local.lua"
+		fi
 
-	if [ "$(uci_get "$DST_CONFIG.$SNORT_SECTION.manual")" != "0" ]; then
-		uci -q set "$DST_CONFIG.$SNORT_SECTION.manual=0" || return 1
+		[ -n "$_missing" ] && _effective=0
+	fi
+
+	if [ "$(uci_get "$DST_CONFIG.$SNORT_SECTION.manual")" != "$_effective" ]; then
+		uci -q set "$DST_CONFIG.$SNORT_SECTION.manual=$_effective" || return 1
 		changed=1
-		log "manual mode is not ready (snort.lua/local.lua missing in $_conf_dir): using the generated snort configuration"
+
+		if [ "$_manual" = "1" ] && [ "$_effective" = "0" ]; then
+			log "manual mode is unavailable ($_missing not found); using the generated snort configuration (automatic, no action needed)"
+		fi
 	fi
 
 	return 0
@@ -177,6 +192,10 @@ sync_all() {
 	changed=0
 
 	for option in $SNORT_OPTIONS; do
+		# manual is decided by apply_manual_fallback() below.  Copying a stale
+		# manual=1 here and flipping it back on every sync would churn the
+		# runtime config and log a fallback notice on every Save & Apply.
+		[ "$option" = "manual" ] && continue
 		copy_option "$SRC_CONFIG" "$SNORT_SECTION" "$DST_CONFIG" "$SNORT_SECTION" "$option" || return 1
 	done
 

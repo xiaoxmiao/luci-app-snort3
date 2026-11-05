@@ -258,8 +258,19 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for implementation notes.
 - **Start reports an error / Snort stays stopped** — enable *Enable Snort* in
   Settings first. The OpenWrt init script exits 0 without starting anything
   when `enabled=0`; this application verifies that a process actually appears
-  and shows the reason (disabled, no rules, init script output or the last
-  `logread` lines). See `logread | grep -i snort` and `snort-mgr check`.
+  and shows the reason (disabled, no rules, init script output or the syslog
+  lines written by this start). See `logread | grep -i snort` and `snort-mgr check`.
+- **`snort-web-sync: manual mode is unavailable ...`** — this is an
+  informational notice, not an error. It means `local.lua` is missing and the
+  `snort-mgr` generated configuration is in use, which is exactly what a normal
+  install needs; no action is required. Upgrades from 4.2.3 or earlier normalise
+  the saved `snort-web.snort.manual=1` to `0` once, so the notice stops
+  appearing. `logread` also keeps the old `daemon.err snort[...]` crash lines
+  from before the fix for a long time: check their timestamps before assuming
+  the failure is current, and confirm with `ps | grep '[s]nort'` and
+  `logread | grep -i 'daemon.err snort' | tail -5`. A failed start detail only
+  quotes lines written *after* the latest start, so old crashes cannot be
+  mistaken for the current reason.
 - **`cannot open ./local.lua` / `Could not find requested DAQ module: pcap`** —
   these are manual-mode failures, not application bugs. Turn off *Manual mode*
   in Settings (or `uci set snort-web.snort.manual=0; uci commit snort-web`) and
@@ -536,6 +547,12 @@ LuCI 应用的设置保存在 **`/etc/config/snort-web`**，而 OpenWrt 的 `sno
 `Could not find requested DAQ module: pcap`。若 `snort.lua` 或 `local.lua` 缺失，
 同步脚本会自动保持生成模式。如确实需要手动模式，请同时创建这两个文件，并在其中
 设置 `daq = { module_dirs = { '/usr/lib/daq/' } }`。
+
+注意：`logread` 会长期保留升级前的 `daemon.err snort[...]` 崩溃日志，请按时间戳
+判断是否为当前故障；`snort-web-sync` 打印的「手动模式不可用」只是说明已自动使用
+生成配置，并非报错，无需处理。从 4.2.3 及更早版本升级时，残留的 `manual=1` 会被
+自动改为 `0`。可用 `ps | grep '[s]nort'` 确认进程是否在运行；启动失败详情只会引用
+本次启动之后新增的日志，不会把旧崩溃当成当前原因。
 
 ### 使用
 

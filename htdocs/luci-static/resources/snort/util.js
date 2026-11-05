@@ -226,10 +226,10 @@ Util.msg = function(code, fallback) {
 		return tr('Snort failed to start');
 
 	case 'config_missing':
-		return tr('snort.lua or local.lua not found');
+		return tr('Manual mode needs snort.lua and local.lua');
 
 	case 'manual_fallback':
-		return tr('Manual mode needs snort.lua and local.lua; using the generated configuration instead');
+		return tr('Manual mode is unavailable; using the generated configuration instead (no action needed)');
 
 	case 'daq_dir_missing':
 		return tr('Manual mode needs daq.module_dirs in local.lua (for example /usr/lib/daq/)');

@@ -193,8 +193,8 @@ msgstr "手动模式"
 msgid "Manual mode needs daq.module_dirs in local.lua (for example /usr/lib/daq/)"
 msgstr "手动模式需要在 local.lua 中设置 daq.module_dirs（例如 /usr/lib/daq/）"
 
-msgid "Manual mode needs snort.lua and local.lua; using the generated configuration instead"
-msgstr "手动模式需要 snort.lua 和 local.lua；已改用生成的配置"
+msgid "Manual mode is unavailable; using the generated configuration instead (no action needed)"
+msgstr "手动模式不可用，已使用生成的配置（无需处理）"
 
 msgid "Maximum number of packet threads, 0 uses the number of CPU cores"
 msgstr "最大数据包线程数，0 表示使用 CPU 核心数"
@@ -391,8 +391,8 @@ msgstr "Snort 已停止"
 msgid "Snort system logs (20 most recent)"
 msgstr "Snort 系统日志（最近 20 条）"
 
-msgid "snort.lua or local.lua not found"
-msgstr "未找到 snort.lua 或 local.lua"
+msgid "Manual mode needs snort.lua and local.lua"
+msgstr "手动模式需要 snort.lua 和 local.lua"
 
 msgid "Start"
 msgstr "启动"

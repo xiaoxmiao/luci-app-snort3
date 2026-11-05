@@ -159,17 +159,17 @@ test('serviceState explains why a stopped service cannot start', () => {
 test('new service failure codes have readable messages', () => {
 	assert.equal(Util.msg('service_disabled'), 'Snort is disabled in Settings');
 	assert.equal(Util.msg('start_failed'), 'Snort failed to start');
-	assert.equal(Util.msg('config_missing'), 'snort.lua or local.lua not found');
+	assert.equal(Util.msg('config_missing'), 'Manual mode needs snort.lua and local.lua');
 });
 
 test('manual mode hints explain the generated fallback and DAQ directory', () => {
-	assert.match(Util.msg('manual_fallback'), /snort\.lua and local\.lua/);
+	assert.match(Util.msg('manual_fallback'), /no action needed/);
 	assert.match(Util.msg('daq_dir_missing'), /daq\.module_dirs/);
 
 	assert.deepEqual(
 		Util.serviceState({ service_state: 'stopped', service_hint: 'manual_fallback' }),
 		{ text: 'Stopped', tone: 'muted',
-		  hint: 'Manual mode needs snort.lua and local.lua; using the generated configuration instead' });
+		  hint: 'Manual mode is unavailable; using the generated configuration instead (no action needed)' });
 
 	assert.match(Util.serviceState({
 		service_state: 'stopped', service_hint: 'daq_dir_missing'

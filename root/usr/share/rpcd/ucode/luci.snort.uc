@@ -29,7 +29,7 @@ const UPDATE_RC = '/tmp/snort_rules_update.rc';
 const SERVICE_STATUS = '/tmp/snort_service_action.status';
 const SERVICE_DETAIL = '/tmp/snort_service_action.detail';
 const SERVICE_OUTPUT = '/tmp/snort_service_action.output';
-const SERVICE_LOGTAIL = '/tmp/snort_service_action.logtail';
+const SERVICE_LOGALL = '/tmp/snort_service_action.logall';
 
 const CONFIG_NAME = 'snort-web';
 
@@ -651,28 +651,47 @@ function capture_output(command) {
 	return { rc, output };
 }
 
-/* procd sends the daemon's stderr to syslog, so a fatal Lua/DAQ error never
- * appears in the init script's stdout.  Surface the most recent snort lines so
- * the UI shows "cannot open ./local.lua" or "DAQ module: pcap" instead of a
- * generic "failed to start". */
-function snort_log_tail() {
-	system('logread 2>/dev/null | grep -i snort | tail -n 8 > ' +
-		SERVICE_LOGTAIL + ' 2>/dev/null', 10000);
+/* Mark the syslog position before a start/restart.  logread keeps entries from
+ * previous runs for a long time, so a plain "tail -n 8" would keep reporting an
+ * old "cannot open ./local.lua" as the reason for every later failure, long
+ * after the configuration was fixed. */
+function mark_service_log() {
+	system('logger -t snort-web "snort-service-begin" 2>/dev/null || true', 5000);
+}
 
-	const text = read_text(SERVICE_LOGTAIL);
+/* procd sends the daemon's stderr to syslog, so a fatal Lua/DAQ error never
+ * appears in the init script's stdout.  Only use lines written AFTER the last
+ * marker and ignore snort-web / snort-web-sync notices: those are normal
+ * informational messages, not the reason snort exited. */
+function snort_log_tail() {
+	system('logread 2>/dev/null > ' + SERVICE_LOGALL, 10000);
+
+	const lines = split(read_text(SERVICE_LOGALL) || '', '\n');
+	let start = 0;
+
+	/* Restart actions repeat the marker; only the newest one matters. */
+	for (let i = 0; i < length(lines); i++) {
+		if (match(lines[i] || '', /snort-service-begin/))
+			start = i + 1;
+	}
+
 	let output = '';
 
-	for (let line in split(text, '\n')) {
-		const trimmed = trim(line);
+	for (let i = start; i < length(lines); i++) {
+		const trimmed = trim(lines[i] || '') || '';
 
 		if (length(trimmed) == 0)
+			continue;
+
+		if (!match(trimmed, /snort\[/) && !match(trimmed, /procd.*snort/))
 			continue;
 
 		output += (length(output) ? ' | ' : '') + trimmed;
 	}
 
+	/* Keep the newest lines rather than truncating from the front. */
 	if (length(output) > 400)
-		output = substr(output, 0, 400) + '...';
+		output = '...' + substr(output, length(output) - 397);
 
 	return output;
 }
@@ -695,7 +714,8 @@ function service_problem(settings, output) {
 			code: 'config_missing',
 			message: 'Manual mode requires both ' + lua_path + ' and ' +
 				path_join(settings.config_dir, 'local.lua') +
-				'. Create them or turn off Manual mode.'
+				'. The generated configuration is selected automatically; ' +
+				'turn off Manual mode to keep it.'
 		};
 
 	if (rule_file_count(rules_path) == 0)
@@ -863,9 +883,13 @@ const methods = {
 					         message: problem.message };
 				}
 
-				/* Capture stdout/stderr: "snort-mgr check" failures and
-				 * validation errors are otherwise lost. */
-				const run = capture_output(shell_quote(INIT_SCRIPT) + ' ' + action);
+			/* Only syslog lines from this attempt may be used as the failure
+			 * reason.  Older local.lua/DAQ crashes are still in logread. */
+			mark_service_log();
+
+			/* Capture stdout/stderr: "snort-mgr check" failures and
+			 * validation errors are otherwise lost. */
+			const run = capture_output(shell_quote(INIT_SCRIPT) + ' ' + action);
 
 				/* procd starts asynchronously; give it a few seconds and
 				 * verify a snort process actually appeared.  A restart needs

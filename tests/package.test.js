@@ -72,17 +72,37 @@ test('manual mode is off by default and requires both Lua files', () => {
 	assert.equal(view.match(/form\.Flag, 'manual'[\s\S]{0,300}?o\.default = '([01])'/)[1], '0');
 	assert.match(view, /snort\.lua and local\.lua/);
 	assert.equal(backend.match(/manual: get\('manual', '([01])'\)/)[1], '0');
-	assert.match(helper, /\[ -f "\$_conf_dir\/snort\.lua" \] && \[ -f "\$_conf_dir\/local\.lua" \] && return 0/);
+	assert.match(helper, /\[ ! -f "\$_conf_dir\/local\.lua" \]/);
+	assert.match(helper, /_effective=0/);
+	assert.match(helper, /no action needed/);
+	assert.match(helper, /\[ "\$option" = "manual" \] && continue/);
 	assert.match(backend, /access\(path_join\(settings\.config_dir, 'local\.lua'\), 'f'\)/);
 });
 
-test('failed starts surface the syslog tail', () => {
+test('upgrades normalise a stale manual=1 application setting', () => {
+	const defaults = read('root/etc/uci-defaults/80_luci-app-snort3');
+
+	assert.match(defaults, /uci -q get snort-web\.snort\.manual/);
+	assert.match(defaults, /uci -q set snort-web\.snort\.manual=0/);
+	assert.match(defaults, /! -f "\$sw_conf_dir\/local\.lua"/);
+});
+
+test('failed starts only quote syslog lines from the current attempt', () => {
 	const backend = read('root/usr/share/rpcd/ucode/luci.snort.uc');
 	const init = read('root/etc/init.d/snort-web');
 
+	assert.match(backend, /function mark_service_log\(\)/);
 	assert.match(backend, /function snort_log_tail\(\)/);
-	assert.match(backend, /logread 2>\/dev\/null \| grep -i snort \| tail -n 8/);
-	assert.match(init, /logread 2>\/dev\/null \| grep -i snort \| tail -n 8/);
+	assert.match(backend, /SERVICE_LOGALL/);
+	assert.match(init, /recent_snort_errors\(\)/);
+	assert.match(init, /No new snort daemon errors/);
+
+	for (const text of [ backend, init ]) {
+		assert.ok(text.includes('snort-service-begin'), 'marker is written before starting');
+		assert.ok(text.includes('procd.*snort'), 'daemon and procd lines are kept');
+		assert.doesNotMatch(text, /logread 2>\/dev\/null \| grep -i snort \| tail -n 8/,
+			'old unbounded logread tail is gone');
+	}
 });
 
 test('the settings view and backend use the application configuration', () => {

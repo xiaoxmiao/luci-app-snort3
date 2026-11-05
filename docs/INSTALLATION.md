@@ -392,8 +392,9 @@ removed.
 | Settings do not reach Snort | Run `/usr/libexec/snort-web-sync --sync`; compare `uci show snort-web` and `uci show snort`; inspect `logread -e snort-web-sync` |
 | Rules update disabled | `/usr/libexec/snort-web-rules-update` exists and is executable |
 | Rule download fails | network, DNS and `ca-certificates`; inspect `/tmp/snort_rules_update.log` |
-| Service state shows an error | read the reason below the badge (it includes the last snort syslog lines); check `/etc/init.d/snort` and `/etc/snort/rules` |
-| `cannot open ./local.lua` / DAQ `pcap` not found / procd crash loop | manual mode is enabled: set `snort-web.snort.manual=0`, commit and apply, or create `/etc/snort/local.lua` with `daq = { module_dirs = { '/usr/lib/daq/' } }` |
+| Service state shows an error | read the reason below the badge (only syslog lines from the current start are quoted, so old `local.lua` crashes are not reused); check `/etc/init.d/snort` and `/etc/snort/rules` |
+| `cannot open ./local.lua` / DAQ `pcap` not found / procd crash loop | manual mode is enabled: set `snort-web.snort.manual=0`, commit and apply, or create `/etc/snort/local.lua` with `daq = { module_dirs = { '/usr/lib/daq/' } }`. Since 4.2.4 a stale `manual=1` is normalised automatically on upgrade |
+| `snort-web-sync: manual mode is unavailable` in `logread` | informational notice, not a failure: `local.lua` is missing and the generated configuration is in use. Check `ps \| grep '[s]nort'` to confirm the daemon is running |
 | No alerts | `/var/log/alert_fast.txt` exists and Snort logging is enabled |
 | French texts missing | `snort.fr.lmo` installed; LuCI language set to French |
 | Chinese texts missing | `snort.zh-cn.lmo` installed; LuCI language set to Simplified Chinese |

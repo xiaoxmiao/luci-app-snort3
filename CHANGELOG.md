@@ -5,6 +5,30 @@ All notable changes to the LuCI Snort3 Module will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.2.4] - 2026-11-05
+
+### Fixed
+- **Upgrades no longer look like they still fail with `local.lua`.** Devices
+  coming from 4.2.2/4.2.3 kept `snort-web.snort.manual=1`, so every Save &
+  Apply copied it into `/etc/config/snort`, immediately reverted it, and logged
+  `manual mode is not ready (snort.lua/local.lua missing ...)` again. That
+  notice describes an automatic fallback, not an error, but it appeared on
+  every sync and named both files even when only `local.lua` was missing. The
+  uci-defaults hook now normalises the stale setting to `manual=0` once, the
+  sync helper computes the effective value instead of flip-flopping it, and
+  the notice names the exact missing file and states that no action is needed.
+- **Start failures no longer quote old syslog lines.** `logread` retains the
+  `cannot open ./local.lua` / `DAQ module: pcap` crashes from before the fix
+  for a long time. Both the rpcd backend and the `snort-web` reload now write a
+  `snort-service-begin` marker before starting and only use daemon/procd lines
+  written after it; informational `snort-web-sync` notices are filtered out.
+  If no new error exists, the detail says so instead of blaming a previous run.
+- `config_missing` and `manual_fallback` hints are now worded as explanations
+  of the generated configuration rather than missing-file errors.
+
+### Changed
+- Translation catalogs, POT and both LMO files rebuilt (154 strings).
+
 ## [4.2.3] - 2026-11-05
 
 ### Fixed
