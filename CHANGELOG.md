@@ -5,6 +5,19 @@ All notable changes to the LuCI Snort3 Module will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.1.1] - 2026-11-05
+
+### Fixed
+- LuCI 26.x (`luci.js` with the class-based module loader) refused to load
+  `snort.style`, `snort.api` and `snort.util` with
+  `TypeError: "<name>" factory yields invalid constructor` because the helper
+  modules still returned plain objects/strings. All three modules now export a
+  `baseclass` subclass via `'require baseclass'` + `baseclass.extend()`, which
+  stays compatible with the classic loader of LuCI 24.10 and older.
+- The stylesheet is exported as `snort.style.css`; `overview` and `alerts`
+  render it with `E('style', {}, [ style.css ])`.
+- The Node unit tests keep loading `snort/util.js` through `module.exports`.
+
 ## [4.1.0] - 2026-11-05
 
 ### Added

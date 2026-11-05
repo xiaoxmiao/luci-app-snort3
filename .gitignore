@@ -6,3 +6,4 @@ Thumbs.db
 *.ipk
 *.apk
 *.lmo.tmp
+.workbuddy/

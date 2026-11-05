@@ -1,6 +1,13 @@
 'use strict';
 
-return [
+'require baseclass';
+
+/*
+ * LuCI >= 26 requires class module exports, see snort/util.js for details.
+ * Views render the stylesheet with E('style', {}, [ style.css ]).
+ */
+return baseclass.extend({
+	css: [
 	'.snort3-page { display: flex; flex-direction: column; gap: 1rem; }',
 	'.snort3-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }',
 	'.snort3-header h2 { margin: 0 0 .25rem 0; }',
@@ -34,4 +41,5 @@ return [
 	'.snort3-code { font-family: monospace; overflow-wrap: anywhere; }',
 	'.snort3-hint { display: flex; flex-direction: column; gap: .5rem; }',
 	'.snort3-hint pre { margin: 0; padding: .6rem; background: rgba(127, 127, 127, .09); border-radius: .35rem; overflow: auto; }'
-].join('\n');
+	].join('\n')
+});

@@ -1,6 +1,7 @@
 'use strict';
 
 'require rpc';
+'require baseclass';
 
 var callStatus = rpc.declare({
 	object: 'luci.snort',
@@ -46,7 +47,10 @@ var callRulesCleanup = rpc.declare({
 	expect: {}
 });
 
-return {
+/*
+ * LuCI >= 26 requires class module exports, see snort/util.js for details.
+ */
+return baseclass.extend({
 	status: callStatus,
 	service: callService,
 	alerts: callAlerts,
@@ -54,4 +58,4 @@ return {
 	rulesUpdate: callRulesUpdate,
 	rulesFix: callRulesFix,
 	rulesCleanup: callRulesCleanup
-};
+});

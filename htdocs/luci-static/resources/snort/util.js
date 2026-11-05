@@ -1,8 +1,15 @@
 'use strict';
 
+'require baseclass';
+
 /*
- * Pure helpers shared by the Snort3 views.  Keep this file free of LuCI
- * dependencies so it can be exercised by the Node test-suite.
+ * Pure helpers shared by the Snort3 views.  Keep the implementation free of
+ * LuCI API calls so it can be exercised by the Node test-suite.
+ *
+ * LuCI >= 26 loads every required module as a class file and rejects any
+ * return value that is not a `baseclass` subclass (the browser reports
+ * "factory yields invalid constructor"), so the helper object is exported
+ * through `baseclass.extend()`.  Node keeps using the plain object below.
  */
 
 var Util = {};
@@ -204,7 +211,7 @@ Util.msg = function(code, fallback) {
 	}
 };
 
-if (typeof module !== 'undefined' && module.exports)
-	module.exports = Util;
+if (typeof baseclass !== 'undefined')
+	return baseclass.extend(Util);
 
-return Util;
+module.exports = Util;

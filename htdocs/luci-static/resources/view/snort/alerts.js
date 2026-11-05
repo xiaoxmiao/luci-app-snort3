@@ -128,7 +128,7 @@ return view.extend({
 		]);
 
 		var page = E('div', { 'class': 'snort3-page' }, [
-			E('style', {}, [ style ]),
+			E('style', {}, [ style.css ]),
 			header,
 			alertsSection,
 			logsSection,
