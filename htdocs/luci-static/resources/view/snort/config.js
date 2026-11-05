@@ -178,7 +178,7 @@ return view.extend({
 		o.placeholder = '/etc/snort/nfq.rules';
 		o.datatype = 'string';
 
-		return m.render().then(function(node) {
+		return Promise.resolve(m.render()).then(function(node) {
 			return E('div', {}, [
 				E('div', { 'style': 'margin:0 0 .75rem 0' },
 					E('a', {
