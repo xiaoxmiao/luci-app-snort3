@@ -128,3 +128,34 @@ test('the committed Simplified Chinese catalog is complete and compiled', () => 
 	assert.ok(translated > 100);
 	assert.equal(lookup(compiled, 'Settings'), '设置');
 });
+
+test('all six committed catalogs have a matching compiled LMO', () => {
+	const root = path.join(__dirname, '..');
+	const langs = [
+		[ 'de', 'de' ], [ 'es', 'es' ], [ 'fr', 'fr' ],
+		[ 'pt_BR', 'pt-br' ], [ 'ru', 'ru' ], [ 'zh_Hans', 'zh-cn' ]
+	];
+
+	for (const [ dir, lmo ] of langs) {
+		const catalog = parsePo(fs.readFileSync(
+			path.join(root, `po/${dir}/snort.po`), 'utf8'));
+		const compiled = fs.readFileSync(
+			path.join(root, `dist/lmo/snort.${lmo}.lmo`));
+		let translated = 0;
+
+		for (const entry of catalog) {
+			if (!entry.msgid)
+				continue;
+
+			assert.ok(entry.msgstr, `${dir}: empty translation for ${entry.msgid}`);
+
+			if (entry.msgstr !== entry.msgid) {
+				assert.equal(lookup(compiled, entry.msgid), entry.msgstr,
+					`${dir}: ${entry.msgid}`);
+				translated++;
+			}
+		}
+
+		assert.ok(translated > 100, `${dir}: only ${translated} translated entries`);
+	}
+});

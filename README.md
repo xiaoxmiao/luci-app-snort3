@@ -2,7 +2,7 @@
 
 Modern LuCI web interface for **Snort3 IDS/IPS** on OpenWrt. The application is
 implemented as a **JavaScript LuCI frontend** backed by an **rpcd/ucode** service;
-the old Lua implementation is preserved under `legacy/` for reference.
+the pre-1.0 Lua/CGI code is archived in the `legacy-and-beta` git tag.
 
 [English](#english) | [Français](#français) | [中文](#中文)
 
@@ -19,88 +19,51 @@ This module gives Snort3 a native place in LuCI:
 - recent alerts and system log excerpts, refreshed every 5 seconds;
 - optional persistent or in-memory rule storage, scheduled updates and boot-time top-up;
 - complete UCI settings for service, logging, rules, OpenAppID and NFQ;
-- English source strings with complete French and Simplified Chinese catalogs.
+- English source strings with German, Spanish, French, Brazilian Portuguese,
+  Russian and Simplified Chinese catalogs (six translation packages).
 
 The browser never runs privileged commands. All service, file and log access is
 performed by the rpcd/ucode backend through a small allow-listed RPC surface.
 
 ### Requirements
 
-- OpenWrt **23.05 or newer** (24.10 LTS recommended) with the JavaScript LuCI runtime;
+- OpenWrt **25.12 or newer** with the JavaScript LuCI runtime (`apk` packages only);
 - `luci-base`;
 - `rpcd-mod-ucode` (the `luci.snort` rpcd plugin);
-- `snort3` and its init script at `/etc/init.d/snort`;
-- the `snort3` package (for `snort-mgr` and the init script); rules are downloaded
-  updater is bundled with this application, so no extra package is required;
-- optional: `luci-i18n-base-fr` or `luci-i18n-base-zh-cn` for the standard
-  LuCI interface in French or Simplified Chinese.
+- `snort3` with its init script at `/etc/init.d/snort` and `snort-mgr`;
+- the bundled rules updater (no extra package is required);
+- optional `luci-i18n-base-*` packages for the LuCI interface language.
 
 ```sh
-# OpenWrt 24.10 and older (opkg)
-opkg update
-opkg install luci-base rpcd-mod-ucode snort3
-
-# OpenWrt 25.12 and newer (apk)
 apk update
 apk add luci-base rpcd-mod-ucode snort3
 ```
 
-### Installation
+### Installation (APK only)
 
-#### OpenWrt 25.12+ — install an APK
+Only APK packages are supported, on OpenWrt 25.12 and newer. There is no shell
+installer, no IPK/opkg build path and no manual file-copy installation.
 
-OpenWrt 25.12 and newer use the `apk` package manager. Build the packages with
-the included GitHub Actions workflow, or locally with an APK-enabled SDK (see
-[docs/INSTALLATION.md](docs/INSTALLATION.md)).
+Build the packages with the included GitHub Actions workflow (`Build OpenWrt
+APK`), or locally with an APK-enabled SDK (see
+[docs/INSTALLATION.md](docs/INSTALLATION.md)). Then copy the `.apk` files to the
+router and install them as root:
 
 ```sh
-# Copy the packages to the router, then install them as root.
 apk add --allow-untrusted ./luci-app-snort3-*.apk
+apk add --allow-untrusted ./luci-i18n-snort3-de-*.apk
+apk add --allow-untrusted ./luci-i18n-snort3-es-*.apk
+apk add --allow-untrusted ./luci-i18n-snort3-fr-*.apk
+apk add --allow-untrusted ./luci-i18n-snort3-pt-br-*.apk
+apk add --allow-untrusted ./luci-i18n-snort3-ru-*.apk
 apk add --allow-untrusted ./luci-i18n-snort3-zh-cn-*.apk
-apk add --allow-untrusted ./luci-i18n-snort3-fr-*.apk   # optional
 ```
 
-The `luci-app-snort3` package is architecture-independent (`LUCI_PKGARCH:=all`)
-when built with the standard `luci.mk`. Build it once with an x86/64 SDK and
-install it on any router running the same OpenWrt release. Use an SDK matching
-the router release; the package manager version (apk versus opkg) must match.
-
-#### OpenWrt 24.10 and older — build an IPK
-
-Copy this directory to `feeds/luci/applications/luci-app-snort3`, enable
-`luci-app-snort3`, `luci-i18n-snort3-fr` and/or `luci-i18n-snort3-zh-cn` in
-`menuconfig`, then build normally:
-
-```sh
-make package/luci-app-snort3/compile V=s
-```
-
-`luci.mk` installs the files under `root/`, the views under `htdocs/`, and
-creates the translation packages from `po/`.
-
-#### GitHub Actions
-
-The `Build OpenWrt APK` workflow downloads an official SDK, builds the
-application and both translation packages, and uploads the `.apk` files as a
-workflow artifact. It can be started manually with a different SDK version or
-target. See [.github/workflows/build-apk.yml](.github/workflows/build-apk.yml).
-
-#### Direct installation (fallback)
-
-The installer remains available for systems without a package build, but APK or
-IPK packages are the supported installation path. It installs the JavaScript
-views, ucode backend, sync helper, init script, ucitrack definition, menu/ACL,
-default `/etc/config/snort-web` and both prebuilt catalogs.
-
-```sh
-# From a downloaded/cloned repository
-sh install.sh
-
-# Or download and run the installer directly
-wget -O /tmp/install-snort3.sh \
-  https://raw.githubusercontent.com/xiaoxmiao/luci-app-snort3/main/install.sh
-sh /tmp/install-snort3.sh
-```
+`--allow-untrusted` is required for locally built packages without the OpenWrt
+release signing key. The application package is architecture-independent
+(`LUCI_PKGARCH:=all`), so one x86/64 SDK build can be installed on any target
+running the same OpenWrt release. Always match the SDK release to the router.
+Hard-refresh the browser (Ctrl+F5) after upgrading.
 
 ### Access
 
@@ -213,13 +176,12 @@ root/usr/libexec/snort-web-sync            snort-web -> snort synchronisation
 root/etc/init.d/snort-web                  boot-time sync before snort
 root/usr/share/ucitrack/                   Save & Apply restart trigger
 root/etc/uci-defaults/                     migration, sync and scheduling
-dist/lmo/snort.fr.lmo                      prebuilt French catalog
-dist/lmo/snort.zh-cn.lmo                   prebuilt Simplified Chinese catalog
-po/fr/snort.po                             French catalog
-po/zh_Hans/snort.po                        Simplified Chinese catalog
+dist/lmo/snort.*.lmo                       six prebuilt catalogs
+po/de, po/es, po/fr, po/pt_BR,            translation catalogs
+po/ru, po/zh_Hans/
 po/templates/snort.pot                     translation template
-legacy/lua-v3/                             previous Lua implementation
-legacy/v0-cgi-interface/                   original CGI prototype
+.github/workflows/build-apk.yml            APK build workflow
+scripts/, tests/                           build helpers and unit tests
 ```
 
 ### APK build workflow
@@ -228,8 +190,8 @@ The workflow at `.github/workflows/build-apk.yml` can be run from the GitHub
 **Actions** tab. It defaults to the OpenWrt 25.12.6 x86/64 SDK and produces:
 
 - `luci-app-snort3-*.apk`
-- `luci-i18n-snort3-fr-*.apk`
-- `luci-i18n-snort3-zh-cn-*.apk`
+- `luci-i18n-snort3-de-*.apk`, `-es-*.apk`, `-fr-*.apk`
+- `luci-i18n-snort3-pt-br-*.apk`, `-ru-*.apk`, `-zh-cn-*.apk`
 
 Because the application and translation packages are architecture-independent,
 the x86/64 SDK output can be installed on other targets running the same
@@ -299,19 +261,18 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for implementation notes.
 - **Settings do not reach Snort** — run `/usr/libexec/snort-web-sync --sync`
   and check `uci show snort-web`, `uci show snort`, and
   `logread | grep -i snort-web`.
-- **French or Chinese texts do not appear** — check
-  `/usr/lib/lua/luci/i18n/snort.fr.lmo` or `snort.zh-cn.lmo`, log out and back
-  in, and make sure the LuCI language is French or Chinese.
+- **Translations do not appear** — check that the matching
+  `luci-i18n-snort3-*` package is installed and
+  `/usr/lib/lua/luci/i18n/snort.<lang>.lmo` exists, then log out and back in.
 - **The service action fails** — check that `/etc/init.d/snort` exists and is
   executable, then inspect `logread | grep -i snort`.
 
-Run `sh verify.sh` on the router for a file, dependency and ubus check.
+On the router, verify the backend with `ubus list luci.snort` and `ubus call luci.snort status`.
 
 ### Legacy versions
 
-The Lua CBI/controller implementation and its original installer are kept in
-`legacy/lua-v3/`; the first CGI prototype is in `legacy/v0-cgi-interface/`.
-They are not installed by the current package.
+The pre-1.0 Lua/CGI implementations and all 4.x beta history are archived in
+the `legacy-and-beta` git tag. The `main` branch starts at version 1.0.0.
 
 ### License
 
@@ -327,7 +288,8 @@ GPL-2.0. See [LICENSE](LICENSE).
 
 Cette application fournit une interface LuCI moderne pour **Snort3 IDS/IPS** sur
 OpenWrt. Le frontend est écrit en **JavaScript LuCI** et repose sur un service
-**rpcd/ucode**. L'ancienne implémentation Lua est conservée dans `legacy/`.
+**rpcd/ucode**. L'implémentation Lua antérieure à 1.0 est archivée dans le tag
+`legacy-and-beta`.
 
 Fonctionnalités :
 
@@ -346,7 +308,7 @@ contrôle les actions autorisées, les chemins et l'accès aux fichiers.
 
 ### Prérequis
 
-- OpenWrt **23.05 ou ultérieur** (24.10 LTS recommandé) avec LuCI JavaScript ;
+- OpenWrt **25.12 ou ultérieur** avec LuCI JavaScript (paquets `apk` uniquement) ;
 - `luci-base` ;
 - `rpcd-mod-ucode` ;
 - `snort3` et son script `/etc/init.d/snort` ;
@@ -355,57 +317,30 @@ contrôle les actions autorisées, les chemins et l'accès aux fichiers.
   LuCI standard en français ou en chinois simplifié.
 
 ```sh
-# OpenWrt 24.10 et antérieur (opkg)
-opkg update
-opkg install luci-base rpcd-mod-ucode snort3
-
-# OpenWrt 25.12 et ultérieur (apk)
 apk update
 apk add luci-base rpcd-mod-ucode snort3
 ```
 
-### Installation
+### Installation (APK uniquement)
 
-#### OpenWrt 25.12+ — paquets APK
+Seuls les paquets APK sont pris en charge, sur OpenWrt 25.12 et ultérieur.
+Il n'existe ni installateur shell, ni paquets IPK/opkg, ni installation manuelle.
 
 ```sh
 apk add --allow-untrusted ./luci-app-snort3-*.apk
+apk add --allow-untrusted ./luci-i18n-snort3-de-*.apk
+apk add --allow-untrusted ./luci-i18n-snort3-es-*.apk
+apk add --allow-untrusted ./luci-i18n-snort3-fr-*.apk
+apk add --allow-untrusted ./luci-i18n-snort3-pt-br-*.apk
+apk add --allow-untrusted ./luci-i18n-snort3-ru-*.apk
 apk add --allow-untrusted ./luci-i18n-snort3-zh-cn-*.apk
-apk add --allow-untrusted ./luci-i18n-snort3-fr-*.apk   # facultatif
 ```
 
-Le workflow **Build OpenWrt APK** construit les paquets avec un SDK officiel. Le
-paquet principal est indépendant de l'architecture (`LUCI_PKGARCH:=all`) et peut
-être installé sur une autre cible fonctionnant avec la même version d'OpenWrt.
+`--allow-untrusted` est nécessaire pour les paquets compilés localement. Le
+paquet principal est indépendant de l'architecture (`LUCI_PKGARCH:=all`) : une
+compilation avec un SDK x86/64 s'installe sur toute cible utilisant la même
+version d'OpenWrt. Rechargez le navigateur (Ctrl+F5) après une mise à jour.
 
-#### OpenWrt 24.10 et antérieur — paquets IPK
-
-Copiez ce répertoire dans `feeds/luci/applications/luci-app-snort3`, activez
-`luci-app-snort3`, `luci-i18n-snort3-fr` et/ou `luci-i18n-snort3-zh-cn` dans
-`menuconfig`, puis compilez normalement :
-
-```sh
-make package/luci-app-snort3/compile V=s
-```
-
-#### Installation directe (secours)
-
-```sh
-# Depuis un dépôt cloné
-sh install.sh
-
-# Ou téléchargement direct
-wget -O /tmp/install-snort3.sh \
-  https://raw.githubusercontent.com/xiaoxmiao/luci-app-snort3/main/install.sh
-sh /tmp/install-snort3.sh
-```
-
-Le script installe les vues JavaScript, le backend ucode, le synchroniseur, le
-script d'initialisation, le fichier ucitrack, le menu, les ACL, la configuration
-`/etc/config/snort-web` et les deux catalogues précompilés.
-
-Voir [docs/INSTALLATION.md](docs/INSTALLATION.md) pour la compilation APK locale
-et l'installation manuelle.
 
 ### Utilisation
 
@@ -447,13 +382,12 @@ root/usr/libexec/snort-web-sync            synchronisation snort-web -> snort
 root/etc/init.d/snort-web                  synchronisation avant le démarrage de snort
 root/usr/share/ucitrack/                   déclencheur après Enregistrer et appliquer
 root/etc/uci-defaults/                     migration, synchronisation et lien de règles
-dist/lmo/snort.fr.lmo                      catalogue français précompilé
-dist/lmo/snort.zh-cn.lmo                   catalogue chinois simplifié précompilé
-po/fr/snort.po                             catalogue français
-po/zh_Hans/snort.po                        catalogue chinois simplifié
+dist/lmo/snort.*.lmo                       six catalogues précompilés
+po/de, po/es, po/fr, po/pt_BR,            catalogues de traduction
+po/ru, po/zh_Hans/
 po/templates/snort.pot                     modèle de traduction
-legacy/lua-v3/                             ancienne implémentation Lua
-legacy/v0-cgi-interface/                   prototype CGI d'origine
+.github/workflows/build-apk.yml            workflow de compilation APK
+scripts/, tests/                           outils de build et tests
 ```
 
 ### Développement
@@ -462,7 +396,7 @@ legacy/v0-cgi-interface/                   prototype CGI d'origine
 npm test                 # tests JavaScript, paquet et LMO
 npm run check:js         # vérification syntaxique JavaScript
 npm run check:i18n       # couverture de tous les catalogues po/*/snort.po
-npm run build:lmo        # régénère les deux catalogues précompilés
+npm run build:lmo        # régénère les six catalogues précompilés
 npm run check:ucode      # validation du plugin avec ucode-lsp
 npm run check            # JS + tests + i18n
 ```
@@ -486,20 +420,18 @@ Voir [CONTRIBUTING.md](CONTRIBUTING.md) pour les détails d'implémentation.
   `uci show snort` et `logread | grep -i snort-web`.
 - **Mise à jour des règles désactivée** : vérifiez que
   `/usr/libexec/snort-web-rules-update` est présent et exécutable.
-- **Traduction française ou chinoise absente** : vérifiez
-  `/usr/lib/lua/luci/i18n/snort.fr.lmo` ou `snort.zh-cn.lmo`, reconnectez-vous
-  à LuCI et choisissez la langue.
+- **Traduction absente** : vérifiez que le paquet `luci-i18n-snort3-*` correspondant
+  est installé et que `/usr/lib/lua/luci/i18n/snort.<langue>.lmo` existe.
 - **Action de service en échec** : vérifiez `/etc/init.d/snort` et consultez
   `logread | grep -i snort`.
 
-Exécutez `sh verify.sh` sur le routeur pour contrôler les fichiers, dépendances
-et l'objet ubus.
+Sur le routeur, vérifiez le backend avec `ubus list luci.snort` et
+`ubus call luci.snort status`.
 
 ### Anciennes versions
 
-L'implémentation Lua et son installateur sont conservés dans `legacy/lua-v3/`.
-Le prototype CGI initial se trouve dans `legacy/v0-cgi-interface/`. Ces fichiers
-ne sont pas installés par le paquet actuel.
+Les implémentations Lua/CGI antérieures à 1.0 et tout l'historique beta 4.x sont
+archivés dans le tag git `legacy-and-beta`. La branche `main` démarre à 1.0.0.
 
 ### Licence
 
@@ -515,28 +447,37 @@ GPL-2.0. Voir [LICENSE](LICENSE).
 
 这是 OpenWrt **Snort3 IDS/IPS** 的现代化 LuCI 管理界面：前端使用 JavaScript，
 后端使用 rpcd/ucode。它可以查看运行状态、控制服务、管理规则，并提供完整的
-服务、日志、OpenAppID 和 NFQ 设置。界面包含英文源字符串、法语和简体中文
-翻译。
+服务、日志、OpenAppID 和 NFQ 设置。界面提供英语源字符串，以及德语、西班牙语、法语、葡萄牙语（巴西）、俄语和
+简体中文共六种翻译包。
 
 ### 兼容性
 
-- OpenWrt **23.05 或更高版本**；推荐 24.10 LTS；
-- OpenWrt **25.12 或更高版本** 使用 `.apk` 软件包；
-- OpenWrt **24.10 及更早版本** 使用 `.ipk` 软件包；
+- OpenWrt **25.12 或更高版本**（仅支持 `apk` 软件包）；
 - 需要 `luci-base`、`rpcd-mod-ucode` 和 `snort3`。
 
-### 安装 APK（OpenWrt 25.12+）
+### 安装 APK（唯一方式）
 
-从 GitHub Actions 的 **Build OpenWrt APK** 工作流下载构建产物，或者使用
-与路由器版本匹配的 OpenWrt SDK 本地构建，然后把文件复制到路由器：
+仅支持 OpenWrt 25.12+ 的 `apk` 软件包，没有 shell 安装脚本、IPK/opkg 构建方式，
+也不提供手动复制文件的安装方法。
+
+先用 `apk add luci-base rpcd-mod-ucode snort3` 安装依赖，再从 GitHub Actions
+的 **Build OpenWrt APK** 工作流下载产物（或用匹配版本的 SDK 本地构建），
+复制到路由器后执行：
 
 ```sh
 apk add --allow-untrusted ./luci-app-snort3-*.apk
+apk add --allow-untrusted ./luci-i18n-snort3-de-*.apk
+apk add --allow-untrusted ./luci-i18n-snort3-es-*.apk
+apk add --allow-untrusted ./luci-i18n-snort3-fr-*.apk
+apk add --allow-untrusted ./luci-i18n-snort3-pt-br-*.apk
+apk add --allow-untrusted ./luci-i18n-snort3-ru-*.apk
 apk add --allow-untrusted ./luci-i18n-snort3-zh-cn-*.apk
 ```
 
-主程序包使用 `LUCI_PKGARCH:=all`，与 CPU 架构无关；翻译包同样是纯数据包。
-请确保 SDK 的 OpenWrt 版本与路由器一致。
+`--allow-untrusted` 用于本地构建的未签名包。主程序包与架构无关
+（`LUCI_PKGARCH:=all`），x86/64 SDK 的产物可安装到同版本 OpenWrt 的其他目标。
+升级后请强制刷新浏览器（Ctrl+F5）。
+
 
 ### 配置同步机制
 
@@ -582,14 +523,14 @@ LuCI 应用的设置保存在 **`/etc/config/snort-web`**，而 OpenWrt 的 `sno
 npm test                 # JavaScript、软件包和 LMO 测试
 npm run check:js         # JavaScript 语法检查
 npm run check:i18n       # 检查所有 po/*/snort.po 的翻译覆盖率
-npm run build:lmo        # 重新生成 dist/lmo 下的两个预编译语言包
+npm run build:lmo        # 重新生成 dist/lmo 下的六个预编译语言包
 npm run check:ucode      # 使用 ucode-lsp 检查后端
 npm run check            # 全部检查
 ```
 
 APK 构建步骤和本地 SDK 命令见
-[docs/INSTALLATION.md](docs/INSTALLATION.md)。路由器端可运行
-`sh verify.sh` 检查文件、依赖和 ubus 对象。
+[docs/INSTALLATION.md](docs/INSTALLATION.md)。路由器端可用
+`ubus list luci.snort` 和 `ubus call luci.snort status` 检查后端。
 
 ### 许可证
 

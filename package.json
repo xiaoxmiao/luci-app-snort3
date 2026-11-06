@@ -1,6 +1,6 @@
 {
   "name": "luci-app-snort3",
-  "version": "4.4.5",
+  "version": "1.0.0",
   "private": true,
   "description": "LuCI JavaScript frontend and rpcd/ucode backend for Snort3 on OpenWrt",
   "license": "GPL-2.0",
@@ -12,7 +12,7 @@
     "check:js": "node scripts/check-js.js",
     "check:i18n": "node scripts/check-i18n.js",
     "check:ucode": "npx --yes ucode-lsp root/usr/share/rpcd/ucode/luci.snort.uc",
-    "build:lmo": "node scripts/po2lmo.js po/fr/snort.po dist/lmo/snort.fr.lmo && node scripts/po2lmo.js po/zh_Hans/snort.po dist/lmo/snort.zh-cn.lmo",
+    "build:lmo": "node scripts/po2lmo.js po/de/snort.po dist/lmo/snort.de.lmo && node scripts/po2lmo.js po/es/snort.po dist/lmo/snort.es.lmo && node scripts/po2lmo.js po/fr/snort.po dist/lmo/snort.fr.lmo && node scripts/po2lmo.js po/pt_BR/snort.po dist/lmo/snort.pt-br.lmo && node scripts/po2lmo.js po/ru/snort.po dist/lmo/snort.ru.lmo && node scripts/po2lmo.js po/zh_Hans/snort.po dist/lmo/snort.zh-cn.lmo",
     "check": "npm run check:js && npm run test && npm run check:i18n"
   }
 }

@@ -4,8 +4,7 @@
 # This Makefile is intended to be used inside the LuCI feed:
 #   feeds/luci/applications/luci-app-snort3/Makefile
 #
-# For direct installation on a router without rebuilding the firmware, use
-# ./install.sh instead.
+# Install the built .apk packages on the router; there is no shell installer.
 #
 
 include $(TOPDIR)/rules.mk
@@ -24,7 +23,7 @@ LUCI_DEPENDS:=+luci-base +rpcd-mod-ucode
 LUCI_EXTRA_DEPENDS:=snort3$(if $(CONFIG_USE_APK), (>=0))
 LUCI_PKGARCH:=all
 
-PKG_VERSION:=4.4.5
+PKG_VERSION:=1.0.0
 PKG_RELEASE:=1
 PKG_PO_VERSION:=$(PKG_VERSION)-r$(PKG_RELEASE)
 

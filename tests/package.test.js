@@ -33,6 +33,46 @@ function parseUci(text) {
 	return sections;
 }
 
+test('the main branch is APK-only and the legacy tree is gone', () => {
+	for (const file of [ 'install.sh', 'verify.sh', 'PROJECT_STRUCTURE.txt', 'legacy' ])
+		assert.equal(fs.existsSync(path.join(ROOT, file)), false, file);
+
+	const makefile = read('Makefile');
+	const readme = read('README.md');
+	const install = read('docs/INSTALLATION.md');
+	const contributing = read('CONTRIBUTING.md');
+
+	assert.doesNotMatch(makefile, /install\.sh/);
+	assert.doesNotMatch(readme, /install\.sh|verify\.sh|opkg (update|install|remove)/);
+	assert.doesNotMatch(install, /install\.sh|verify\.sh|opkg (update|install|remove)|Build an IPK|Manual installation/);
+	assert.doesNotMatch(contributing, /install\.sh|verify\.sh/);
+	assert.match(readme, /apk add --allow-untrusted/);
+});
+
+test('six translation packages are wired up', () => {
+	const pkg = JSON.parse(read('package.json'));
+	const workflow = read('.github/workflows/build-apk.yml');
+	const langs = [ 'de', 'es', 'fr', 'pt_BR', 'ru', 'zh_Hans' ];
+	const lmos = [ 'snort.de.lmo', 'snort.es.lmo', 'snort.fr.lmo',
+	               'snort.pt-br.lmo', 'snort.ru.lmo', 'snort.zh-cn.lmo' ];
+
+	for (const lang of langs) {
+		assert.equal(fs.existsSync(path.join(ROOT, 'po', lang, 'snort.po')), true, lang);
+		assert.match(workflow, new RegExp('CONFIG_LUCI_LANG_' + lang + '=y'));
+	}
+	for (const lmo of lmos) {
+		assert.equal(fs.existsSync(path.join(ROOT, 'dist/lmo', lmo)), true, lmo);
+		assert.ok(pkg.scripts['build:lmo'].includes(lmo), lmo);
+	}
+	assert.match(workflow, /luci-i18n-snort3-pt-br/);
+});
+
+test('the main baseline starts at 1.0.0', () => {
+	assert.match(read('Makefile'), /PKG_VERSION:=1\.0\.0/);
+	assert.equal(JSON.parse(read('package.json')).version, '1.0.0');
+	assert.match(read('CHANGELOG.md'), /^## \[1\.0\.0\]/m);
+});
+
 test('the default snort-web configuration matches the sync helper', () => {
 	const sections = parseUci(read('root/etc/config/snort-web'));
 	const helper = read('root/usr/libexec/snort-web-sync');

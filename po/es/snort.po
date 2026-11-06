@@ -1,0 +1,500 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: es\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "1 day"
+msgstr "1 día"
+
+msgid "1 month"
+msgstr "1 mes"
+
+msgid "1 week"
+msgstr "1 semana"
+
+msgid "Actions"
+msgstr "Acciones"
+
+msgid "Advanced"
+msgstr "Avanzado"
+
+msgid "Alert"
+msgstr "Alerta"
+
+msgid "Alert file"
+msgstr "Archivo de alertas"
+
+msgid "Alerts"
+msgstr "Alertas"
+
+msgid "Auto-refresh every 5 seconds"
+msgstr "Actualización automática cada 5 segundos"
+
+msgid "Auto-start"
+msgstr "Inicio automático"
+
+msgid "Auto-start disabled"
+msgstr "Inicio automático desactivado"
+
+msgid "Auto-start enabled"
+msgstr "Inicio automático activado"
+
+msgid "Automatic (WAN, LAN, eth0)"
+msgstr "Automático (WAN, LAN, eth0)"
+
+msgid "Automatic rule updates"
+msgstr "Actualizaciones automáticas de reglas"
+
+msgid "Backend error"
+msgstr "Error del backend"
+
+msgid "Block"
+msgstr "Bloquear"
+
+msgid "Capture Length"
+msgstr "Longitud de captura"
+
+msgid "Chain priority"
+msgstr "Prioridad de cadena"
+
+msgid "Chain type"
+msgstr "Tipo de cadena"
+
+msgid "Community rules"
+msgstr "Reglas comunitarias"
+
+msgid "Configuration directory"
+msgstr "Directorio de configuración"
+
+msgid "currently unavailable"
+msgstr "no disponible actualmente"
+
+msgid "DAQ method"
+msgstr "Método DAQ"
+
+msgid "Default"
+msgstr "Predeterminado"
+
+msgid "Default action for rules"
+msgstr "Acción predeterminada para las reglas"
+
+msgid "Detailed JSON alerts"
+msgstr "Alertas JSON detalladas"
+
+msgid "Device to monitor. Automatic follows the WAN device, then the LAN bridge, then eth0."
+msgstr "Dispositivo a supervisar. El modo automático usa el dispositivo WAN, luego el puente LAN y después eth0."
+
+msgid "Directory does not exist:"
+msgstr "El directorio no existe:"
+
+msgid "Directory for temporary files and downloaded rules"
+msgstr "Directorio para archivos temporales y reglas descargadas"
+
+msgid "Disable at boot"
+msgstr "Desactivar en el arranque"
+
+msgid "Disabled"
+msgstr "Desactivado"
+
+msgid "Drop"
+msgstr "Descartar"
+
+msgid "Enable application detection with the OpenAppID package"
+msgstr "Activar la detección de aplicaciones con el paquete OpenAppID"
+
+msgid "Enable at boot"
+msgstr "Activar en el arranque"
+
+msgid "Enable event logging"
+msgstr "Activar el registro de eventos"
+
+msgid "Enable logging"
+msgstr "Activar el registro"
+
+msgid "Enable Snort"
+msgstr "Activar Snort"
+
+msgid "Enabled"
+msgstr "Activado"
+
+msgid "Enter an Oinkcode before downloading subscriber rules"
+msgstr "Introduzca un Oinkcode antes de descargar las reglas de suscripción"
+
+msgid "Enter your Oinkcode if you have one"
+msgstr "Introduzca su Oinkcode si dispone de uno"
+
+msgid "Error"
+msgstr "Error"
+
+msgid "Error creating symbolic link"
+msgstr "Error al crear el enlace simbólico"
+
+msgid "Existing rules path is not a directory"
+msgstr "La ruta de reglas existente no es un directorio"
+
+msgid "External IP address range"
+msgstr "Rango de direcciones IP externas"
+
+msgid "External network"
+msgstr "Red externa"
+
+msgid "Fanout type"
+msgstr "Tipo de distribución"
+
+msgid "First queue number"
+msgstr "Número de la primera cola"
+
+msgid "How often scheduled rule updates run."
+msgstr "Frecuencia de las actualizaciones programadas de reglas."
+
+msgid "Idle"
+msgstr "Inactivo"
+
+msgid "IDS (Detection)"
+msgstr "IDS (Detección)"
+
+msgid "IDS = Detection only, IPS = Active prevention"
+msgstr "IDS = solo detección, IPS = prevención activa"
+
+msgid "In progress..."
+msgstr "En curso..."
+
+msgid "Interface"
+msgstr "Interfaz"
+
+msgid "Invalid action"
+msgstr "Acción no válida"
+
+msgid "IP address range to protect"
+msgstr "Rango de direcciones IP a proteger"
+
+msgid "IPS (Prevention)"
+msgstr "IPS (Prevención)"
+
+msgid "Keep downloaded rules in the configuration directory across reboots. When disabled, rules are downloaded again after every boot."
+msgstr "Conservar las reglas descargadas en el directorio de configuración tras los reinicios. Si se desactiva, las reglas se descargan de nuevo después de cada arranque."
+
+msgid "Kernel load balancing algorithm"
+msgstr "Algoritmo de equilibrio de carga del núcleo"
+
+msgid "Last updated:"
+msgstr "Última actualización:"
+
+msgid "Loading..."
+msgstr "Cargando..."
+
+msgid "Local network"
+msgstr "Red local"
+
+msgid "Log directory"
+msgstr "Directorio de registros"
+
+msgid "Log files:"
+msgstr "Archivos de registro:"
+
+msgid "Logging configuration"
+msgstr "Configuración del registro"
+
+msgid "Maximum number of packet threads, 0 uses the number of CPU cores"
+msgstr "Número máximo de hilos de paquetes; 0 usa el número de núcleos de CPU"
+
+msgid "Maximum packet capture size"
+msgstr "Tamaño máximo de captura de paquetes"
+
+msgid "Maximum queue length"
+msgstr "Longitud máxima de la cola"
+
+msgid "Memory"
+msgstr "Memoria"
+
+msgid "Mode"
+msgstr "Modo"
+
+msgid "Move the existing rules into the persistent /etc/snort/rules directory?"
+msgstr "¿Mover las reglas existentes al directorio persistente /etc/snort/rules?"
+
+msgid "Netfilter queue settings used when the DAQ method is NFQ."
+msgstr "Ajustes de colas Netfilter usados cuando el método DAQ es NFQ."
+
+msgid "Network interface"
+msgstr "Interfaz de red"
+
+msgid "NFQ (for IPS)"
+msgstr "NFQ (para IPS)"
+
+msgid "NFQ settings"
+msgstr "Ajustes de NFQ"
+
+msgid "nftables chain type used for IPS mode"
+msgstr "Tipo de cadena nftables usado en modo IPS"
+
+msgid "No alerts recorded"
+msgstr "No hay alertas registradas"
+
+msgid "No logs"
+msgstr "No hay registros"
+
+msgid "No recent alerts - Your network is secure"
+msgstr "No hay alertas recientes: su red es segura"
+
+msgid "No rule files found"
+msgstr "No se encontraron archivos de reglas"
+
+msgid "No rules found"
+msgstr "No se encontraron reglas"
+
+msgid "No rules yet"
+msgstr "Aún no hay reglas"
+
+msgid "No update log yet."
+msgstr "Aún no hay registro de actualizaciones."
+
+msgid "Number of NFQ queues, usually 2 to 8"
+msgstr "Número de colas NFQ, normalmente de 2 a 8"
+
+msgid "Oinkcode (subscriber rules)"
+msgstr "Oinkcode (reglas de suscripción)"
+
+msgid "Old directory backed up. Symbolic link created successfully"
+msgstr "Directorio anterior respaldado. Enlace simbólico creado correctamente"
+
+msgid "OpenAppID"
+msgstr "OpenAppID"
+
+msgid "Operating mode"
+msgstr "Modo de operación"
+
+msgid "Overview"
+msgstr "Resumen"
+
+msgid "Packet acquisition method"
+msgstr "Método de adquisición de paquetes"
+
+msgid "Packet thread count"
+msgstr "Número de hilos de paquetes"
+
+msgid "Path where logs will be stored"
+msgstr "Ruta donde se guardarán los registros"
+
+msgid "PCAP (Recommended)"
+msgstr "PCAP (recomendado)"
+
+msgid "Per-thread JSON alerts"
+msgstr "Alertas JSON por hilo"
+
+msgid "Persistent"
+msgstr "Persistente"
+
+msgid "Persistent rules"
+msgstr "Reglas persistentes"
+
+msgid "PID"
+msgstr "PID"
+
+msgid "Queue count"
+msgstr "Número de colas"
+
+msgid "Real-time status, service control and rules management."
+msgstr "Estado en tiempo real, control del servicio y gestión de reglas."
+
+msgid "Recent alerts"
+msgstr "Alertas recientes"
+
+msgid "Recent alerts (50 most recent)"
+msgstr "Alertas recientes (50 más recientes)"
+
+msgid "Refresh"
+msgstr "Actualizar"
+
+msgid "Registered rules"
+msgstr "Reglas registradas"
+
+msgid "Reject"
+msgstr "Rechazar"
+
+msgid "Restart"
+msgstr "Reiniciar"
+
+msgid "RPC request failed"
+msgstr "Error en la solicitud RPC"
+
+msgid "Rule action"
+msgstr "Acción de la regla"
+
+msgid "Rule files:"
+msgstr "Archivos de reglas:"
+
+msgid "Rule storage, scheduling and source selection. The Oinkcode is entered on the Overview page."
+msgstr "Almacenamiento, programación y selección del origen de las reglas. El Oinkcode se introduce en la página de resumen."
+
+msgid "Rules management"
+msgstr "Gestión de reglas"
+
+msgid "Rules update failed"
+msgstr "Error al actualizar las reglas"
+
+msgid "Rules updater not found"
+msgstr "No se encontró el actualizador de reglas"
+
+msgid "Run scheduled rule updates with cron at 03:00."
+msgstr "Ejecutar actualizaciones programadas de reglas con cron a las 03:00."
+
+msgid "Running"
+msgstr "En ejecución"
+
+msgid "Save & Apply starts or stops Snort to match this setting"
+msgstr "Guardar y aplicar inicia o detiene Snort según este ajuste"
+
+msgid "Service"
+msgstr "Servicio"
+
+msgid "Service action failed"
+msgstr "Error en la acción del servicio"
+
+msgid "Service control"
+msgstr "Control del servicio"
+
+msgid "Service settings"
+msgstr "Ajustes del servicio"
+
+msgid "Service state"
+msgstr "Estado del servicio"
+
+msgid "Settings"
+msgstr "Ajustes"
+
+msgid "Snort - Alerts and Logs"
+msgstr "Snort: alertas y registros"
+
+msgid "Snort configuration directory path"
+msgstr "Ruta del directorio de configuración de Snort"
+
+msgid "Snort failed to start"
+msgstr "Snort no pudo iniciarse"
+
+msgid "Snort IDS/IPS"
+msgstr "Snort IDS/IPS"
+
+msgid "Snort init script not found"
+msgstr "No se encontró el script de inicio de Snort"
+
+msgid "Snort is an open source intrusion detection and prevention system."
+msgstr "Snort es un sistema de detección y prevención de intrusiones de código abierto."
+
+msgid "Snort is disabled in Settings"
+msgstr "Snort está desactivado en los ajustes"
+
+msgid "Snort is not running - alerts are not available"
+msgstr "Snort no está en ejecución: las alertas no están disponibles"
+
+msgid "Snort is not running - no system logs are available"
+msgstr "Snort no está en ejecución: no hay registros del sistema disponibles"
+
+msgid "Snort memory"
+msgstr "Memoria de Snort"
+
+msgid "Snort restarted"
+msgstr "Snort reiniciado"
+
+msgid "Snort started"
+msgstr "Snort iniciado"
+
+msgid "Snort stopped"
+msgstr "Snort detenido"
+
+msgid "Snort system logs (20 most recent)"
+msgstr "Registros del sistema de Snort (20 más recientes)"
+
+msgid "Source:"
+msgstr "Origen:"
+
+msgid "Start"
+msgstr "Iniciar"
+
+msgid "Stop"
+msgstr "Detener"
+
+msgid "Stopped"
+msgstr "Detenido"
+
+msgid "Storage layout will change on the next update"
+msgstr "El almacenamiento cambiará en la próxima actualización"
+
+msgid "Storage:"
+msgstr "Almacenamiento:"
+
+msgid "Store rules persistently"
+msgstr "Guardar reglas de forma persistente"
+
+msgid "Symbolic link created successfully"
+msgstr "Enlace simbólico creado correctamente"
+
+msgid "System logs come from logread, not from a file."
+msgstr "Los registros del sistema provienen de logread, no de un archivo."
+
+msgid "System memory"
+msgstr "Memoria del sistema"
+
+msgid "System uptime"
+msgstr "Tiempo de actividad del sistema"
+
+msgid "Temporary"
+msgstr "Temporal"
+
+msgid "Temporary directory"
+msgstr "Directorio temporal"
+
+msgid "Temporary files cleaned"
+msgstr "Archivos temporales eliminados"
+
+msgid "Temporary rules"
+msgstr "Reglas temporales"
+
+msgid "Total alerts"
+msgstr "Total de alertas"
+
+msgid "Unable to back up the old rules directory"
+msgstr "No se pudo respaldar el directorio de reglas anterior"
+
+msgid "Unable to clean temporary files"
+msgstr "No se pudieron eliminar los archivos temporales"
+
+msgid "Unable to start the rules update"
+msgstr "No se pudo iniciar la actualización de reglas"
+
+msgid "Unavailable"
+msgstr "No disponible"
+
+msgid "Unknown error"
+msgstr "Error desconocido"
+
+msgid "Update already in progress..."
+msgstr "Ya hay una actualización en curso..."
+
+msgid "Update completed!"
+msgstr "¡Actualización completada!"
+
+msgid "Update in progress..."
+msgstr "Actualización en curso..."
+
+msgid "Update interval"
+msgstr "Intervalo de actualización"
+
+msgid "Update launched in background. Monitoring starts automatically."
+msgstr "Actualización iniciada en segundo plano. La supervisión comienza automáticamente."
+
+msgid "Update status"
+msgstr "Estado de la actualización"
+
+msgid "Update subscriber rules"
+msgstr "Actualizar reglas de suscripción"
+
+msgid "Use community rules"
+msgstr "Usar reglas comunitarias"
+
+msgid "View all alerts"
+msgstr "Ver todas las alertas"
+
+msgid "View detailed reports via SSH with the command:"
+msgstr "Ver informes detallados por SSH con el comando:"

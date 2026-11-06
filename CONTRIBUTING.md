@@ -1,7 +1,8 @@
 # Contributing
 
 Contributions are welcome. This project targets the JavaScript LuCI runtime and
-an rpcd/ucode backend; Lua code is kept only under `legacy/` for reference.
+an rpcd/ucode backend; the pre-1.0 Lua/CGI code is archived in the
+`legacy-and-beta` git tag.
 
 ## Architecture
 
@@ -68,9 +69,9 @@ The first run downloads the checker. The command should report no errors for
 
 ## ucode guidelines
 
-- Keep the plugin compatible with the ucode runtime shipped by OpenWrt 23.05 and
-  24.10. Avoid newer syntax such as `??` and `?.` unless the minimum version is
-  raised explicitly.
+- Keep the plugin compatible with the ucode runtime shipped by OpenWrt 25.12+.
+  Avoid newer syntax such as `??` and `?.` unless the minimum version is raised
+  explicitly.
 - Use `fs` and `popen` with fixed commands or argument arrays. Never interpolate
   untrusted values into a shell string.
 - Validate paths with `safe_path()` before using them.
@@ -123,8 +124,6 @@ Before submitting a change:
 ```sh
 npm run check          # JavaScript syntax, unit tests and i18n coverage
 npm run check:ucode    # ucode diagnostics
-sh -n install.sh       # shell syntax
-sh -n verify.sh
 sh -n root/usr/libexec/snort-web-sync
 sh -n root/etc/init.d/snort-web
 sh -n root/etc/uci-defaults/80_luci-app-snort3
@@ -133,7 +132,7 @@ sh -n root/etc/uci-defaults/80_luci-app-snort3
 On a router, additionally run:
 
 ```sh
-sh verify.sh
+ubus list luci.snort
 ubus call luci.snort status
 ```
 
@@ -147,7 +146,6 @@ ubus call luci.snort status
 
 ## Legacy code
 
-`legacy/lua-v3/` contains the previous Lua controller, CBI model, templates,
-installer and original shell script. `legacy/v0-cgi-interface/` contains the
-initial CGI prototype. These files are historical references and are not
-installed by the current package. Do not add new features there.
+The pre-1.0 Lua controller, CBI model, templates and the original CGI
+prototype were removed from this branch. They remain available in the
+`legacy-and-beta` git tag together with the complete 4.x beta history.

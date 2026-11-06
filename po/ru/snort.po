@@ -1,0 +1,500 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: ru\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+
+msgid "1 day"
+msgstr "1 день"
+
+msgid "1 month"
+msgstr "1 месяц"
+
+msgid "1 week"
+msgstr "1 неделя"
+
+msgid "Actions"
+msgstr "Действия"
+
+msgid "Advanced"
+msgstr "Дополнительно"
+
+msgid "Alert"
+msgstr "Оповещение"
+
+msgid "Alert file"
+msgstr "Файл оповещений"
+
+msgid "Alerts"
+msgstr "Оповещения"
+
+msgid "Auto-refresh every 5 seconds"
+msgstr "Автообновление каждые 5 секунд"
+
+msgid "Auto-start"
+msgstr "Автозапуск"
+
+msgid "Auto-start disabled"
+msgstr "Автозапуск отключён"
+
+msgid "Auto-start enabled"
+msgstr "Автозапуск включён"
+
+msgid "Automatic (WAN, LAN, eth0)"
+msgstr "Автоматически (WAN, LAN, eth0)"
+
+msgid "Automatic rule updates"
+msgstr "Автоматическое обновление правил"
+
+msgid "Backend error"
+msgstr "Ошибка серверной части"
+
+msgid "Block"
+msgstr "Блокировать"
+
+msgid "Capture Length"
+msgstr "Длина захвата"
+
+msgid "Chain priority"
+msgstr "Приоритет цепочки"
+
+msgid "Chain type"
+msgstr "Тип цепочки"
+
+msgid "Community rules"
+msgstr "Общедоступные правила"
+
+msgid "Configuration directory"
+msgstr "Каталог конфигурации"
+
+msgid "currently unavailable"
+msgstr "сейчас недоступно"
+
+msgid "DAQ method"
+msgstr "Метод DAQ"
+
+msgid "Default"
+msgstr "По умолчанию"
+
+msgid "Default action for rules"
+msgstr "Действие по умолчанию для правил"
+
+msgid "Detailed JSON alerts"
+msgstr "Подробные оповещения JSON"
+
+msgid "Device to monitor. Automatic follows the WAN device, then the LAN bridge, then eth0."
+msgstr "Устройство для мониторинга. Автоматически выбирается устройство WAN, затем мост LAN, затем eth0."
+
+msgid "Directory does not exist:"
+msgstr "Каталог не существует:"
+
+msgid "Directory for temporary files and downloaded rules"
+msgstr "Каталог для временных файлов и загруженных правил"
+
+msgid "Disable at boot"
+msgstr "Отключить при загрузке"
+
+msgid "Disabled"
+msgstr "Отключено"
+
+msgid "Drop"
+msgstr "Сбросить"
+
+msgid "Enable application detection with the OpenAppID package"
+msgstr "Включить определение приложений с помощью пакета OpenAppID"
+
+msgid "Enable at boot"
+msgstr "Включить при загрузке"
+
+msgid "Enable event logging"
+msgstr "Включить журналирование событий"
+
+msgid "Enable logging"
+msgstr "Включить журналирование"
+
+msgid "Enable Snort"
+msgstr "Включить Snort"
+
+msgid "Enabled"
+msgstr "Включено"
+
+msgid "Enter an Oinkcode before downloading subscriber rules"
+msgstr "Введите Oinkcode перед загрузкой правил по подписке"
+
+msgid "Enter your Oinkcode if you have one"
+msgstr "Введите Oinkcode, если он у вас есть"
+
+msgid "Error"
+msgstr "Ошибка"
+
+msgid "Error creating symbolic link"
+msgstr "Ошибка создания символической ссылки"
+
+msgid "Existing rules path is not a directory"
+msgstr "Существующий путь правил не является каталогом"
+
+msgid "External IP address range"
+msgstr "Диапазон внешних IP-адресов"
+
+msgid "External network"
+msgstr "Внешняя сеть"
+
+msgid "Fanout type"
+msgstr "Тип распределения"
+
+msgid "First queue number"
+msgstr "Номер первой очереди"
+
+msgid "How often scheduled rule updates run."
+msgstr "Как часто выполняются запланированные обновления правил."
+
+msgid "Idle"
+msgstr "Ожидание"
+
+msgid "IDS (Detection)"
+msgstr "IDS (обнаружение)"
+
+msgid "IDS = Detection only, IPS = Active prevention"
+msgstr "IDS = только обнаружение, IPS = активное предотвращение"
+
+msgid "In progress..."
+msgstr "Выполняется..."
+
+msgid "Interface"
+msgstr "Интерфейс"
+
+msgid "Invalid action"
+msgstr "Недопустимое действие"
+
+msgid "IP address range to protect"
+msgstr "Защищаемый диапазон IP-адресов"
+
+msgid "IPS (Prevention)"
+msgstr "IPS (предотвращение)"
+
+msgid "Keep downloaded rules in the configuration directory across reboots. When disabled, rules are downloaded again after every boot."
+msgstr "Сохранять загруженные правила в каталоге конфигурации после перезагрузки. Если отключено, правила загружаются заново после каждой загрузки системы."
+
+msgid "Kernel load balancing algorithm"
+msgstr "Алгоритм балансировки нагрузки ядра"
+
+msgid "Last updated:"
+msgstr "Последнее обновление:"
+
+msgid "Loading..."
+msgstr "Загрузка..."
+
+msgid "Local network"
+msgstr "Локальная сеть"
+
+msgid "Log directory"
+msgstr "Каталог журналов"
+
+msgid "Log files:"
+msgstr "Файлы журналов:"
+
+msgid "Logging configuration"
+msgstr "Настройки журналирования"
+
+msgid "Maximum number of packet threads, 0 uses the number of CPU cores"
+msgstr "Максимальное число потоков обработки пакетов; 0 использует число ядер CPU"
+
+msgid "Maximum packet capture size"
+msgstr "Максимальный размер захвата пакета"
+
+msgid "Maximum queue length"
+msgstr "Максимальная длина очереди"
+
+msgid "Memory"
+msgstr "Память"
+
+msgid "Mode"
+msgstr "Режим"
+
+msgid "Move the existing rules into the persistent /etc/snort/rules directory?"
+msgstr "Переместить существующие правила в постоянный каталог /etc/snort/rules?"
+
+msgid "Netfilter queue settings used when the DAQ method is NFQ."
+msgstr "Настройки очередей Netfilter для метода DAQ NFQ."
+
+msgid "Network interface"
+msgstr "Сетевой интерфейс"
+
+msgid "NFQ (for IPS)"
+msgstr "NFQ (для IPS)"
+
+msgid "NFQ settings"
+msgstr "Настройки NFQ"
+
+msgid "nftables chain type used for IPS mode"
+msgstr "Тип цепочки nftables для режима IPS"
+
+msgid "No alerts recorded"
+msgstr "Оповещения не записаны"
+
+msgid "No logs"
+msgstr "Нет записей журнала"
+
+msgid "No recent alerts - Your network is secure"
+msgstr "Нет недавних оповещений — ваша сеть в безопасности"
+
+msgid "No rule files found"
+msgstr "Файлы правил не найдены"
+
+msgid "No rules found"
+msgstr "Правила не найдены"
+
+msgid "No rules yet"
+msgstr "Правил пока нет"
+
+msgid "No update log yet."
+msgstr "Журнал обновлений пока пуст."
+
+msgid "Number of NFQ queues, usually 2 to 8"
+msgstr "Число очередей NFQ, обычно от 2 до 8"
+
+msgid "Oinkcode (subscriber rules)"
+msgstr "Oinkcode (правила по подписке)"
+
+msgid "Old directory backed up. Symbolic link created successfully"
+msgstr "Старый каталог сохранён. Символическая ссылка создана"
+
+msgid "OpenAppID"
+msgstr "OpenAppID"
+
+msgid "Operating mode"
+msgstr "Режим работы"
+
+msgid "Overview"
+msgstr "Обзор"
+
+msgid "Packet acquisition method"
+msgstr "Метод захвата пакетов"
+
+msgid "Packet thread count"
+msgstr "Число потоков обработки пакетов"
+
+msgid "Path where logs will be stored"
+msgstr "Путь для сохранения журналов"
+
+msgid "PCAP (Recommended)"
+msgstr "PCAP (рекомендуется)"
+
+msgid "Per-thread JSON alerts"
+msgstr "Оповещения JSON по потокам"
+
+msgid "Persistent"
+msgstr "Постоянно"
+
+msgid "Persistent rules"
+msgstr "Постоянные правила"
+
+msgid "PID"
+msgstr "PID"
+
+msgid "Queue count"
+msgstr "Число очередей"
+
+msgid "Real-time status, service control and rules management."
+msgstr "Состояние в реальном времени, управление службой и правилами."
+
+msgid "Recent alerts"
+msgstr "Недавние оповещения"
+
+msgid "Recent alerts (50 most recent)"
+msgstr "Недавние оповещения (50 последних)"
+
+msgid "Refresh"
+msgstr "Обновить"
+
+msgid "Registered rules"
+msgstr "Зарегистрированные правила"
+
+msgid "Reject"
+msgstr "Отклонить"
+
+msgid "Restart"
+msgstr "Перезапустить"
+
+msgid "RPC request failed"
+msgstr "Ошибка RPC-запроса"
+
+msgid "Rule action"
+msgstr "Действие правила"
+
+msgid "Rule files:"
+msgstr "Файлы правил:"
+
+msgid "Rule storage, scheduling and source selection. The Oinkcode is entered on the Overview page."
+msgstr "Хранение, расписание и выбор источника правил. Oinkcode вводится на странице обзора."
+
+msgid "Rules management"
+msgstr "Управление правилами"
+
+msgid "Rules update failed"
+msgstr "Не удалось обновить правила"
+
+msgid "Rules updater not found"
+msgstr "Средство обновления правил не найдено"
+
+msgid "Run scheduled rule updates with cron at 03:00."
+msgstr "Выполнять запланированные обновления правил через cron в 03:00."
+
+msgid "Running"
+msgstr "Работает"
+
+msgid "Save & Apply starts or stops Snort to match this setting"
+msgstr "«Сохранить и применить» запускает или останавливает Snort в соответствии с этой настройкой"
+
+msgid "Service"
+msgstr "Служба"
+
+msgid "Service action failed"
+msgstr "Ошибка действия службы"
+
+msgid "Service control"
+msgstr "Управление службой"
+
+msgid "Service settings"
+msgstr "Настройки службы"
+
+msgid "Service state"
+msgstr "Состояние службы"
+
+msgid "Settings"
+msgstr "Настройки"
+
+msgid "Snort - Alerts and Logs"
+msgstr "Snort — оповещения и журналы"
+
+msgid "Snort configuration directory path"
+msgstr "Путь к каталогу конфигурации Snort"
+
+msgid "Snort failed to start"
+msgstr "Не удалось запустить Snort"
+
+msgid "Snort IDS/IPS"
+msgstr "Snort IDS/IPS"
+
+msgid "Snort init script not found"
+msgstr "Сценарий запуска Snort не найден"
+
+msgid "Snort is an open source intrusion detection and prevention system."
+msgstr "Snort — система обнаружения и предотвращения вторжений с открытым исходным кодом."
+
+msgid "Snort is disabled in Settings"
+msgstr "Snort отключён в настройках"
+
+msgid "Snort is not running - alerts are not available"
+msgstr "Snort не запущен — оповещения недоступны"
+
+msgid "Snort is not running - no system logs are available"
+msgstr "Snort не запущен — системные журналы недоступны"
+
+msgid "Snort memory"
+msgstr "Память Snort"
+
+msgid "Snort restarted"
+msgstr "Snort перезапущен"
+
+msgid "Snort started"
+msgstr "Snort запущен"
+
+msgid "Snort stopped"
+msgstr "Snort остановлен"
+
+msgid "Snort system logs (20 most recent)"
+msgstr "Системные журналы Snort (20 последних)"
+
+msgid "Source:"
+msgstr "Источник:"
+
+msgid "Start"
+msgstr "Запустить"
+
+msgid "Stop"
+msgstr "Остановить"
+
+msgid "Stopped"
+msgstr "Остановлен"
+
+msgid "Storage layout will change on the next update"
+msgstr "Способ хранения изменится при следующем обновлении"
+
+msgid "Storage:"
+msgstr "Хранение:"
+
+msgid "Store rules persistently"
+msgstr "Сохранять правила постоянно"
+
+msgid "Symbolic link created successfully"
+msgstr "Символическая ссылка успешно создана"
+
+msgid "System logs come from logread, not from a file."
+msgstr "Системные журналы берутся из logread, а не из файла."
+
+msgid "System memory"
+msgstr "Системная память"
+
+msgid "System uptime"
+msgstr "Время работы системы"
+
+msgid "Temporary"
+msgstr "Временный"
+
+msgid "Temporary directory"
+msgstr "Временный каталог"
+
+msgid "Temporary files cleaned"
+msgstr "Временные файлы удалены"
+
+msgid "Temporary rules"
+msgstr "Временные правила"
+
+msgid "Total alerts"
+msgstr "Всего оповещений"
+
+msgid "Unable to back up the old rules directory"
+msgstr "Не удалось сохранить старый каталог правил"
+
+msgid "Unable to clean temporary files"
+msgstr "Не удалось удалить временные файлы"
+
+msgid "Unable to start the rules update"
+msgstr "Не удалось запустить обновление правил"
+
+msgid "Unavailable"
+msgstr "Недоступно"
+
+msgid "Unknown error"
+msgstr "Неизвестная ошибка"
+
+msgid "Update already in progress..."
+msgstr "Обновление уже выполняется..."
+
+msgid "Update completed!"
+msgstr "Обновление завершено!"
+
+msgid "Update in progress..."
+msgstr "Выполняется обновление..."
+
+msgid "Update interval"
+msgstr "Интервал обновления"
+
+msgid "Update launched in background. Monitoring starts automatically."
+msgstr "Обновление запущено в фоне. Мониторинг начнётся автоматически."
+
+msgid "Update status"
+msgstr "Состояние обновления"
+
+msgid "Update subscriber rules"
+msgstr "Обновить правила по подписке"
+
+msgid "Use community rules"
+msgstr "Использовать общедоступные правила"
+
+msgid "View all alerts"
+msgstr "Показать все оповещения"
+
+msgid "View detailed reports via SSH with the command:"
+msgstr "Подробные отчёты через SSH с помощью команды:"

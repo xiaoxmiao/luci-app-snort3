@@ -5,6 +5,28 @@ All notable changes to the LuCI Snort3 Module will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - 2026-11-06
+
+This is the first release of the `main` line. The complete 4.x beta history and
+the pre-1.0 Lua/CGI implementations are preserved in the `legacy-and-beta` git
+tag; the `master` branch is frozen at 4.4.5.
+
+### Changed
+- **Version baseline reset to 1.0.0.** `Makefile` and `package.json` now carry
+  `1.0.0`; the APK filename changes accordingly.
+- **APK is the only installation method.** Removed `install.sh`, `verify.sh`,
+  `PROJECT_STRUCTURE.txt`, the entire `legacy/` tree and all archived APK
+  builds. README (English, French, Chinese), `docs/INSTALLATION.md` and
+  `CONTRIBUTING.md` no longer mention the shell installer, manual file-copy
+  installation, IPK/opkg builds or OpenWrt 24.10 and older. Minimum supported
+  release is OpenWrt 25.12+ with `apk`.
+- **Six translation packages.** Added German (`de`), Spanish (`es`), Russian
+  (`ru`) and Brazilian Portuguese (`pt_BR`) catalogs alongside the existing
+  French and Simplified Chinese ones. Each contains all 165 UI strings; English
+  remains the source language and is therefore not packaged separately.
+  `build:lmo` produces six `.lmo` files and the GitHub Actions workflow enables
+  and verifies all six `CONFIG_LUCI_LANG_*` switches.
+
 ## [4.4.5] - 2026-11-06
 
 ### Fixed

@@ -3,7 +3,6 @@ npm-debug.log*
 package-lock.json
 .DS_Store
 Thumbs.db
-*.ipk
 *.apk
 *.lmo.tmp
 .workbuddy/

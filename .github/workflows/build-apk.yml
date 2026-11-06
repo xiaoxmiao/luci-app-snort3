@@ -127,7 +127,11 @@ jobs:
           # CONFIG_LUCI_CSSTIDY is not set
           # CONFIG_LUCI_SRCDIET is not set
           CONFIG_PACKAGE_luci-app-snort3=y
+          CONFIG_LUCI_LANG_de=y
+          CONFIG_LUCI_LANG_es=y
           CONFIG_LUCI_LANG_fr=y
+          CONFIG_LUCI_LANG_pt_BR=y
+          CONFIG_LUCI_LANG_ru=y
           CONFIG_LUCI_LANG_zh_Hans=y
           EOF
 
@@ -149,9 +153,8 @@ jobs:
           set -euo pipefail
           cd "$SDK_DIR"
 
-          # The application Makefile defines the base package and both
-          # translation packages, so one source-level target builds all of
-          # them.  There are no separate package/<i18n>/compile targets.
+          # luci.mk generates one translation package per po/ directory, so
+          # a single source-level target builds the app plus all six catalogs.
           make package/luci-app-snort3/compile V=s
 
       - name: Collect APK files
@@ -165,7 +168,9 @@ jobs:
             -exec cp -v {} "$GITHUB_WORKSPACE/artifacts/" \;
 
           test -n "$(ls -A "$GITHUB_WORKSPACE/artifacts")"
-          for pkg in luci-app-snort3 luci-i18n-snort3-fr luci-i18n-snort3-zh-cn; do
+          for pkg in luci-app-snort3 \
+            luci-i18n-snort3-de luci-i18n-snort3-es luci-i18n-snort3-fr \
+            luci-i18n-snort3-pt-br luci-i18n-snort3-ru luci-i18n-snort3-zh-cn; do
             test -n "$(find "$GITHUB_WORKSPACE/artifacts" -maxdepth 1 -name "$pkg-*.apk" -print -quit)" || {
               echo "Missing $pkg APK" >&2
               exit 1
