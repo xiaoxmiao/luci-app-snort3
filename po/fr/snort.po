@@ -450,3 +450,18 @@ msgstr "Temporaire"
 
 msgid "Temporary rules - migrate to persistent storage"
 msgstr "Règles temporaires - migrer vers le stockage persistant"
+
+msgid "Community rules"
+msgstr "Règles communautaires"
+
+msgid "Last updated:"
+msgstr "Dernière mise à jour :"
+
+msgid "No rule files found"
+msgstr "Aucun fichier de règles trouvé"
+
+msgid "Registered rules"
+msgstr "Règles enregistrées"
+
+msgid "Source:"
+msgstr "Source :"

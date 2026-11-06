@@ -65,6 +65,9 @@ msgstr ""
 msgid "Cleanup temporary files"
 msgstr ""
 
+msgid "Community rules"
+msgstr ""
+
 msgid "Configuration directory"
 msgstr ""
 
@@ -173,6 +176,9 @@ msgstr ""
 msgid "Kernel load balancing algorithm"
 msgstr ""
 
+msgid "Last updated:"
+msgstr ""
+
 msgid "Loading..."
 msgstr ""
 
@@ -231,6 +237,9 @@ msgid "No logs"
 msgstr ""
 
 msgid "No recent alerts - Your network is secure"
+msgstr ""
+
+msgid "No rule files found"
 msgstr ""
 
 msgid "No rules directory found"
@@ -297,6 +306,9 @@ msgid "Recent alerts (50 most recent)"
 msgstr ""
 
 msgid "Refresh"
+msgstr ""
+
+msgid "Registered rules"
 msgstr ""
 
 msgid "Reject"
@@ -384,6 +396,9 @@ msgid "Snort stopped"
 msgstr ""
 
 msgid "Snort system logs (20 most recent)"
+msgstr ""
+
+msgid "Source:"
 msgstr ""
 
 msgid "Start"

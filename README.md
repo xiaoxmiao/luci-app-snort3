@@ -173,7 +173,9 @@ The application ships a built-in updater at
   upgrades. Downloading and unpacking still use tmpfs and the final rename is
   atomic; existing symlinks are migrated on upgrade or via **Migrate**;
 - it reports **Idle / In progress / Completed / Failed** on the Overview page,
-  with the detailed reason in the update log;
+  with the detailed reason in the update log. The status returns to *Idle* five
+  minutes after a run, and the page lists every installed `.rules` file with its
+  size, the rules source (community or registered) and the last update time;
 - after a successful update it restarts Snort automatically, because
   `snort-mgr` enumerates `*.rules` when rendering `snort_conf.lua`.
 

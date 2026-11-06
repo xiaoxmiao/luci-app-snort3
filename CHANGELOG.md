@@ -5,6 +5,29 @@ All notable changes to the LuCI Snort3 Module will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.3.4] - 2026-11-06
+
+### Fixed
+- **Tab menu.** The parent `admin/services/snort` entry was declared as a
+  `view`, so visiting it rendered the Overview without any child tab being
+  marked active. It now uses LuCI's standard
+  `firstchild` / `preferred: overview` action (the same pattern as
+  `admin/status` and `admin/network`).
+- **Update status was wrong in two ways.** The result file in `/tmp` is
+  persistent, so a previous success kept showing *Update completed!* forever
+  even when no update had been requested. And while a new download was
+  starting, that stale `ok` could win over the live lock, so the page claimed
+  the update had finished while it was still running. A live lock now always
+  forces `running`, and a completed/failed result returns to `idle` after five
+  minutes. `status` also exposes `finished_at` and `status_age`.
+
+### Added
+- **Concrete rule information.** `rules` now returns `rule_files` (name, size,
+  mtime), `rules_source` (community or registered) and `rules_updated`; the
+  Overview lists every installed `.rules` file with its size, the source and
+  the last update time. The updater log also prints each installed file name
+  and byte count instead of only a total.
+
 ## [4.3.3] - 2026-11-06
 
 ### Fixed

@@ -3,12 +3,17 @@
 		"title": "Snort IDS/IPS",
 		"order": 60,
 		"action": {
-			"type": "view",
-			"path": "snort/overview"
+			"type": "firstchild",
+			"preferred": "overview",
+			"recurse": true
 		},
 		"depends": {
-			"acl": [ "luci-app-snort3" ],
-			"uci": { "snort-web": true }
+			"acl": [
+				"luci-app-snort3"
+			],
+			"uci": {
+				"snort-web": true
+			}
 		}
 	},
 	"admin/services/snort/overview": {
@@ -19,8 +24,12 @@
 			"path": "snort/overview"
 		},
 		"depends": {
-			"acl": [ "luci-app-snort3" ],
-			"uci": { "snort-web": true }
+			"acl": [
+				"luci-app-snort3"
+			],
+			"uci": {
+				"snort-web": true
+			}
 		}
 	},
 	"admin/services/snort/settings": {
@@ -31,8 +40,12 @@
 			"path": "snort/config"
 		},
 		"depends": {
-			"acl": [ "luci-app-snort3" ],
-			"uci": { "snort-web": true }
+			"acl": [
+				"luci-app-snort3"
+			],
+			"uci": {
+				"snort-web": true
+			}
 		}
 	},
 	"admin/services/snort/alerts": {
@@ -43,8 +56,12 @@
 			"path": "snort/alerts"
 		},
 		"depends": {
-			"acl": [ "luci-app-snort3" ],
-			"uci": { "snort-web": true }
+			"acl": [
+				"luci-app-snort3"
+			],
+			"uci": {
+				"snort-web": true
+			}
 		}
 	}
 }

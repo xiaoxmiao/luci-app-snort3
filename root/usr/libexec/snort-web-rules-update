@@ -154,6 +154,11 @@ fi
 rule_count=$(find "$new_rules" -type f -name '*.rules' | wc -l)
 [ "$rule_count" -gt 0 ] || fail 'The archive contains no .rules files' 'rules_empty'
 
+for f in "$new_rules"/*.rules; do
+	[ -f "$f" ] || continue
+	log "  rule: $(basename "$f") ($(wc -c < "$f") bytes)"
+done
+
 # Install into the persistent rules directory.  The staging directory is on
 # the same filesystem as the target, so the final rename is atomic.
 mkdir -p "$conf_dir" || fail "Unable to create $conf_dir" 'rules_dir_failed'

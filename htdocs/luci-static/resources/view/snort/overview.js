@@ -219,6 +219,39 @@ return view.extend({
 			' / ' + util.translate('Storage:') + ' ' +
 			(rules.persistent ? util.translate('Persistent') : util.translate('Temporary')));
 
+		var files = Array.isArray(rules.rule_files) ? rules.rule_files : [];
+		var meta = [];
+
+		meta.push(util.translate('Source:') + ' ' +
+			(rules.rules_source === 'registered'
+				? util.translate('Registered rules')
+				: util.translate('Community rules')));
+
+		if (rules.rules_updated)
+			meta.push(util.translate('Last updated:') + ' ' +
+				new Date(Number(rules.rules_updated) * 1000).toLocaleString());
+
+		var fileList = E('div', { 'class': 'snort3-file-list' });
+
+		if (files.length) {
+			files.forEach(function(f) {
+				fileList.appendChild(E('div', { 'class': 'snort3-file' }, [
+					E('code', {}, f.name || ''),
+					E('span', { 'class': 'snort3-file-size' },
+						Math.max(1, Math.round(Number(f.size || 0) / 1024)) + ' kB')
+				]));
+			});
+		}
+		else {
+			fileList.appendChild(E('div', { 'class': 'snort3-toolbar-note' },
+				util.translate('No rule files found')));
+		}
+
+		dom.content(this.nodes.rulesDetail, [
+			E('div', { 'class': 'snort3-rule-meta' }, meta.join(' · ')),
+			fileList
+		]);
+
 		var update = rules.update || {};
 		var upd = util.updateState(update);
 
@@ -345,6 +378,7 @@ return view.extend({
 		this.nodes.rulesBadge = E('span', { 'class': 'snort3-badge snort3-badge-muted' }, util.translate('Loading...'));
 		this.nodes.rulesPath = E('code', {}, '...');
 		this.nodes.ruleCounts = E('div', { 'class': 'snort3-toolbar-note' }, '');
+		this.nodes.rulesDetail = E('div', { 'class': 'snort3-rule-detail' }, '');
 		this.nodes.updateBadge = E('span', { 'class': 'snort3-badge snort3-badge-muted' }, util.translate('Loading...'));
 		this.nodes.updateLog = E('pre', { 'class': 'snort3-log' }, '');
 		this.nodes.recentAlerts = E('div', { 'class': 'snort3-alert-list' });
@@ -393,6 +427,7 @@ return view.extend({
 			]),
 			E('div', { 'class': 'snort3-rule-path' }, this.nodes.rulesPath),
 			this.nodes.ruleCounts,
+			this.nodes.rulesDetail,
 			E('div', { 'class': 'snort3-actions', 'style': 'margin-top:.75rem' }, [
 				this.nodes.updateButton,
 				E('button', {

@@ -153,6 +153,38 @@ test('postinst restarts rpcd so a replaced ucode plugin is reloaded', () => {
 	assert.doesNotMatch(makefile, /^\t\/etc\/init\.d\/rpcd reload/m);
 });
 
+test('menu parent uses firstchild so the active tab is highlighted', () => {
+	const menu = JSON.parse(read('root/usr/share/luci/menu.d/luci-app-snort3.json'));
+	const parent = menu['admin/services/snort'].action;
+
+	assert.equal(parent.type, 'firstchild');
+	assert.equal(parent.preferred, 'overview');
+	assert.equal(menu['admin/services/snort/overview'].action.path, 'snort/overview');
+});
+
+test('update status expires and a live lock always wins', () => {
+	const backend = read('root/usr/share/rpcd/ucode/luci.snort.uc');
+
+	assert.match(backend, /UPDATE_IDLE_AFTER/);
+	assert.match(backend, /if \(running\) \{\s+result = 'running'/);
+	assert.match(backend, /status_age > UPDATE_IDLE_AFTER/);
+	assert.match(backend, /finished_at/);
+});
+
+test('rule details expose file names, source and update time', () => {
+	const backend = read('root/usr/share/rpcd/ucode/luci.snort.uc');
+	const updater = read('root/usr/libexec/snort-web-rules-update');
+	const view = read('htdocs/luci-static/resources/view/snort/overview.js');
+
+	assert.match(backend, /function rule_file_list/);
+	assert.match(backend, /rule_files: files/);
+	assert.match(backend, /rules_source/);
+	assert.match(backend, /rules_updated/);
+	assert.match(updater, /rule: \$\(basename/);
+	assert.match(view, /snort3-file-list/);
+	assert.match(view, /rules_source === 'registered'/);
+});
+
 test('failed starts only quote syslog lines from the current attempt', () => {
 	const backend = read('root/usr/share/rpcd/ucode/luci.snort.uc');
 	const init = read('root/etc/init.d/snort-web');

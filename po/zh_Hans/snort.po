@@ -453,3 +453,18 @@ msgstr "临时"
 
 msgid "Temporary rules - migrate to persistent storage"
 msgstr "临时规则 — 请迁移到持久存储"
+
+msgid "Community rules"
+msgstr "社区规则"
+
+msgid "Last updated:"
+msgstr "最后更新："
+
+msgid "No rule files found"
+msgstr "未找到规则文件"
+
+msgid "Registered rules"
+msgstr "注册版规则"
+
+msgid "Source:"
+msgstr "来源："

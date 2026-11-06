@@ -41,6 +41,7 @@ const ALERT_FILE_NAME = 'alert_fast.txt';
 
 const TAIL_BYTES = 64 * 1024;
 const UPDATE_STALE_GRACE = 10 * 60;
+const UPDATE_IDLE_AFTER = 5 * 60;
 
 function safe_path(value, fallback) {
 	if (type(value) != 'string' || length(value) == 0)
@@ -404,8 +405,11 @@ function updater_process_alive() {
 function update_state() {
 	const log_lines = read_tail_lines(UPDATE_LOG, 20, false);
 	const lock_info = lstat(UPDATE_LOCK);
+	const status_info = lstat(UPDATE_STATUS);
 	const lock = lock_info != null;
-	const age = lock_info ? (time() - or_default(lock_info.mtime, 0)) : 0;
+	const lock_age = lock_info ? (time() - or_default(lock_info.mtime, 0)) : 0;
+	const status_age = status_info ? (time() - or_default(status_info.mtime, 0)) : 0;
+	const rc_text = trim(read_text(UPDATE_RC) || '');
 	let finished = false;
 
 	for (let line in log_lines) {
@@ -415,50 +419,59 @@ function update_state() {
 		}
 	}
 
-	/* A lock left behind by a crashed or killed updater must not block all
-	 * future updates forever.  Keep a short grace period for the fork/exec
-	 * window, then rely on the actual updater process being visible. */
 	const alive = lock && !finished ? updater_process_alive() : false;
-	const stale = lock && !finished && !alive && age > UPDATE_STALE_GRACE;
+	const stale = lock && !finished && !alive && lock_age > UPDATE_STALE_GRACE;
+	const running = lock && !finished && !stale;
 
-	/* The updater writes its result to UPDATE_STATUS.  A stale "running"
-	 * state without a lock means the process was killed before it could
-	 * report back, which the UI should show as a failure, not a hang. */
 	const status_lines = split(trim(read_text(UPDATE_STATUS) || ''), '\n');
 	let result = trim(status_lines[0] || '') || 'idle';
 	let code = trim(status_lines[1] || '') || '';
 
-	if (result == 'ok')
-		result = 'finished';
-	else if (result == 'running' && !lock && !finished) {
+	/* A live lock wins over the status file.  While a new updater is starting
+	 * the file can still hold the previous run's "ok", which used to make the
+	 * page say "Update completed!" during an active download. */
+	if (running) {
+		result = 'running';
+		code = '';
+	}
+	else if (result == 'running' && !finished) {
 		result = 'failed';
 		code = 'rules_update_failed';
 	}
-	else if (result == 'running' && finished) {
-		/* Fall back to the exit code recorded by the background shell
-		 * when the updater did not report a status itself. */
-		const rc_text = trim(read_text(UPDATE_RC) || '');
+	else if (result == 'failed') {
+		if (!code)
+			code = 'rules_update_failed';
 
+		if (status_age > UPDATE_IDLE_AFTER)
+			result = 'idle';
+	}
+	else if (result == 'ok' || result == 'finished' ||
+	         (result == 'running' && finished) ||
+	         (result == 'idle' && finished)) {
 		if (rc_text != '' && rc_text != '0') {
 			result = 'failed';
 			code = 'rules_update_failed';
 		}
-		else {
+		/* The result file is persistent; do not leave "Update completed!"
+		 * on screen forever when no update was requested in this session. */
+		else if (status_age > UPDATE_IDLE_AFTER)
+			result = 'idle';
+		else
 			result = 'finished';
-		}
 	}
-	else if (result == 'failed' && !code)
-		code = 'rules_update_failed';
-	else if (result == 'idle' && finished)
-		result = 'finished';
+	else {
+		result = 'idle';
+	}
 
 	return {
-		running: lock && !finished && !stale,
+		running,
 		lock,
 		alive,
 		stale,
-		age,
+		age: lock_age,
+		status_age,
 		finished,
+		finished_at: finished && !running && status_info ? or_default(status_info.mtime, 0) : 0,
 		log_lines,
 		result,
 		code
@@ -486,6 +499,32 @@ function rule_file_count(dir) {
 	return count;
 }
 
+function rule_file_list(dir) {
+	const names = lsdir(dir);
+	const list = [];
+
+	if (!names)
+		return list;
+
+	for (let name in names) {
+		if (!match(name, /\.rules$/))
+			continue;
+
+		const info = stat(path_join(dir, name));
+
+		if (!info || info.type != 'file')
+			continue;
+
+		push(list, {
+			name: name,
+			size: or_default(info.size, 0),
+			mtime: or_default(info.mtime, 0)
+		});
+	}
+
+	return list;
+}
+
 function rules_state() {
 	const settings = get_settings();
 	const config_rules = path_join(settings.config_dir, 'rules');
@@ -505,6 +544,15 @@ function rules_state() {
 		target_exists = resolved != null && resolved.type == 'directory';
 	}
 
+	const files = rule_file_list(config_rules);
+	const directory = stat(config_rules);
+	let updated = directory ? or_default(directory.mtime, 0) : 0;
+
+	for (let f in files) {
+		if (f.mtime > updated)
+			updated = f.mtime;
+	}
+
 	return {
 		success: true,
 		ok: true,
@@ -516,8 +564,11 @@ function rules_state() {
 		link_target: target,
 		link_valid: link && target_exists,
 		temp_exists: temp_info != null && temp_info.type == 'directory',
-		config_rule_count: rule_file_count(config_rules),
+		config_rule_count: length(files),
 		temp_rule_count: rule_file_count(temp_rules),
+		rule_files: files,
+		rules_source: length(settings.oinkcode) > 0 ? 'registered' : 'community',
+		rules_updated: updated,
 		updater_available: rules_updater() != null,
 		updater: rules_updater(),
 		update: update_state()
