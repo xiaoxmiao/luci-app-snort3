@@ -1,13 +1,23 @@
 #
 # LuCI Snort3 module
 #
-# This Makefile is intended to be used inside the LuCI feed:
+# This repository is ONE application of the LuCI feed, not a standalone feed.
+# It works from either of these locations in an OpenWrt buildroot / SDK:
 #   feeds/luci/applications/luci-app-snort3/Makefile
+#   package/luci-app-snort3/Makefile
+# The LuCI feed itself must be present (./scripts/feeds update luci).
 #
 # Install the built .apk packages on the router; there is no shell installer.
 #
 
 include $(TOPDIR)/rules.mk
+
+# luci.mk derives LUCI_NAME from the directory name. Pin it so that a checkout
+# renamed at clone time still produces luci-app-snort3 and the matching
+# luci-i18n-snort3-* translation packages.
+LUCI_NAME:=luci-app-snort3
+LUCI_URL:=https://github.com/xiaoxmiao/luci-app-snort3
+LUCI_MAINTAINER:=xiaoxmiao <https://github.com/xiaoxmiao/luci-app-snort3>
 
 LUCI_TITLE:=LuCI support for Snort3 IDS/IPS
 LUCI_DESCRIPTION:=Web interface for status, service control, configuration, alerts and rules management of Snort3.
@@ -67,6 +77,20 @@ define Package/luci-app-snort3/prerm
 exit 0
 endef
 
-include ../../luci.mk
+# Resolve luci.mk explicitly.  The historical "include ../../luci.mk" only
+# resolves when this Makefile sits in feeds/luci/applications/<app>/; a clone
+# dropped into package/ then failed the include and silently vanished from
+# menuconfig.  luci.mk only relies on $(CURDIR), $(TOPDIR) and $(INCLUDE_DIR),
+# so including it from the feed root works from any checkout location.
+LUCI_MK := $(firstword $(wildcard \
+	../../luci.mk \
+	$(TOPDIR)/feeds/luci/luci.mk \
+	$(TOPDIR)/package/feeds/luci/luci.mk))
 
-# call BuildPackage - OpenWrt buildroot signature
+ifeq ($(LUCI_MK),)
+$(error luci-app-snort3: luci.mk not found. Install the LuCI feed with ./scripts/feeds update luci and ./scripts/feeds install luci-base, then place this repository in package/luci-app-snort3 or feeds/luci/applications/luci-app-snort3. For the feed location also run ./scripts/feeds update -i luci and ./scripts/feeds install -p luci luci-app-snort3)
+endif
+
+include $(LUCI_MK)
+
+# BuildPackage and the language packages are emitted by luci.mk.

@@ -65,6 +65,13 @@ release signing key. The application package is architecture-independent
 running the same OpenWrt release. Always match the SDK release to the router.
 Hard-refresh the browser (Ctrl+F5) after upgrading.
 
+Building from a full OpenWrt source tree instead of the SDK: this repository is
+a single LuCI application, not a feed. Place it in
+`feeds/luci/applications/luci-app-snort3` and run `./scripts/feeds update -i luci`
+plus `./scripts/feeds install -p luci luci-app-snort3`, or clone it into
+`package/luci-app-snort3`. See
+[docs/INSTALLATION.md](docs/INSTALLATION.md#23-building-from-a-full-openwrt-buildroot).
+
 ### Access
 
 Open LuCI and go to **Services → Snort IDS/IPS**.
@@ -349,6 +356,13 @@ l'architecture (`LUCI_PKGARCH:=all`) : une compilation avec le SDK x86/64
 s'installe sur toute cible utilisant la même version d'OpenWrt. Utilisez
 toujours un SDK de la même version que le routeur. Après une mise à jour,
 rechargez le navigateur (Ctrl+F5).
+
+Pour compiler depuis un arbre source OpenWrt complet plutôt qu'avec le SDK : ce
+dépôt est une application LuCI unique, pas un feed. Placez-le dans
+`feeds/luci/applications/luci-app-snort3` et lancez `./scripts/feeds update -i luci`
+puis `./scripts/feeds install -p luci luci-app-snort3`, ou clonez-le dans
+`package/luci-app-snort3`. Voir
+[docs/INSTALLATION.md](docs/INSTALLATION.md#23-building-from-a-full-openwrt-buildroot).
 
 ### Accès
 
@@ -637,6 +651,13 @@ apk add --allow-untrusted ./luci-i18n-snort3-zh-cn-*.apk
 与架构无关（`LUCI_PKGARCH:=all`），因此 x86/64 SDK 的产物可安装到运行同一
 OpenWrt 版本的其他目标平台。SDK 版本务必与路由器一致。升级后请强制刷新
 浏览器（Ctrl+F5）。
+
+如果不用 SDK，而是从完整的 OpenWrt 源码树构建：本仓库是单个 LuCI 应用，不是
+feed。请放到 `feeds/luci/applications/luci-app-snort3` 并执行
+`./scripts/feeds update -i luci` 与
+`./scripts/feeds install -p luci luci-app-snort3`，或克隆到
+`package/luci-app-snort3`。详见
+[docs/INSTALLATION.md](docs/INSTALLATION.md#23-building-from-a-full-openwrt-buildroot)。
 
 ### 访问
 

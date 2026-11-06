@@ -137,6 +137,19 @@ jobs:
 
           make defconfig
 
+          # Regression guard: menuconfig must actually see this package. A
+          # broken luci.mk include or an unmet dependency silently drops the
+          # symbol here even though a direct package/.../compile still works.
+          ./scripts/feeds list > /tmp/snort3-feeds.list
+          grep -q luci-app-snort3 /tmp/snort3-feeds.list || {
+            echo "luci-app-snort3 is missing from the feed index" >&2
+            exit 1
+          }
+          grep -q '^CONFIG_PACKAGE_luci-app-snort3=y$' .config || {
+            echo "luci-app-snort3 was dropped by make defconfig" >&2
+            exit 1
+          }
+
           echo "Selected package options:"
           grep -E '^CONFIG_PACKAGE_(lua|liblucihttp|luci|snort)' .config || true
 

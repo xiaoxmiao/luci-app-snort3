@@ -136,6 +136,76 @@ apk add --allow-untrusted ./luci-i18n-snort3-zh-cn-*.apk
 `--allow-untrusted` is required for packages built locally without the OpenWrt
 release signing key.
 
+### 2.3 Building from a full OpenWrt buildroot
+
+This repository is **one LuCI application**, not an OpenWrt feed. Cloning it
+into the buildroot root directory, into `feeds/` or into any other arbitrary
+directory does not register the package: `make menuconfig` only indexes
+`package/*/Makefile` and the symlinks created by `./scripts/feeds install`.
+The LuCI feed must be checked out too, because the application `Makefile`
+includes `luci.mk` from it.
+
+Prepare the feeds once:
+
+```sh
+./scripts/feeds update -a
+./scripts/feeds install -a          # or at least luci-base and rpcd-mod-ucode
+```
+
+Then choose one of the two supported placements.
+
+**Option A - inside the LuCI feed** (the layout used by the CI workflow):
+
+```sh
+git clone https://github.com/xiaoxmiao/luci-app-snort3.git \
+	feeds/luci/applications/luci-app-snort3
+rm -rf feeds/luci/applications/luci-app-snort3/.git   # avoid a nested git repo
+./scripts/feeds update -i luci      # rebuild the index only; do not reset the feed
+./scripts/feeds install -p luci luci-app-snort3
+make menuconfig                     # LuCI -> 3. Applications -> luci-app-snort3
+```
+
+`-i` matters: a plain `./scripts/feeds update luci` refreshes the feed git
+checkout. Removing the nested `.git` keeps the feed as a single repository.
+`feeds install` creates the `package/feeds/luci/luci-app-snort3` symlink that
+menuconfig actually reads.
+
+**Option B - directly under `package/`**:
+
+```sh
+git clone https://github.com/xiaoxmiao/luci-app-snort3.git \
+	package/luci-app-snort3
+make menuconfig
+```
+
+Packages in `package/` are scanned directly, so no `feeds install` is needed.
+The Makefile resolves `feeds/luci/luci.mk` automatically; earlier builds
+hard-coded `../../luci.mk` and therefore failed from this location.
+
+Build with:
+
+```sh
+make package/luci-app-snort3/compile V=s
+```
+
+The entry is under **LuCI → 3. Applications**, not in a top-level Snort menu.
+Translation packages are hidden and selected through `CONFIG_LUCI_LANG_*` as
+shown in 2.2.
+
+| Symptom | Cause / fix |
+| --- | --- |
+| No `luci-app-snort3` entry in menuconfig | Cloned outside `package/` or the LuCI feed; run `./scripts/feeds update -i luci` and `./scripts/feeds install -p luci luci-app-snort3`; check `ls -l package/feeds/luci/luci-app-snort3` |
+| `luci.mk: No such file or directory` or `luci.mk not found` | LuCI feed not checked out: `./scripts/feeds update luci` |
+| Entry greyed out / cannot be selected | Missing `luci-base` or `rpcd-mod-ucode`: `./scripts/feeds install luci-base rpcd-mod-ucode` |
+| Built but the LuCI menu is missing | Clear `/tmp/luci-indexcache.*`, restart `rpcd` and `uhttpd` |
+
+Check the registration with:
+
+```sh
+./scripts/feeds list | grep snort3
+grep -n 'CONFIG_PACKAGE_luci-app-snort3' .config
+```
+
 
 ## 3. How the configuration is stored
 

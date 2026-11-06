@@ -5,6 +5,23 @@ All notable changes to the LuCI Snort3 Module will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+- **The package is now discoverable in a full OpenWrt buildroot.** `Makefile`
+  no longer hard-codes `include ../../luci.mk`: it resolves `luci.mk` from the
+  LuCI feed root when the checkout sits in `package/`, and fails with an
+  actionable message when the LuCI feed is missing instead of silently
+  disappearing from `make menuconfig`. `LUCI_NAME`, `LUCI_URL` and
+  `LUCI_MAINTAINER` are pinned so a renamed clone still produces
+  `luci-app-snort3` and the six `luci-i18n-snort3-*` translation packages.
+
+### Added
+- `docs/INSTALLATION.md` section 2.3 documents both supported placements in a
+  full buildroot (`feeds/luci/applications/...` with `feeds update -i` plus
+  `feeds install -p luci`, or `package/...`) and a troubleshooting table for
+  menuconfig. README carries the same note in English, French and Chinese.
+
 ## [1.0.0] - 2026-11-06
 
 This is the first release of the `main` line. The complete 4.x beta history and
