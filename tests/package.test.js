@@ -127,14 +127,19 @@ test('running snort3 processes are detected and wrappers excluded', () => {
 	const init = read('root/etc/init.d/snort-web');
 	const updater = read('root/usr/libexec/snort-web-rules-update');
 
-	assert.match(backend, /match\(comm, \/snort\/i\)/);
+	assert.match(backend, /named = index\(comm, 'snort'\)/);
 	assert.match(backend, /\/usr\/bin\/snort/);
 	assert.match(backend, /rc\.common/);
 	assert.match(backend, /proc_comm/);
 	assert.match(backend, /function proc_scan\(\)/);
+	assert.match(backend, /function pidof_pids\(\)/);
+	assert.match(backend, /pidof snort3 snort/);
+	assert.match(backend, /if \(length\(pids\) == 0\)\s+return pidof_pids\(\)/);
 	assert.match(backend, /proc_scan: proc_scan\(\)/);
-	assert.match(backend, /daemon: index\(cmdline/);
-	assert.match(backend, /wrapper: index\(cmdline/);
+	assert.match(backend, /const daemon = index\(cmdline/);
+	assert.match(backend, /const wrapper = index\(cmdline/);
+	assert.match(backend, /daemon: daemon/);
+	assert.match(backend, /wrapper: wrapper/);
 	assert.doesNotMatch(backend, /trim\(comm\) == 'snort'/);
 	assert.match(init, /snort_running\(\)/);
 	assert.match(init, /pidof snort3/);

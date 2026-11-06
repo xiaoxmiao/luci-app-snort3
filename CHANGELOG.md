@@ -5,6 +5,21 @@ All notable changes to the LuCI Snort3 Module will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.3.3] - 2026-11-06
+
+### Fixed
+- **A running `snort3` daemon is now reliably detected.** The device confirmed
+  a live process (`{snort3} /usr/bin/snort -q -c /var/snort.d/snort_conf.lua`)
+  while 4.3.1 reported `running: false`, so the anchored regex
+  `/^snort[0-9]*$/` was not the reliable check it appeared to be on that ucode
+  build. Detection now uses plain string searches on `/proc/<pid>/comm` and
+  `cmdline` (no regex on comm), with `rc.common` wrappers still excluded.
+- **`pidof snort3 snort` fallback.** If rpcd cannot enumerate `/proc` at all,
+  the backend falls back to `pidof` for both process names. `proc_scan()` and
+  `process_id_list()` now share a single scan, so the diagnostic output and the
+  running state can never disagree. `proc_scan` also reports `daemon`,
+  `wrapper` and `named` flags per process.
+
 ## [4.3.2] - 2026-11-06
 
 ### Fixed

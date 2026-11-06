@@ -30,6 +30,7 @@ const SERVICE_DETAIL = '/tmp/snort_service_action.detail';
 const SERVICE_OUTPUT = '/tmp/snort_service_action.output';
 const SERVICE_LOGALL = '/tmp/snort_service_action.logall';
 const BACKEND_ERROR = '/tmp/snort_backend_error.log';
+const SERVICE_PIDS = '/tmp/snort_proc_pids';
 
 const CONFIG_NAME = 'snort-web';
 
@@ -139,38 +140,11 @@ function get_settings() {
 	};
 }
 
-/* The executable is /usr/bin/snort, but /proc/<pid>/comm reports "snort3"
- * on many builds (busybox ps shows "{snort3} /usr/bin/snort ...").  procd's
- * rc.common wrapper is also named "snort", so exclude init-script shells
- * instead of trusting comm alone. */
-function process_id_list() {
-	const pids = [];
-	const entries = lsdir('/proc');
-
-	if (!entries)
-		return pids;
-
-	for (let name in entries) {
-		if (!match(name, /^[0-9]+$/))
-			continue;
-
-		const comm = trim(read_text('/proc/' + name + '/comm'));
-		const cmdline = read_text('/proc/' + name + '/cmdline');
-
-		if (index(cmdline, 'rc.common') != null ||
-		    index(cmdline, '/etc/init.d/snort') != null)
-			continue;
-
-		if (match(comm, /snort/i) || index(cmdline, '/usr/bin/snort') != null)
-			push(pids, +name);
-	}
-
-	return pids;
-}
-
-/* Expose every snort-related process so a "stopped" state can be diagnosed
- * without SSH access to /proc.  Never treat this as the running state: the
- * rc.common wrapper is flagged instead of being counted. */
+/* One scan of /proc feeds both the running state and the diagnostic reply.
+ * The executable is /usr/bin/snort but comm is "snort3" on many builds, and
+ * procd's rc.common wrapper is also named "snort".  Plain string searches are
+ * used instead of an anchored regex on comm: the anchored expression failed
+ * on some ucode builds and reported a running daemon as stopped. */
 function proc_scan() {
 	const found = [];
 	const entries = lsdir('/proc');
@@ -184,22 +158,57 @@ function proc_scan() {
 
 		const comm = trim(read_text('/proc/' + name + '/comm'));
 		const cmdline = read_text('/proc/' + name + '/cmdline');
+		const daemon = index(cmdline, '/usr/bin/snort') != null;
+		const wrapper = index(cmdline, 'rc.common') != null ||
+		                index(cmdline, '/etc/init.d/snort') != null;
+		const named = index(comm, 'snort') != null || index(comm, 'Snort') != null;
 
-		if (!match(comm, /snort/i) && index(cmdline, 'snort') == null)
+		if (!daemon && !named && index(cmdline, 'snort') == null)
 			continue;
 
-		push(found, {
-			pid: +name,
-			comm: comm,
-			daemon: index(cmdline, '/usr/bin/snort') != null,
-			wrapper: index(cmdline, 'rc.common') != null
-		});
+		push(found, { pid: +name, comm: comm, daemon: daemon,
+		              wrapper: wrapper, named: named });
 
 		if (length(found) >= 10)
 			break;
 	}
 
 	return found;
+}
+
+/* Fall back to pidof when /proc cannot be enumerated from rpcd's context.
+ * Both names are queried: the daemon's comm is snort3 on many builds while
+ * older ones still use snort. */
+function pidof_pids() {
+	system('pidof snort3 snort > ' + SERVICE_PIDS + ' 2>/dev/null', 5000);
+
+	const pids = [];
+
+	for (let part in split(trim(read_text(SERVICE_PIDS)), ' ')) {
+		const pid = int(trim(part));
+
+		if (pid > 0)
+			push(pids, pid);
+	}
+
+	return pids;
+}
+
+function process_id_list() {
+	const pids = [];
+
+	for (let p in proc_scan()) {
+		if (p.wrapper)
+			continue;
+
+		if (p.daemon || p.named)
+			push(pids, p.pid);
+	}
+
+	if (length(pids) == 0)
+		return pidof_pids();
+
+	return pids;
 }
 
 function process_rss_kb(pid) {
