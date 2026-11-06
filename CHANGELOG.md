@@ -5,6 +5,27 @@ All notable changes to the LuCI Snort3 Module will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.4.3] - 2026-11-06
+
+### Fixed
+- **Fresh installs no longer lose the rule buttons or claim an update is
+  running.** `update_state()` computed
+  `!finished && (lock || alive) && !stale`; a reset device has no lock, no
+  update log and no `FINISHED` marker, so any `/proc` entry whose command line
+  merely mentions the updater (the `ifup` hotplug wrapper chain, for example)
+  made `running` true forever and disabled both rule buttons. The lock created
+  by `rules_update` is authoritative again; `alive` only counts as a fallback
+  when the log proves an actual download is in progress (the boot-time top-up
+  has no lock). `FINISHED` still ends a run.
+- **The rules storage layout is now actually migrated.** The 4.4.1 rewrite
+  removed the definitions of `rules` / `tmp_rules` from
+  `/etc/uci-defaults/80_luci-app-snort3` while the migration block still used
+  them. Empty strings made every `[ -d ... ]` test fail silently, so the stock
+  `/etc/snort/rules` real directory survived and the page reported *Storage
+  layout will change on the next update* with zero rule files. The paths are
+  defined again and the postinst replays the uci-defaults script on upgrade,
+  instead of waiting for the next reboot.
+
 ## [4.4.2] - 2026-11-06
 
 ### Fixed

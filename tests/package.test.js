@@ -225,7 +225,8 @@ test('storage badge follows the setting and the source follows installed rules',
 test('a live update overrides the stale status file but FINISHED ends it', () => {
 	const backend = read('root/usr/share/rpcd/ucode/luci.snort.uc');
 
-	assert.match(backend, /const running = !finished && \(lock \|\| alive\) && !stale/);
+	assert.match(backend, /const running = !finished &&/);
+	assert.match(backend, /\(alive && length\(log_lines\) > 0\)/);
 	assert.match(backend, /if \(running\) \{\s+result = 'running'/);
 	assert.match(backend, /status_age > UPDATE_IDLE_AFTER/);
 	assert.match(backend, /result_raw/);
@@ -242,7 +243,8 @@ test('uci-defaults aligns the on-disk layout with rules_persist', () => {
 test('a finished update is never reported as running', () => {
 	const backend = read('root/usr/share/rpcd/ucode/luci.snort.uc');
 
-	assert.match(backend, /const running = !finished && \(lock \|\| alive\) && !stale/);
+	assert.match(backend, /const running = !finished &&/);
+	assert.match(backend, /\(alive && length\(log_lines\) > 0\)/);
 	assert.match(backend, /if \(running\) \{\s+result = 'running'/);
 });
 
@@ -255,6 +257,25 @@ test('the overview has two rule buttons and no cleanup control', () => {
 	assert.match(overview, /communityButton = E\('button', \{\s*'class': 'cbi-button cbi-button-reset'/);
 	assert.doesNotMatch(overview, /Cleanup temporary files|handleRulesCleanup/);
 	assert.doesNotMatch(api, /rulesCleanup|rules_cleanup/);
+});
+
+test('a fresh install keeps both rule buttons enabled', () => {
+	const backend = read('root/usr/share/rpcd/ucode/luci.snort.uc');
+
+	/* No lock and no log: a stray /proc match must not start a "running" state. */
+	assert.match(backend, /const running = !finished &&/);
+	assert.match(backend, /\(lock \|\| \(alive && length\(log_lines\) > 0\)\) && !stale/);
+	assert.match(backend, /const lock = lock_info != null/);
+});
+
+test('uci-defaults defines its rule paths and postinst replays the migration', () => {
+	const defaults = read('root/etc/uci-defaults/80_luci-app-snort3');
+	const makefile = read('Makefile');
+
+	assert.match(defaults, /rules="\$conf_dir\/rules"/);
+	assert.match(defaults, /tmp_rules="\$temp_dir\/rules"/);
+	assert.match(defaults, /ln -s "\$tmp_rules" "\$rules"/);
+	assert.match(makefile, /\/bin\/sh \/etc\/uci-defaults\/80_luci-app-snort3/);
 });
 
 test('menu parent uses firstchild so the active tab is highlighted', () => {

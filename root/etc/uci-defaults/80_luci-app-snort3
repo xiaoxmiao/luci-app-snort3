@@ -25,6 +25,15 @@ fi
 # 4.4.0 made persistence optional (off by default).  Releases up to 4.3.x
 # always left a real /etc/snort/rules directory behind, so align the on-disk
 # layout with the current setting before the first sync of this version.
+# These paths MUST be defined here: without them the migration below silently
+# tested empty strings and left the stock directory in place on fresh installs.
+conf_dir=$(uci -q get snort-web.snort.config_dir 2>/dev/null || true)
+[ -n "$conf_dir" ] || conf_dir=/etc/snort
+temp_dir=$(uci -q get snort-web.snort.temp_dir 2>/dev/null || true)
+[ -n "$temp_dir" ] || temp_dir=/var/snort.d
+rules="$conf_dir/rules"
+tmp_rules="$temp_dir/rules"
+
 persist=$(uci -q get snort-web.snort.rules_persist 2>/dev/null || true)
 [ "$persist" = "1" ] || persist=0
 

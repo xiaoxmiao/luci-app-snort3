@@ -469,15 +469,19 @@ function update_state() {
 		}
 	}
 
-	/* The background chain appends FINISHED as its very last action, and the
-	 * RPC truncates the log before each run, so that marker belongs to this
-	 * run.  It must win over both the lock and the process scan: /proc can
-	 * still show a wrapper whose command line mentions the updater while the
-	 * download is already done, which used to leave the badge stuck on
-	 * "Update in progress..." forever. */
+	/* rules_update creates the lock before launching its background chain and
+	 * the chain appends FINISHED as its last action (the log is truncated at
+	 * the start of every run), so those two signals describe a UI-started
+	 * update precisely.  A fresh install has neither a lock nor a log, but the
+	 * /proc scan can still see an unrelated wrapper whose command line merely
+	 * mentions the updater (the ifup hotplug chain, for example).  Letting
+	 * "alive" alone set running used to disable both buttons forever.
+	 * "alive" is only a fallback when the log proves a download is actually
+	 * in progress - that covers the boot-time top-up, which has no lock. */
 	const alive = updater_process_alive();
 	const stale = lock && !alive && lock_age > UPDATE_STALE_GRACE;
-	const running = !finished && (lock || alive) && !stale;
+	const running = !finished &&
+		(lock || (alive && length(log_lines) > 0)) && !stale;
 
 	const status_lines = split(trim(read_text(UPDATE_STATUS) || ''), '\n');
 	let result = trim(status_lines[0] || '') || 'idle';
