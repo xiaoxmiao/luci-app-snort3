@@ -175,8 +175,49 @@ else
 	fi
 
 	if fetch "$url" "$tarball" && [ -s "$tarball" ] && tar -xzf "$tarball" -C "$work_dir"; then
-		find "$work_dir" -type f -name '*.rules' ! -name 'includes.rules' \
-			-exec cp -f '{}' "$new_rules/" \; || fail 'Unable to collect rule files' 'extract_failed'
+		# Subscriber snapshots contain rules/, so_rules/, preproc_rules/ etc.
+		# Flat-copying every *.rules from the whole tree mixes SO-rule stubs
+		# (which need matching .so objects) into the main include, and snort
+		# exits shortly after start.  snort-mgr only includes the top-level
+		# rules/*.rules, so install exactly that directory.  The community
+		# archive has a single top-level directory with its .rules files.
+		if [ -d "$work_dir/rules" ]; then
+			rules_src="$work_dir/rules"
+		else
+			first_rule=$(find "$work_dir" -type f -name '*.rules' \
+				! -name 'includes.rules' ! -path '*/so_rules/*' \
+				! -path '*/preproc_rules/*' | head -n 1)
+			rules_src=$(dirname "$first_rule")
+		fi
+
+		[ -n "$rules_src" ] && [ -d "$rules_src" ] ||
+			fail 'Unable to locate the rules directory in the archive' 'extract_failed'
+
+		stubs_total=0
+		for f in "$rules_src"/*.rules; do
+			[ -f "$f" ] || continue
+			[ "$(basename "$f")" = 'includes.rules' ] && continue
+
+			# Talos subscriber snapshots mix shared-object (SO) rule stubs
+			# into the normal .rules files.  Such a line carries "soid:" (or
+			# "so:eval") and references a precompiled .so library that the
+			# OpenWrt snort3 package does not ship; snort then logs thousands
+			# of "SO rule N not loaded" errors, hits FATAL and procd respawns
+			# it every few dozen seconds.  Keep the text rules, drop only the
+			# stub lines.  Community rules contain none of them.
+			name=$(basename "$f")
+			stubs=$(grep -ciE 'soid|so:eval' "$f" 2>/dev/null) || stubs=0
+			grep -viE 'soid|so:eval' "$f" > "$new_rules/$name" || :
+
+			if [ ! -s "$new_rules/$name" ]; then
+				rm -f "$new_rules/$name"
+			else
+				stubs_total=$((stubs_total + stubs))
+			fi
+		done
+
+		[ "$stubs_total" -gt 0 ] &&
+			log "Skipped $stubs_total shared-object rule stubs (the .so libraries are not installed)."
 	elif [ "$FALLBACK" -eq 1 ]; then
 		log 'Download failed; installing a minimal fallback ruleset.'
 		fallback_rules "$new_rules"

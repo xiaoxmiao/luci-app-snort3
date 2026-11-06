@@ -318,8 +318,14 @@ return view.extend({
 			started = result.ok === true;
 			return self.refreshRules();
 		}).catch(rpcError).then(function() {
-			if (!started)
-				button.disabled = false;
+			/* A rejected request (oinkcode_missing, update_busy, ...) must
+			 * leave BOTH buttons usable, not just the one that was clicked. */
+			if (!started) {
+				if (self.nodes.subscriberButton)
+					self.nodes.subscriberButton.disabled = false;
+				if (self.nodes.communityButton)
+					self.nodes.communityButton.disabled = false;
+			}
 		});
 	},
 

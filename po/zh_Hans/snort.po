@@ -492,3 +492,6 @@ msgstr "系统日志来自 logread，不是文件。"
 
 msgid "Temporary rules"
 msgstr "临时规则"
+
+msgid "Enter an Oinkcode before downloading subscriber rules"
+msgstr "请先输入 Oinkcode 再更新订阅规则"

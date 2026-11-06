@@ -128,6 +128,9 @@ msgstr ""
 msgid "Enabled"
 msgstr ""
 
+msgid "Enter an Oinkcode before downloading subscriber rules"
+msgstr ""
+
 msgid "Enter your Oinkcode if you have one"
 msgstr ""
 

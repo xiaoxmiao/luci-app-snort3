@@ -225,8 +225,8 @@ test('storage badge follows the setting and the source follows installed rules',
 test('a live update overrides the stale status file but FINISHED ends it', () => {
 	const backend = read('root/usr/share/rpcd/ucode/luci.snort.uc');
 
-	assert.match(backend, /const running = !finished &&/);
-	assert.match(backend, /\(alive && length\(log_lines\) > 0\)/);
+	assert.match(backend, /const running = lock && !stale/);
+	assert.match(backend, /const recent_lines = read_tail_lines\(UPDATE_LOG, 200, false\)/);
 	assert.match(backend, /if \(running\) \{\s+result = 'running'/);
 	assert.match(backend, /status_age > UPDATE_IDLE_AFTER/);
 	assert.match(backend, /result_raw/);
@@ -243,8 +243,8 @@ test('uci-defaults aligns the on-disk layout with rules_persist', () => {
 test('a finished update is never reported as running', () => {
 	const backend = read('root/usr/share/rpcd/ucode/luci.snort.uc');
 
-	assert.match(backend, /const running = !finished &&/);
-	assert.match(backend, /\(alive && length\(log_lines\) > 0\)/);
+	assert.match(backend, /const running = lock && !stale/);
+	assert.match(backend, /const recent_lines = read_tail_lines\(UPDATE_LOG, 200, false\)/);
 	assert.match(backend, /if \(running\) \{\s+result = 'running'/);
 });
 
@@ -263,8 +263,8 @@ test('a fresh install keeps both rule buttons enabled', () => {
 	const backend = read('root/usr/share/rpcd/ucode/luci.snort.uc');
 
 	/* No lock and no log: a stray /proc match must not start a "running" state. */
-	assert.match(backend, /const running = !finished &&/);
-	assert.match(backend, /\(lock \|\| \(alive && length\(log_lines\) > 0\)\) && !stale/);
+	assert.match(backend, /const running = lock && !stale/);
+	assert.match(backend, /slice\(recent_lines/);
 	assert.match(backend, /const lock = lock_info != null/);
 });
 
@@ -276,6 +276,26 @@ test('uci-defaults defines its rule paths and postinst replays the migration', (
 	assert.match(defaults, /tmp_rules="\$temp_dir\/rules"/);
 	assert.match(defaults, /ln -s "\$tmp_rules" "\$rules"/);
 	assert.match(makefile, /\/bin\/sh \/etc\/uci-defaults\/80_luci-app-snort3/);
+});
+
+test('subscriber snapshots install only the top-level rules directory', () => {
+	const updater = read('root/usr/libexec/snort-web-rules-update');
+
+	assert.match(updater, /if \[ -d "\$work_dir\/rules" \]; then/);
+	assert.match(updater, /! -path '\*\/so_rules\/\*'/);
+	assert.match(updater, /for f in "\$rules_src"\/\*\.rules/);
+	assert.match(updater, /grep -viE 'soid\|so:eval'/);
+	assert.match(updater, /Skipped \$stubs_total shared-object rule stubs/);
+	assert.doesNotMatch(updater, /find "\$work_dir" -type f -name '\*\.rules' \\\n\t\t\t-exec cp/);
+});
+
+test('a rejected rule update re-enables both buttons with a localised hint', () => {
+	const overview = read('htdocs/luci-static/resources/view/snort/overview.js');
+	const util = read('htdocs/luci-static/resources/snort/util.js');
+
+	assert.match(overview, /self\.nodes\.subscriberButton\.disabled = false/);
+	assert.match(overview, /self\.nodes\.communityButton\.disabled = false/);
+	assert.match(util, /case 'oinkcode_missing'/);
 });
 
 test('menu parent uses firstchild so the active tab is highlighted', () => {

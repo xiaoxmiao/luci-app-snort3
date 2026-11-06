@@ -489,3 +489,6 @@ msgstr "Les journaux système proviennent de logread, pas d'un fichier."
 
 msgid "Temporary rules"
 msgstr "Règles temporaires"
+
+msgid "Enter an Oinkcode before downloading subscriber rules"
+msgstr "Saisissez un Oinkcode avant de télécharger les règles abonnées"

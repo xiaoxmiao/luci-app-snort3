@@ -237,6 +237,9 @@ Util.msg = function(code, fallback) {
 	case 'disabled':
 		return tr('Auto-start disabled');
 
+	case 'oinkcode_missing':
+		return tr('Enter an Oinkcode before downloading subscriber rules');
+
 	case 'invalid_action':
 		return tr('Invalid action');
 

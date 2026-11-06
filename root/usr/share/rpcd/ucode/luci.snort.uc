@@ -453,7 +453,13 @@ function updater_process_alive() {
 }
 
 function update_state() {
-	const log_lines = read_tail_lines(UPDATE_LOG, 20, false);
+	/* The updater prints one line per rule file and busybox wget prints a
+	 * dotted progress line every few KB, so a 20-line window can easily lose
+	 * the FINISHED marker.  Scan a larger window but still show only the last
+	 * 20 lines in the UI. */
+	const recent_lines = read_tail_lines(UPDATE_LOG, 200, false);
+	const log_lines = length(recent_lines) > 20
+		? slice(recent_lines, length(recent_lines) - 20) : recent_lines;
 	const lock_info = lstat(UPDATE_LOCK);
 	const status_info = lstat(UPDATE_STATUS);
 	const lock = lock_info != null;
@@ -462,26 +468,23 @@ function update_state() {
 	const rc_text = trim(read_text(UPDATE_RC) || '');
 	let finished = false;
 
-	for (let line in log_lines) {
+	for (let line in recent_lines) {
 		if (index('' + line, 'FINISHED') != null) {
 			finished = true;
 			break;
 		}
 	}
 
-	/* rules_update creates the lock before launching its background chain and
-	 * the chain appends FINISHED as its last action (the log is truncated at
-	 * the start of every run), so those two signals describe a UI-started
-	 * update precisely.  A fresh install has neither a lock nor a log, but the
-	 * /proc scan can still see an unrelated wrapper whose command line merely
-	 * mentions the updater (the ifup hotplug chain, for example).  Letting
-	 * "alive" alone set running used to disable both buttons forever.
-	 * "alive" is only a fallback when the log proves a download is actually
-	 * in progress - that covers the boot-time top-up, which has no lock. */
+	/* The lock is the only authoritative signal: rules_update creates it
+	 * before launching the background chain, and that chain removes it as its
+	 * last step.  Neither the process scan (which can match an unrelated sh -c
+	 * wrapper) nor the log (which can be flooded by wget progress and lose
+	 * FINISHED) may decide the running state.  "alive" is used only to expire
+	 * a lock whose updater died.  The boot-time hotplug top-up has no lock, so
+	 * it never disables the two rule buttons. */
 	const alive = updater_process_alive();
 	const stale = lock && !alive && lock_age > UPDATE_STALE_GRACE;
-	const running = !finished &&
-		(lock || (alive && length(log_lines) > 0)) && !stale;
+	const running = lock && !stale;
 
 	const status_lines = split(trim(read_text(UPDATE_STATUS) || ''), '\n');
 	let result = trim(status_lines[0] || '') || 'idle';

@@ -5,6 +5,29 @@ All notable changes to the LuCI Snort3 Module will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.4.4] - 2026-11-06
+
+### Fixed
+- **Both rule buttons could stay disabled after an update, even with an empty
+  Oinkcode field.** `update_state()` still let a `/proc` match (plus a non-empty
+  log) set `running`, and `FINISHED` was looked for in only the last 20 log
+  lines - busybox wget progress and one line per rule file easily pushed it out
+  of that window. The lock is now the *only* running signal (created before the
+  background chain, removed as its last step); the process scan only expires a
+  dead updater's lock, and `FINISHED` is scanned over 200 lines while the UI
+  still shows 20. A rejected request such as `oinkcode_missing` now re-enables
+  both buttons and shows a translated hint. The community button never needed
+  an Oinkcode - it was disabled solely by the bogus `running` state.
+- **Subscriber rules made Snort restart every few dozen seconds.** The updater
+  flat-copied every `*.rules` from the unpacked snapshot, including
+  `so_rules/` and `preproc_rules/` SO-rule stubs that need matching `.so`
+  objects. Mixed into the top-level `rules/` directory they were all loaded by
+  `snort-mgr`'s `include *.rules`, so snort exited and procd respawned it; the
+  community archive has a single rules file and was unaffected. Only the
+  snapshot's top-level `rules/` directory is installed now (the community
+  archive's single directory is still found automatically), and rule lines
+  carrying `soid:` / `so:eval` are stripped while all text rules are kept.
+
 ## [4.4.3] - 2026-11-06
 
 ### Fixed
