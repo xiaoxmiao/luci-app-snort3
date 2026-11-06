@@ -1,6 +1,6 @@
 {
   "name": "luci-app-snort3",
-  "version": "4.3.1",
+  "version": "4.3.2",
   "private": true,
   "description": "LuCI JavaScript frontend and rpcd/ucode backend for Snort3 on OpenWrt",
   "license": "GPL-2.0",

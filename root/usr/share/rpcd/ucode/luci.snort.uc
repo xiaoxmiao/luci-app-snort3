@@ -161,11 +161,45 @@ function process_id_list() {
 		    index(cmdline, '/etc/init.d/snort') != null)
 			continue;
 
-		if (match(comm, /^snort[0-9]*$/) || index(cmdline, '/usr/bin/snort') != null)
+		if (match(comm, /snort/i) || index(cmdline, '/usr/bin/snort') != null)
 			push(pids, +name);
 	}
 
 	return pids;
+}
+
+/* Expose every snort-related process so a "stopped" state can be diagnosed
+ * without SSH access to /proc.  Never treat this as the running state: the
+ * rc.common wrapper is flagged instead of being counted. */
+function proc_scan() {
+	const found = [];
+	const entries = lsdir('/proc');
+
+	if (!entries)
+		return found;
+
+	for (let name in entries) {
+		if (!match(name, /^[0-9]+$/))
+			continue;
+
+		const comm = trim(read_text('/proc/' + name + '/comm'));
+		const cmdline = read_text('/proc/' + name + '/cmdline');
+
+		if (!match(comm, /snort/i) && index(cmdline, 'snort') == null)
+			continue;
+
+		push(found, {
+			pid: +name,
+			comm: comm,
+			daemon: index(cmdline, '/usr/bin/snort') != null,
+			wrapper: index(cmdline, 'rc.common') != null
+		});
+
+		if (length(found) >= 10)
+			break;
+	}
+
+	return found;
 }
 
 function process_rss_kb(pid) {
@@ -729,6 +763,7 @@ function status_call() {
 		rule_count,
 		pid: running ? '' + pids[0] : '',
 		proc_comm: running ? trim(read_text('/proc/' + pids[0] + '/comm')) : '',
+		proc_scan: proc_scan(),
 		pid_count: length(pids),
 		mem_kb: length(pids) > 0 ? process_rss_kb(pids[0]) : 0,
 		mem_total: memory.total,

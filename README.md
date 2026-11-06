@@ -256,6 +256,14 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for implementation notes.
   when `enabled=0`; this application verifies that a process actually appears
   and shows the reason (disabled, no rules, init script output or the syslog
   lines written by this start). See `logread | grep -i snort` and `snort-mgr check`.
+- **The page still behaves like the previous release after upgrading** —
+  `rpcd reload` does not re-fork ucode plugins, so run
+  `/etc/init.d/rpcd restart`, clear `/tmp/luci-indexcache*` and
+  `/tmp/luci-modulecache`, delete `/tmp/snort_service_action.*`, then hard-refresh
+  the browser. Do not delete `/etc/config/snort-web` (it is a conffile holding
+  your settings). Since 4.3.2 the postinst performs the rpcd restart itself.
+  `ubus call luci.snort status` exposes `proc_comm` and `proc_scan` to show what
+  the backend actually found in `/proc`.
 - **Overview shows only N/A and the buttons do nothing** — a `backend_error`
   notification now names the failing RPC method; the same message is written to
   `/tmp/snort_backend_error.log`. Check `ubus call luci.snort status` and

@@ -5,6 +5,25 @@ All notable changes to the LuCI Snort3 Module will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.3.2] - 2026-11-06
+
+### Fixed
+- **Upgrading now really reloads the backend.** OpenWrt's `rpcd.init`
+  implements `reload_service()` as `procd_send_signal rpcd`, which does not
+  re-fork the long-lived ucode plugin processes. The postinst script used
+  `rpcd reload`, so after installing a new APK the file on disk was updated
+  but rpcd kept executing the previous `luci.snort.uc`. It now uses
+  `rpcd restart` (as `install.sh` always did).
+
+### Added
+- **`proc_scan` diagnostic in `status`.** Lists up to ten snort-related
+  processes found in `/proc` with `pid`, `comm`, and `daemon`/`wrapper`
+  flags, so a `running: false` result can be distinguished between "no
+  daemon exists" and "daemon present but not recognised" without SSH access.
+- Process matching is now any comm containing `snort` (case-insensitive) or
+  a `/usr/bin/snort` command line, while still excluding the `rc.common`
+  init-script wrapper.
+
 ## [4.3.1] - 2026-11-06
 
 ### Fixed

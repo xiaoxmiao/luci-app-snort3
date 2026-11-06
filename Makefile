@@ -20,7 +20,7 @@ LUCI_DEPENDS:=+luci-base +rpcd-mod-ucode
 LUCI_EXTRA_DEPENDS:=snort3$(if $(CONFIG_USE_APK), (>=0))
 LUCI_PKGARCH:=all
 
-PKG_VERSION:=4.3.1
+PKG_VERSION:=4.3.2
 PKG_RELEASE:=1
 PKG_PO_VERSION:=$(PKG_VERSION)-r$(PKG_RELEASE)
 
@@ -47,7 +47,9 @@ define Package/luci-app-snort3/postinst
 	fi
 	rm -f /tmp/luci-indexcache.*
 	rm -rf /tmp/luci-modulecache/
-	/etc/init.d/rpcd reload 2>/dev/null
+	# rpcd reload only sends a signal; it does not re-fork the long-lived
+	# ucode plugin processes.  A restart is required after replacing the plugin.
+	/etc/init.d/rpcd restart 2>/dev/null
 }
 exit 0
 endef

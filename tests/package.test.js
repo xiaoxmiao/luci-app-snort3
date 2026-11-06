@@ -127,14 +127,25 @@ test('running snort3 processes are detected and wrappers excluded', () => {
 	const init = read('root/etc/init.d/snort-web');
 	const updater = read('root/usr/libexec/snort-web-rules-update');
 
-	assert.match(backend, /match\(comm, \/\^snort\[0-9\]\*\$\/\)/);
+	assert.match(backend, /match\(comm, \/snort\/i\)/);
 	assert.match(backend, /\/usr\/bin\/snort/);
 	assert.match(backend, /rc\.common/);
 	assert.match(backend, /proc_comm/);
+	assert.match(backend, /function proc_scan\(\)/);
+	assert.match(backend, /proc_scan: proc_scan\(\)/);
+	assert.match(backend, /daemon: index\(cmdline/);
+	assert.match(backend, /wrapper: index\(cmdline/);
 	assert.doesNotMatch(backend, /trim\(comm\) == 'snort'/);
 	assert.match(init, /snort_running\(\)/);
 	assert.match(init, /pidof snort3/);
 	assert.match(updater, /pidof snort3/);
+});
+
+test('postinst restarts rpcd so a replaced ucode plugin is reloaded', () => {
+	const makefile = read('Makefile');
+
+	assert.match(makefile, /\/etc\/init\.d\/rpcd restart/);
+	assert.doesNotMatch(makefile, /^\t\/etc\/init\.d\/rpcd reload/m);
 });
 
 test('failed starts only quote syslog lines from the current attempt', () => {
