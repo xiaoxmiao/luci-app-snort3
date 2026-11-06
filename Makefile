@@ -95,4 +95,8 @@ endif
 
 include $(LUCI_MK)
 
-# BuildPackage and the language packages are emitted by luci.mk.
+# OpenWrt's package scanner greps every candidate Makefile for the literal
+# string "call BuildPackage" (see include/scan.mk) before it parses anything.
+# luci.mk invokes BuildPackage from inside the include, so this signature
+# comment must stay: removing it silently removes the package from menuconfig.
+# call BuildPackage - OpenWrt buildroot signature

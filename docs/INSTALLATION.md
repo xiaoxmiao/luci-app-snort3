@@ -154,6 +154,12 @@ Prepare the feeds once:
 
 Then choose one of the two supported placements.
 
+Both placements depend on the `call BuildPackage` signature comment at the end
+of the application Makefile: OpenWrt's scanner (`include/scan.mk`) greps every
+candidate Makefile for that literal string before parsing anything and silently
+skips the directory when it is missing. The line is present in this repository -
+do not remove it when editing the Makefile.
+
 **Option A - inside the LuCI feed** (recommended, and the layout used by the
 CI workflow):
 
@@ -183,13 +189,7 @@ make menuconfig
 Packages in `package/` are indexed directly, so no `feeds install` is needed.
 The Makefile resolves `feeds/luci/luci.mk` automatically; earlier builds
 hard-coded `../../luci.mk` and therefore failed from this location. A clean
-source tree picks the package up on the next `make defconfig`. Prebuilt SDKs
-sometimes keep a cached package list, in which case refresh it first:
-
-```sh
-rm -rf tmp/info tmp/.packageinfo
-make defconfig
-```
+source tree picks the package up on the next `make defconfig`.
 
 Build with:
 
@@ -203,7 +203,7 @@ shown in 2.2.
 
 | Symptom | Cause / fix |
 | --- | --- |
-| No `luci-app-snort3` entry in menuconfig | Cloned outside `package/` or the LuCI feed; for the feed layout run `./scripts/feeds update -i luci` and `./scripts/feeds install -p luci luci-app-snort3` and check `ls -l package/feeds/luci/luci-app-snort3`; for `package/` on a prebuilt SDK refresh `tmp/info` as shown above |
+| No `luci-app-snort3` entry in menuconfig | Cloned outside `package/` or the LuCI feed; for the feed layout run `./scripts/feeds update -i luci` and `./scripts/feeds install -p luci luci-app-snort3` and check `ls -l package/feeds/luci/luci-app-snort3` |
 | `luci.mk: No such file or directory` or `could not locate luci.mk` | LuCI feed not checked out: `./scripts/feeds update luci` |
 | Entry greyed out / cannot be selected | Missing `luci-base` or `rpcd-mod-ucode`: `./scripts/feeds install luci-base rpcd-mod-ucode` |
 | Built but the LuCI menu is missing | Clear `/tmp/luci-indexcache.*`, restart `rpcd` and `uhttpd` |

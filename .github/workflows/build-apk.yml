@@ -93,9 +93,9 @@ jobs:
           # libucode, ...) that the SDK itself does not ship as source.
           ./scripts/feeds update base luci packages
 
-          # The SDK ships a prebuilt package index; adding a package directly
-          # under package/ does not invalidate it. Installing into the LuCI
-          # feed and rebuilding that index is the reliable layout.
+          # Install the checkout into the LuCI feed and rebuild its index.
+          # This is the placement CI verifies, and feeds install creates the
+          # package/feeds/luci symlink that menuconfig actually reads.
           mkdir -p feeds/luci/applications
           rm -rf feeds/luci/applications/luci-app-snort3
           cp -a "$GITHUB_WORKSPACE" feeds/luci/applications/luci-app-snort3
