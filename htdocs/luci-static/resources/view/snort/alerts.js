@@ -15,32 +15,47 @@ function setText(node, text) {
 
 return view.extend({
 	load: function() {
-		return api.alerts(50, 20);
+		return Promise.all([
+			api.status(),
+			api.alerts(50, 20)
+		]);
 	},
 
 	refresh: function() {
 		var self = this;
 
-		return api.alerts(50, 20).then(function(data) {
-			self.update(data || {});
+		return Promise.all([
+			api.status(),
+			api.alerts(50, 20)
+		]).then(function(data) {
+			self.update(data[1] || {}, data[0] || {});
 		}).catch(function() {
 			setText(self.nodes.summary, util.translate('Unavailable'));
 		});
 	},
 
-	update: function(data) {
+	update: function(data, status) {
 		var alerts = Array.isArray(data.alerts) ? data.alerts : [];
 		var logs = Array.isArray(data.logs) ? data.logs : [];
+		var service = util.serviceState(status);
+		var inactive = status && status.service_state &&
+			status.service_state !== 'running';
+		var emptyClass = inactive ? 'snort3-empty snort3-empty-inactive' : 'snort3-empty';
 
 		setText(this.nodes.count, data.alert_count != null ? data.alert_count : 0);
+		this.nodes.count.className = 'snort3-badge ' +
+			(inactive ? 'snort3-badge-warning' : 'snort3-badge-muted');
 		var files = Array.isArray(data.alert_files) ? data.alert_files : [];
 		setText(this.nodes.file, files.length ? files.join(', ') : '/var/log/alert_json.txt');
-		setText(this.nodes.summary,
-			util.translate('Total alerts') + ': ' + (data.alert_count != null ? data.alert_count : 0));
+		setText(this.nodes.summary, inactive
+			? util.translate('Service state') + ': ' + service.text
+			: util.translate('Total alerts') + ': ' + (data.alert_count != null ? data.alert_count : 0));
 
 		if (alerts.length === 0) {
 			dom.content(this.nodes.alerts,
-				E('div', { 'class': 'snort3-empty' }, util.translate('No alerts recorded')));
+				E('div', { 'class': emptyClass }, inactive
+					? util.translate('Snort is not running - alerts are not available')
+					: util.translate('No alerts recorded')));
 		}
 		else {
 			dom.content(this.nodes.alerts, alerts.map(function(line) {
@@ -50,7 +65,9 @@ return view.extend({
 
 		if (logs.length === 0) {
 			dom.content(this.nodes.logs,
-				E('div', { 'class': 'snort3-empty' }, util.translate('No logs')));
+				E('div', { 'class': emptyClass }, inactive
+					? util.translate('Snort is not running - no system logs are available')
+					: util.translate('No logs')));
 		}
 		else {
 			dom.content(this.nodes.logs, logs.map(function(line) {
@@ -138,7 +155,7 @@ return view.extend({
 			hintSection
 		]);
 
-		this.update(data || {});
+		this.update(data[1] || {}, data[0] || {});
 		poll.add(L.bind(this.refresh, this), 5);
 
 		return page;

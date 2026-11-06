@@ -492,3 +492,9 @@ msgstr "Règles temporaires"
 
 msgid "Enter an Oinkcode before downloading subscriber rules"
 msgstr "Saisissez un Oinkcode avant de télécharger les règles abonnées"
+
+msgid "Snort is not running - alerts are not available"
+msgstr "Snort n'est pas en cours d'exécution - les alertes ne sont pas disponibles"
+
+msgid "Snort is not running - no system logs are available"
+msgstr "Snort n'est pas en cours d'exécution - aucun journal système disponible"

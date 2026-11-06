@@ -42,6 +42,7 @@ return baseclass.extend({
 	'.snort3-alert { padding: .45rem .6rem; border-left: 3px solid #dc3545; background: rgba(220, 53, 69, .07); border-radius: .25rem; font-family: monospace; font-size: .85em; white-space: pre-wrap; overflow-wrap: anywhere; }',
 	'.snort3-log-line { padding: .35rem .5rem; border-left: 3px solid #0d6efd; background: rgba(13, 110, 253, .06); border-radius: .25rem; font-family: monospace; font-size: .82em; white-space: pre-wrap; overflow-wrap: anywhere; }',
 	'.snort3-empty { padding: .75rem; border-radius: .35rem; background: rgba(40, 167, 69, .1); color: #1e7e34; font-weight: 600; }',
+	'.snort3-empty-inactive { background: rgba(255, 152, 0, .16); color: #a05a00; }',
 	'.snort3-link-row { display: flex; justify-content: space-between; align-items: center; gap: .75rem; flex-wrap: wrap; margin-bottom: .5rem; }',
 	'.snort3-section { border: 1px solid rgba(127, 127, 127, .25); border-radius: .5rem; padding: 1rem; }',
 	'.snort3-section > h3 { margin: 0 0 .75rem 0; }',

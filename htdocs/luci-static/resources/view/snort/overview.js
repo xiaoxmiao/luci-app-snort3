@@ -117,7 +117,7 @@ return view.extend({
 			reportBackendError(data);
 			self.updateStatus(data[0] || {});
 			self.updateRules(data[1] || {});
-			self.updateAlerts(data[2] || {});
+			self.updateAlerts(data[2] || {}, data[0] || {});
 		}).catch(function() {
 			setBadge(self.nodes.serviceBadge, util.translate('Unavailable'), 'danger');
 			setBadge(self.nodes.stateBadge, util.translate('Unavailable'), 'danger');
@@ -270,15 +270,24 @@ return view.extend({
 			this.nodes.communityButton.disabled = busy;
 	},
 
-	updateAlerts: function(alerts) {
+	updateAlerts: function(alerts, status) {
 		var lines = Array.isArray(alerts.alerts) ? alerts.alerts : [];
+		var inactive = status && status.service_state &&
+			status.service_state !== 'running';
 
 		if (alerts.alert_count != null)
 			setText(this.nodes.alertCount, alerts.alert_count);
 
 		if (lines.length === 0) {
+			/* An empty alert file is only "secure" while the daemon is
+			 * actually inspecting traffic.  A stopped service means the
+			 * absence of alerts tells us nothing about the network. */
 			dom.content(this.nodes.recentAlerts,
-				E('div', { 'class': 'snort3-empty' }, util.translate('No recent alerts - Your network is secure')));
+				E('div', {
+					'class': inactive ? 'snort3-empty snort3-empty-inactive' : 'snort3-empty'
+				}, inactive
+					? util.translate('Snort is not running - alerts are not available')
+					: util.translate('No recent alerts - Your network is secure')));
 			return;
 		}
 
@@ -510,7 +519,7 @@ return view.extend({
 
 		this.updateStatus(status);
 		this.updateRules(rules);
-		this.updateAlerts(alerts);
+		this.updateAlerts(alerts, status);
 
 		poll.add(L.bind(this.refresh, this), 5);
 

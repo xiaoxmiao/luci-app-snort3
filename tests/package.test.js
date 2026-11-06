@@ -298,6 +298,20 @@ test('a rejected rule update re-enables both buttons with a localised hint', () 
 	assert.match(util, /case 'oinkcode_missing'/);
 });
 
+test('empty alert views report a stopped service instead of a secure network', () => {
+	const overview = read('htdocs/luci-static/resources/view/snort/overview.js');
+	const alertsView = read('htdocs/luci-static/resources/view/snort/alerts.js');
+	const style = read('htdocs/luci-static/resources/snort/style.js');
+
+	assert.match(overview, /updateAlerts: function\(alerts, status\)/);
+	assert.match(overview, /snort3-empty-inactive/);
+	assert.match(alertsView, /api\.status\(\)/);
+	assert.match(alertsView, /update: function\(data, status\)/);
+	assert.match(alertsView, /Snort is not running - alerts are not available/);
+	assert.match(alertsView, /Snort is not running - no system logs are available/);
+	assert.match(style, /snort3-empty-inactive/);
+});
+
 test('menu parent uses firstchild so the active tab is highlighted', () => {
 	const menu = JSON.parse(read('root/usr/share/luci/menu.d/luci-app-snort3.json'));
 	const parent = menu['admin/services/snort'].action;

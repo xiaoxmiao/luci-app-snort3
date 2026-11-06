@@ -5,6 +5,21 @@ All notable changes to the LuCI Snort3 Module will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.4.5] - 2026-11-06
+
+### Fixed
+- **An empty alert list no longer claims the network is secure while Snort is
+  stopped.** Both the Overview recent-alerts box and the Alerts page rendered
+  the green `snort3-empty` state ("No recent alerts - Your network is secure" /
+  "No alerts recorded") whenever the alert files were empty, even with no
+  daemon running and no system logs. The Overview now passes its existing
+  `status` reply into the alert renderer, and the Alerts page fetches `status`
+  alongside `alerts`. When `service_state` is not `running`, both show an amber
+  warning ("Snort is not running - alerts are not available" / "no system logs
+  are available"), the Alerts summary shows the actual service state and its
+  count badge turns amber. The green "secure" message is only used while the
+  daemon is actually inspecting traffic.
+
 ## [4.4.4] - 2026-11-06
 
 ### Fixed

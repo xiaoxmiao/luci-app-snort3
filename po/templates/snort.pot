@@ -395,6 +395,12 @@ msgstr ""
 msgid "Snort is disabled in Settings"
 msgstr ""
 
+msgid "Snort is not running - alerts are not available"
+msgstr ""
+
+msgid "Snort is not running - no system logs are available"
+msgstr ""
+
 msgid "Snort memory"
 msgstr ""
 

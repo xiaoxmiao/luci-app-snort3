@@ -495,3 +495,9 @@ msgstr "临时规则"
 
 msgid "Enter an Oinkcode before downloading subscriber rules"
 msgstr "请先输入 Oinkcode 再更新订阅规则"
+
+msgid "Snort is not running - alerts are not available"
+msgstr "Snort 未运行，无法获取告警"
+
+msgid "Snort is not running - no system logs are available"
+msgstr "Snort 未运行，暂无系统日志"
