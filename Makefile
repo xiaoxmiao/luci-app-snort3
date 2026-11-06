@@ -82,13 +82,15 @@ endef
 # dropped into package/ then failed the include and silently vanished from
 # menuconfig.  luci.mk only relies on $(CURDIR), $(TOPDIR) and $(INCLUDE_DIR),
 # so including it from the feed root works from any checkout location.
-LUCI_MK := $(firstword $(wildcard \
-	../../luci.mk \
-	$(TOPDIR)/feeds/luci/luci.mk \
-	$(TOPDIR)/package/feeds/luci/luci.mk))
+LUCI_MK := $(firstword $(wildcard ../../luci.mk $(TOPDIR)/feeds/luci/luci.mk $(TOPDIR)/package/feeds/luci/luci.mk))
 
+# Do not use $(error) here: OpenWrt evaluates this Makefile with DUMP=1 while
+# building its package index, and a fatal error there makes the package vanish
+# from menuconfig without any visible message. A warning plus a best-effort
+# path keeps that scan alive.
 ifeq ($(LUCI_MK),)
-$(error luci-app-snort3: luci.mk not found. Install the LuCI feed with ./scripts/feeds update luci and ./scripts/feeds install luci-base, then place this repository in package/luci-app-snort3 or feeds/luci/applications/luci-app-snort3. For the feed location also run ./scripts/feeds update -i luci and ./scripts/feeds install -p luci luci-app-snort3)
+$(warning luci-app-snort3: could not locate luci.mk. Run ./scripts/feeds update luci and ./scripts/feeds install luci-base, then place this repository in package/luci-app-snort3 or feeds/luci/applications/luci-app-snort3.)
+LUCI_MK := $(TOPDIR)/feeds/luci/luci.mk
 endif
 
 include $(LUCI_MK)

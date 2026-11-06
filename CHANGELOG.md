@@ -10,17 +10,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - **The package is now discoverable in a full OpenWrt buildroot.** `Makefile`
   no longer hard-codes `include ../../luci.mk`: it resolves `luci.mk` from the
-  LuCI feed root when the checkout sits in `package/`, and fails with an
-  actionable message when the LuCI feed is missing instead of silently
-  disappearing from `make menuconfig`. `LUCI_NAME`, `LUCI_URL` and
-  `LUCI_MAINTAINER` are pinned so a renamed clone still produces
-  `luci-app-snort3` and the six `luci-i18n-snort3-*` translation packages.
+  LuCI feed root when the checkout sits in `package/`, and warns with
+  actionable instructions when the feed is missing instead of aborting the
+  `DUMP=1` index scan (which made the package vanish from `make menuconfig`).
+  `LUCI_NAME`, `LUCI_URL` and `LUCI_MAINTAINER` are pinned so a renamed clone
+  still produces `luci-app-snort3` and the six `luci-i18n-snort3-*`
+  translation packages.
 
 ### Added
 - `docs/INSTALLATION.md` section 2.3 documents both supported placements in a
-  full buildroot (`feeds/luci/applications/...` with `feeds update -i` plus
-  `feeds install -p luci`, or `package/...`) and a troubleshooting table for
-  menuconfig. README carries the same note in English, French and Chinese.
+  full buildroot (`package/...` as the recommended layout, or
+  `feeds/luci/applications/...` with `feeds update -i` plus `feeds install -p
+  luci`) and a troubleshooting table for menuconfig. README carries the same
+  note in English, French and Chinese.
+- The APK workflow now builds from `package/luci-app-snort3`, the same layout a
+  user gets after cloning into a source tree, and asserts that `make defconfig`
+  keeps `CONFIG_PACKAGE_luci-app-snort3=y` in `.config`. This catches any
+  regression that would hide the package from menuconfig.
 
 ## [1.0.0] - 2026-11-06
 
