@@ -19,14 +19,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - `docs/INSTALLATION.md` section 2.3 documents both supported placements in a
-  full buildroot (`package/...` as the recommended layout, or
-  `feeds/luci/applications/...` with `feeds update -i` plus `feeds install -p
-  luci`) and a troubleshooting table for menuconfig. README carries the same
-  note in English, French and Chinese.
-- The APK workflow now builds from `package/luci-app-snort3`, the same layout a
-  user gets after cloning into a source tree, and asserts that `make defconfig`
-  keeps `CONFIG_PACKAGE_luci-app-snort3=y` in `.config`. This catches any
-  regression that would hide the package from menuconfig.
+  full buildroot (`feeds/luci/applications/...` with `feeds update -i` plus
+  `feeds install -p luci` as the recommended layout, or `package/...`) and a
+  troubleshooting table for menuconfig, including the stale package index on
+  prebuilt SDKs. README carries the same note in English, French and Chinese.
+- The APK workflow asserts that the feed-install symlink exists and that
+  `make defconfig` keeps `CONFIG_PACKAGE_luci-app-snort3=y` in `.config`. This
+  catches any regression that would hide the package from menuconfig.
 
 ## [1.0.0] - 2026-11-06
 

@@ -154,21 +154,8 @@ Prepare the feeds once:
 
 Then choose one of the two supported placements.
 
-**Option A - directly under `package/`** (recommended, and the layout used by
-the CI workflow):
-
-```sh
-git clone https://github.com/xiaoxmiao/luci-app-snort3.git \
-	package/luci-app-snort3
-make menuconfig                     # LuCI -> 3. Applications -> luci-app-snort3
-```
-
-Packages in `package/` are indexed directly, so no `feeds install` is needed.
-The Makefile resolves `feeds/luci/luci.mk` automatically; earlier builds
-hard-coded `../../luci.mk` and therefore failed from this location. This is the
-simplest way to add the application to an existing source tree.
-
-**Option B - inside the LuCI feed**:
+**Option A - inside the LuCI feed** (recommended, and the layout used by the
+CI workflow):
 
 ```sh
 git clone https://github.com/xiaoxmiao/luci-app-snort3.git \
@@ -176,13 +163,33 @@ git clone https://github.com/xiaoxmiao/luci-app-snort3.git \
 rm -rf feeds/luci/applications/luci-app-snort3/.git   # avoid a nested git repo
 ./scripts/feeds update -i luci      # rebuild the index only; do not reset the feed
 ./scripts/feeds install -p luci luci-app-snort3
-make menuconfig
+make menuconfig                     # LuCI -> 3. Applications -> luci-app-snort3
 ```
 
 `-i` matters: a plain `./scripts/feeds update luci` refreshes the feed git
 checkout. Removing the nested `.git` keeps the feed as a single repository.
 `feeds install` creates the `package/feeds/luci/luci-app-snort3` symlink that
-menuconfig actually reads.
+menuconfig actually reads. This is the most reliable placement: the feed index
+is rebuilt explicitly, so no stale package cache can hide the application.
+
+**Option B - directly under `package/`**:
+
+```sh
+git clone https://github.com/xiaoxmiao/luci-app-snort3.git \
+	package/luci-app-snort3
+make menuconfig
+```
+
+Packages in `package/` are indexed directly, so no `feeds install` is needed.
+The Makefile resolves `feeds/luci/luci.mk` automatically; earlier builds
+hard-coded `../../luci.mk` and therefore failed from this location. A clean
+source tree picks the package up on the next `make defconfig`. Prebuilt SDKs
+sometimes keep a cached package list, in which case refresh it first:
+
+```sh
+rm -rf tmp/info tmp/.packageinfo
+make defconfig
+```
 
 Build with:
 
@@ -196,7 +203,7 @@ shown in 2.2.
 
 | Symptom | Cause / fix |
 | --- | --- |
-| No `luci-app-snort3` entry in menuconfig | Cloned outside `package/` or the LuCI feed; for the feed layout run `./scripts/feeds update -i luci` and `./scripts/feeds install -p luci luci-app-snort3` and check `ls -l package/feeds/luci/luci-app-snort3` |
+| No `luci-app-snort3` entry in menuconfig | Cloned outside `package/` or the LuCI feed; for the feed layout run `./scripts/feeds update -i luci` and `./scripts/feeds install -p luci luci-app-snort3` and check `ls -l package/feeds/luci/luci-app-snort3`; for `package/` on a prebuilt SDK refresh `tmp/info` as shown above |
 | `luci.mk: No such file or directory` or `could not locate luci.mk` | LuCI feed not checked out: `./scripts/feeds update luci` |
 | Entry greyed out / cannot be selected | Missing `luci-base` or `rpcd-mod-ucode`: `./scripts/feeds install luci-base rpcd-mod-ucode` |
 | Built but the LuCI menu is missing | Clear `/tmp/luci-indexcache.*`, restart `rpcd` and `uhttpd` |
@@ -204,6 +211,7 @@ shown in 2.2.
 Check the registration with:
 
 ```sh
+./scripts/feeds list | grep snort3          # feed layout
 grep -n 'Package: luci-app-snort3' tmp/.packageinfo
 grep -n 'CONFIG_PACKAGE_luci-app-snort3' .config
 ```

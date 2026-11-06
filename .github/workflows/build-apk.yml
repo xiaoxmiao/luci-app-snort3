@@ -84,7 +84,7 @@ jobs:
           [ -n "$sdk_dir" ] || { echo "SDK directory not found" >&2; exit 1; }
           echo "SDK_DIR=$sdk_dir" >> "$GITHUB_ENV"
 
-      - name: Add the application to the buildroot
+      - name: Add the application to the LuCI feed
         run: |
           set -euo pipefail
           cd "$SDK_DIR"
@@ -93,15 +93,17 @@ jobs:
           # libucode, ...) that the SDK itself does not ship as source.
           ./scripts/feeds update base luci packages
 
-          # Place the checkout where a user would put it after cloning into a
-          # full OpenWrt source tree. Packages in package/ are indexed
-          # directly, and this also exercises the Makefile fallback that finds
-          # feeds/luci/luci.mk instead of the feed-relative ../../luci.mk.
-          rm -rf package/luci-app-snort3
-          cp -a "$GITHUB_WORKSPACE" package/luci-app-snort3
-          rm -rf package/luci-app-snort3/.git
+          # The SDK ships a prebuilt package index; adding a package directly
+          # under package/ does not invalidate it. Installing into the LuCI
+          # feed and rebuilding that index is the reliable layout.
+          mkdir -p feeds/luci/applications
+          rm -rf feeds/luci/applications/luci-app-snort3
+          cp -a "$GITHUB_WORKSPACE" feeds/luci/applications/luci-app-snort3
+          rm -rf feeds/luci/applications/luci-app-snort3/.git
 
-          ./scripts/feeds install -p luci luci-base
+          ./scripts/feeds update -i luci
+
+          ./scripts/feeds install -p luci luci-app-snort3 luci-base
 
       - name: Configure the build
         run: |
@@ -138,18 +140,16 @@ jobs:
           make defconfig
 
           # Regression guard: menuconfig must actually see this package. A
-          # broken luci.mk include or an unmet dependency silently drops the
-          # symbol here even though a direct package/.../compile still works.
+          # broken luci.mk include or a fatal error during the DUMP=1 index
+          # scan makes the package disappear without any build failure.
+          test -e package/feeds/luci/luci-app-snort3 || {
+            echo "luci-app-snort3 was not installed from the LuCI feed" >&2
+            exit 1
+          }
           grep -q '^CONFIG_PACKAGE_luci-app-snort3=y$' .config || {
             echo "luci-app-snort3 was dropped by make defconfig: menuconfig would not show it" >&2
             exit 1
           }
-          if [ -f tmp/.packageinfo ]; then
-            grep -q 'Package: luci-app-snort3' tmp/.packageinfo || {
-              echo "luci-app-snort3 is missing from the package metadata" >&2
-              exit 1
-            }
-          fi
 
           echo "Selected package options:"
           grep -E '^CONFIG_PACKAGE_(lua|liblucihttp|luci|snort)' .config || true
