@@ -28,7 +28,7 @@ PKG_RELEASE:=1
 PKG_PO_VERSION:=$(PKG_VERSION)-r$(PKG_RELEASE)
 
 PKG_LICENSE:=GPL-2.0
-PKG_MAINTAINER:=David Dzieciol <david.dzieciol51100@gmail.com>
+PKG_MAINTAINER:=xiaoxmiao <https://github.com/xiaoxmiao/luci-app-snort3>
 
 # /etc/config/snort is provided by the snort3 package. Shipping it here as
 # well would cause a file clash during firmware builds. The application stores

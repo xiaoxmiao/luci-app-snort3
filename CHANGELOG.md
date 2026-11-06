@@ -26,6 +26,13 @@ tag; the `master` branch is frozen at 4.4.5.
   remains the source language and is therefore not packaged separately.
   `build:lmo` produces six `.lmo` files and the GitHub Actions workflow enables
   and verifies all six `CONFIG_LUCI_LANG_*` switches.
+- **README is now a true trilingual document.** English, French and Chinese
+  share the same twelve sections; the outdated single "Mettre a jour les
+  regles" / "update rules" wording and the contradictory claim that rules are
+  always persistent were removed, along with beta-era version numbers. Credit
+  is explicit in all three languages: David Dzieciol is the original upstream
+  author, xiaoxmiao is the maintainer, and `PKG_MAINTAINER` follows. The GPL
+  copyright line in `LICENSE` is unchanged.
 
 ## [4.4.5] - 2026-11-06
 
