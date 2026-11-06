@@ -5,6 +5,30 @@ All notable changes to the LuCI Snort3 Module will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.4.1] - 2026-11-06
+
+### Fixed
+- **Storage badge now follows the setting.** It reported "persistent" based on
+  the on-disk directory type, so a 4.3.x real directory kept claiming the rules
+  were persistent even with `rules_persist=0`. `rules` now returns
+  `persistent` from the setting plus `storage_actual` / `storage_mismatch`, and
+  uci-defaults converts a leftover real directory into a tmpfs symlink (with a
+  backup) when persistence is off.
+- **"Update completed!" during a live download.** A stale status file, an old
+  `FINISHED` line or an mtime/clock mismatch could make `running` false while
+  the lock was still present. The lock (or a live updater process) is now
+  authoritative; `status` also exposes `result_raw` for diagnosis.
+- **Rule source described what was installed, not what was requested.** It was
+  inferred from the saved Oinkcode, so choosing "Update subscriber rules"
+  immediately labelled the still-installed community rules as subscriber
+  rules. The updater now writes a `.source` marker inside the rules directory
+  that is atomically replaced together with the rules.
+- **Alerts page still mentioned `/var/log/alert_fast.txt`.** The backend now
+  returns `alert_files`, but the view fell back to that hardcoded path when
+  `alert_file` was missing. It now lists the real JSON files, formats JSON
+  alerts with the shared `Util.formatAlert()`, and states that system logs come
+  from `logread`, not from a file. The obsolete "Fast alerts" entry is gone.
+
 ## [4.4.0] - 2026-11-06
 
 ### Fixed

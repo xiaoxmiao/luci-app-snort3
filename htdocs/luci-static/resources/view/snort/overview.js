@@ -97,33 +97,6 @@ function reportBackendError(data) {
 	return false;
 }
 
-/* snort-mgr emits alert_json (one JSON object per line).  Render the useful
- * fields instead of dumping raw JSON, and fall back to the raw line for the
- * legacy alert_fast format. */
-function formatAlert(line) {
-	try {
-		var o = JSON.parse(line);
-
-		if (!o || typeof o !== 'object')
-			return line;
-
-		var bits = [];
-
-		if (o.timestamp) bits.push(o.timestamp);
-		if (o.action) bits.push('[' + o.action + ']');
-		if (o.msg) bits.push(o.msg);
-		if (o.src_addr || o.dst_addr)
-			bits.push((o.src_addr || '?') + (o.src_port ? ':' + o.src_port : '') +
-				' -> ' + (o.dst_addr || '?') + (o.dst_port ? ':' + o.dst_port : ''));
-		if (o.sid) bits.push('sid:' + o.sid);
-
-		return bits.length ? bits.join(' ') : line;
-	}
-	catch (e) {
-		return line;
-	}
-}
-
 return view.extend({
 	load: function() {
 		return Promise.all([
@@ -216,21 +189,19 @@ return view.extend({
 		var stateText;
 		var stateTone;
 
-		if (rules.persistent && (rules.config_rule_count || 0) > 0) {
-			stateText = util.translate('Persistent rules');
-			stateTone = 'success';
-		}
-		else if (rules.persistent) {
-			stateText = util.translate('No rules yet');
+		if (rules.storage_mismatch) {
+			stateText = util.translate('Storage layout will change on the next update');
 			stateTone = 'warning';
 		}
-		else if (rules.config_is_link) {
-			stateText = util.translate('Temporary rules - migrate to persistent storage');
-			stateTone = 'danger';
+		else if ((rules.config_rule_count || 0) > 0) {
+			stateText = rules.persistent
+				? util.translate('Persistent rules')
+				: util.translate('Temporary rules');
+			stateTone = 'success';
 		}
 		else {
-			stateText = util.translate('No rules directory found');
-			stateTone = 'danger';
+			stateText = util.translate('No rules yet');
+			stateTone = 'warning';
 		}
 
 		setBadge(this.nodes.rulesBadge, stateText, stateTone);
@@ -312,7 +283,7 @@ return view.extend({
 		}
 
 		dom.content(this.nodes.recentAlerts, lines.map(function(line) {
-			return E('div', { 'class': 'snort3-alert' }, formatAlert(line));
+			return E('div', { 'class': 'snort3-alert' }, util.formatAlert(line));
 		}));
 	},
 

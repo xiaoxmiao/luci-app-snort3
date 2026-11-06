@@ -94,9 +94,6 @@ msgstr "Script d'initialisation Snort introuvable"
 msgid "Rules management"
 msgstr "Gestion des règles"
 
-msgid "No rules directory found"
-msgstr "Aucun répertoire de règles trouvé"
-
 msgid "Rule files:"
 msgstr "Fichiers de règles :"
 
@@ -159,9 +156,6 @@ msgstr "Consultez les rapports détaillés via SSH avec la commande :"
 
 msgid "Log files:"
 msgstr "Fichiers de journaux :"
-
-msgid "Fast alerts"
-msgstr "Alertes rapides"
 
 msgid "Detailed JSON alerts"
 msgstr "Alertes JSON détaillées"
@@ -433,9 +427,6 @@ msgstr "Stockage :"
 msgid "Temporary"
 msgstr "Temporaire"
 
-msgid "Temporary rules - migrate to persistent storage"
-msgstr "Règles temporaires - migrer vers le stockage persistant"
-
 msgid "Community rules"
 msgstr "Règles communautaires"
 
@@ -489,3 +480,15 @@ msgstr "Mettre à jour les règles abonnées"
 
 msgid "Use community rules"
 msgstr "Utiliser les règles communautaires"
+
+msgid "Per-thread JSON alerts"
+msgstr "Alertes JSON par thread"
+
+msgid "Storage layout will change on the next update"
+msgstr "Le mode de stockage changera lors de la prochaine mise à jour"
+
+msgid "System logs come from logread, not from a file."
+msgstr "Les journaux système proviennent de logread, pas d'un fichier."
+
+msgid "Temporary rules"
+msgstr "Règles temporaires"

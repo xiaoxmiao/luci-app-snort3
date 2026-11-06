@@ -118,9 +118,6 @@ msgstr "外部网络"
 msgid "Fanout type"
 msgstr "Fanout 类型"
 
-msgid "Fast alerts"
-msgstr "快速告警"
-
 msgid "First queue number"
 msgstr "起始队列编号"
 
@@ -204,9 +201,6 @@ msgstr "无日志"
 
 msgid "No recent alerts - Your network is secure"
 msgstr "最近没有告警 - 您的网络安全"
-
-msgid "No rules directory found"
-msgstr "未找到规则目录"
 
 msgid "No rules found"
 msgstr "未找到规则"
@@ -436,9 +430,6 @@ msgstr "存储："
 msgid "Temporary"
 msgstr "临时"
 
-msgid "Temporary rules - migrate to persistent storage"
-msgstr "临时规则 — 请迁移到持久存储"
-
 msgid "Community rules"
 msgstr "社区规则"
 
@@ -492,3 +483,15 @@ msgstr "更新订阅规则"
 
 msgid "Use community rules"
 msgstr "使用社区规则"
+
+msgid "Per-thread JSON alerts"
+msgstr "按线程的 JSON 告警"
+
+msgid "Storage layout will change on the next update"
+msgstr "下次更新后存储方式将切换"
+
+msgid "System logs come from logread, not from a file."
+msgstr "系统日志来自 logread，不是文件。"
+
+msgid "Temporary rules"
+msgstr "临时规则"

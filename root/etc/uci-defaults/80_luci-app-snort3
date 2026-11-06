@@ -22,15 +22,11 @@ if [ -f /etc/config/snort ]; then
 	uci -q commit snort
 fi
 
-# Older releases symlinked /etc/snort/rules into tmpfs, so downloaded rules
-# disappeared on every reboot.  Move anything still there into a real,
-# persistent directory before the first sync of this version.
-conf_dir=$(uci -q get snort-web.snort.config_dir 2>/dev/null)
-[ -n "$conf_dir" ] || conf_dir=/etc/snort
-temp_dir=$(uci -q get snort-web.snort.temp_dir 2>/dev/null)
-[ -n "$temp_dir" ] || temp_dir=/var/snort.d
-rules="$conf_dir/rules"
-tmp_rules="$temp_dir/rules"
+# 4.4.0 made persistence optional (off by default).  Releases up to 4.3.x
+# always left a real /etc/snort/rules directory behind, so align the on-disk
+# layout with the current setting before the first sync of this version.
+persist=$(uci -q get snort-web.snort.rules_persist 2>/dev/null || true)
+[ "$persist" = "1" ] || persist=0
 
 copy_rules_from() {
 	[ -d "$1" ] || return 0
@@ -40,22 +36,38 @@ copy_rules_from() {
 	return 0
 }
 
-if [ -L "$rules" ]; then
-	stage="$rules.migrate.$$"
-	if mkdir -p "$stage" 2>/dev/null; then
-		copy_rules_from "$tmp_rules" "$stage"
-		copy_rules_from "$(readlink "$rules" 2>/dev/null)" "$stage"
-		rm -f "$rules"
-		if [ -n "$(ls -A "$stage" 2>/dev/null)" ]; then
-			mv "$stage" "$rules" || mkdir -p "$rules"
-		else
-			rmdir "$stage" 2>/dev/null || :
-			mkdir -p "$rules"
+if [ "$persist" = "0" ]; then
+	if [ -d "$rules" ] && [ ! -L "$rules" ]; then
+		mkdir -p "$tmp_rules" 2>/dev/null || exit 0
+		copy_rules_from "$rules" "$tmp_rules"
+		backup="${rules}.backup.$(date '+%s')"
+		if mv "$rules" "$backup" && ln -s "$tmp_rules" "$rules"; then
+			logger -t snort-web "switched rules to temporary storage (backup $backup)" 2>/dev/null || :
 		fi
-		logger -t snort-web "migrated rules into persistent $rules" 2>/dev/null || :
+	elif [ ! -e "$rules" ]; then
+		mkdir -p "$tmp_rules" && ln -s "$tmp_rules" "$rules"
+	else
+		# A dangling symlink after a reboot: recreate its tmpfs target.
+		mkdir -p "$tmp_rules"
 	fi
-elif [ -d "$rules" ] && ! ls "$rules"/*.rules >/dev/null 2>&1; then
-	copy_rules_from "$tmp_rules" "$rules"
+else
+	if [ -L "$rules" ]; then
+		stage="$rules.migrate.$$"
+		if mkdir -p "$stage" 2>/dev/null; then
+			copy_rules_from "$tmp_rules" "$stage"
+			copy_rules_from "$(readlink "$rules" 2>/dev/null)" "$stage"
+			rm -f "$rules"
+			if [ -n "$(ls -A "$stage" 2>/dev/null)" ]; then
+				mv "$stage" "$rules" || mkdir -p "$rules"
+			else
+				rmdir "$stage" 2>/dev/null || :
+				mkdir -p "$rules"
+			fi
+			logger -t snort-web "migrated rules into persistent $rules" 2>/dev/null || :
+		fi
+	elif [ -d "$rules" ] && ! ls "$rules"/*.rules >/dev/null 2>&1; then
+		copy_rules_from "$tmp_rules" "$rules"
+	fi
 fi
 
 # Import an existing /etc/config/snort once and push the application settings

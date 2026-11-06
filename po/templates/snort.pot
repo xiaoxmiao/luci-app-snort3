@@ -152,9 +152,6 @@ msgstr ""
 msgid "Fanout type"
 msgstr ""
 
-msgid "Fast alerts"
-msgstr ""
-
 msgid "First queue number"
 msgstr ""
 
@@ -254,9 +251,6 @@ msgstr ""
 msgid "No rule files found"
 msgstr ""
 
-msgid "No rules directory found"
-msgstr ""
-
 msgid "No rules found"
 msgstr ""
 
@@ -294,6 +288,9 @@ msgid "Path where logs will be stored"
 msgstr ""
 
 msgid "PCAP (Recommended)"
+msgstr ""
+
+msgid "Per-thread JSON alerts"
 msgstr ""
 
 msgid "Persistent"
@@ -425,6 +422,9 @@ msgstr ""
 msgid "Stopped"
 msgstr ""
 
+msgid "Storage layout will change on the next update"
+msgstr ""
+
 msgid "Storage:"
 msgstr ""
 
@@ -432,6 +432,9 @@ msgid "Store rules persistently"
 msgstr ""
 
 msgid "Symbolic link created successfully"
+msgstr ""
+
+msgid "System logs come from logread, not from a file."
 msgstr ""
 
 msgid "System memory"
@@ -449,7 +452,7 @@ msgstr ""
 msgid "Temporary files cleaned"
 msgstr ""
 
-msgid "Temporary rules - migrate to persistent storage"
+msgid "Temporary rules"
 msgstr ""
 
 msgid "Total alerts"

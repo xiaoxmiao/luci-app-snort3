@@ -220,6 +220,7 @@ fi
 rm -rf "$work_dir"
 
 printf '%s\n' "$SOURCE" > "$SOURCE_FILE" 2>/dev/null || :
+printf '%s\n' "$SOURCE" > "$rules_target/.source" 2>/dev/null || :
 set_state ok
 log "Loaded ${rule_count} rule file(s) into ${rules_target} (persistent=${persist}, source=${SOURCE})."
 

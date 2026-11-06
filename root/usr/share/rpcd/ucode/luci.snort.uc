@@ -469,9 +469,13 @@ function update_state() {
 		}
 	}
 
-	const alive = lock && !finished ? updater_process_alive() : false;
-	const stale = lock && !finished && !alive && lock_age > UPDATE_STALE_GRACE;
-	const running = lock && !finished && !stale;
+	/* The lock exists from the moment the RPC starts the background chain
+	 * until that chain removes it.  It is authoritative: a stale status file,
+	 * an old FINISHED line or a clock/mtime mismatch must never turn a live
+	 * download into "completed". */
+	const alive = updater_process_alive();
+	const stale = lock && !alive && lock_age > UPDATE_STALE_GRACE;
+	const running = (lock || alive) && !stale;
 
 	const status_lines = split(trim(read_text(UPDATE_STATUS) || ''), '\n');
 	let result = trim(status_lines[0] || '') || 'idle';
@@ -521,6 +525,7 @@ function update_state() {
 		age: lock_age,
 		status_age,
 		finished,
+		result_raw: result,
 		finished_at: finished && !running && status_info ? or_default(status_info.mtime, 0) : 0,
 		log_lines,
 		result,
@@ -595,7 +600,10 @@ function rules_state() {
 	}
 
 	const files = rule_file_list(config_rules);
+	const source_marker = trim(read_text(path_join(config_rules, '.source')));
 	const directory = stat(config_rules);
+	const persisted = '' + settings.rules_persist == '1';
+	const actual_persistent = config_info != null && config_info.type == 'directory';
 	let updated = directory ? or_default(directory.mtime, 0) : 0;
 
 	for (let f in files) {
@@ -609,7 +617,9 @@ function rules_state() {
 		config_rules,
 		temp_rules,
 		config_exists: config_info != null,
-		persistent: config_info != null && config_info.type == 'directory',
+		persistent: persisted,
+		storage_actual: actual_persistent ? 'persistent' : 'temporary',
+		storage_mismatch: persisted != actual_persistent,
 		config_is_link: link,
 		link_target: target,
 		link_valid: link && target_exists,
@@ -617,10 +627,12 @@ function rules_state() {
 		config_rule_count: length(files),
 		temp_rule_count: rule_file_count(temp_rules),
 		rule_files: files,
-		rules_source: trim(read_text(UPDATE_SOURCE)) ||
-			(length(settings.oinkcode) > 0 ? 'registered' : 'community'),
+		/* The marker lives inside the rules directory, so it is replaced
+		 * together with the rules and always describes what is installed -
+		 * not the Oinkcode that happens to be saved. */
+		rules_source: source_marker || trim(read_text(UPDATE_SOURCE)) || 'community',
 		rules_updated: updated,
-		rules_persist: '' + settings.rules_persist == '1',
+		rules_persist: persisted,
 		rules_auto_update: '' + settings.rules_auto_update == '1',
 		rules_update_interval: settings.rules_update_interval,
 		oinkcode: settings.oinkcode,

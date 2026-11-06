@@ -33,7 +33,8 @@ return view.extend({
 		var logs = Array.isArray(data.logs) ? data.logs : [];
 
 		setText(this.nodes.count, data.alert_count != null ? data.alert_count : 0);
-		setText(this.nodes.file, data.alert_file || '/var/log/alert_fast.txt');
+		var files = Array.isArray(data.alert_files) ? data.alert_files : [];
+		setText(this.nodes.file, files.length ? files.join(', ') : '/var/log/alert_json.txt');
 		setText(this.nodes.summary,
 			util.translate('Total alerts') + ': ' + (data.alert_count != null ? data.alert_count : 0));
 
@@ -43,7 +44,7 @@ return view.extend({
 		}
 		else {
 			dom.content(this.nodes.alerts, alerts.map(function(line) {
-				return E('div', { 'class': 'snort3-alert' }, line);
+				return E('div', { 'class': 'snort3-alert' }, util.formatAlert(line));
 			}));
 		}
 
@@ -76,7 +77,7 @@ return view.extend({
 
 		this.nodes.summary = E('p', { 'class': 'snort3-subtitle' }, '');
 		this.nodes.count = E('span', { 'class': 'snort3-badge snort3-badge-muted' }, '0');
-		this.nodes.file = E('code', { 'class': 'snort3-code' }, '/var/log/alert_fast.txt');
+		this.nodes.file = E('code', { 'class': 'snort3-code' }, '/var/log/alert_json.txt');
 		this.nodes.alerts = E('div', { 'class': 'snort3-alert-list' });
 		this.nodes.logs = E('div', { 'class': 'snort3-alert-list' });
 
@@ -98,6 +99,8 @@ return view.extend({
 
 		var logsSection = E('div', { 'class': 'snort3-section' }, [
 			E('h3', {}, util.translate('Snort system logs (20 most recent)')),
+			E('div', { 'class': 'snort3-toolbar-note', 'style': 'margin-bottom:.5rem' },
+				util.translate('System logs come from logread, not from a file.')),
 			this.nodes.logs
 		]);
 
@@ -109,12 +112,12 @@ return view.extend({
 			E('strong', {}, util.translate('Log files:')),
 			E('ul', { 'style': 'margin:0' }, [
 				E('li', {}, [
-					E('code', {}, '/var/log/alert_fast.txt'),
-					' - ' + util.translate('Fast alerts')
+					E('code', {}, '/var/log/alert_json.txt'),
+					' - ' + util.translate('Detailed JSON alerts')
 				]),
 				E('li', {}, [
-					E('code', {}, '/var/log/*alert_json.txt'),
-					' - ' + util.translate('Detailed JSON alerts')
+					E('code', {}, '/var/log/N_alert_json.txt'),
+					' - ' + util.translate('Per-thread JSON alerts')
 				])
 			])
 		]);

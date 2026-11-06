@@ -13,7 +13,7 @@ Browser
                                            ├─ UCI: /etc/config/snort-web
                                            ├─ sync: /usr/libexec/snort-web-sync
                                            ├─ init: /etc/init.d/snort
-                                           ├─ logs: /var/log/alert_fast.txt
+                                           ├─ logs: /var/log/alert_json.txt (system: logread)
                                            └─ rules: /etc/snort/rules, /var/snort.d
 ```
 

@@ -162,8 +162,11 @@ test('alerts are read from the alert_json family of files', () => {
 	assert.match(backend, /\^\[0-9\]\+_alert_json/);
 	assert.match(backend, /function read_alert_lines/);
 	assert.match(backend, /count_alert_lines/);
-	assert.match(overview, /function formatAlert/);
-	assert.match(overview, /formatAlert\(line\)/);
+	assert.match(read('htdocs/luci-static/resources/snort/util.js'), /Util\.formatAlert = function/);
+	assert.match(overview, /util\.formatAlert\(line\)/);
+	assert.match(read('htdocs/luci-static/resources/view/snort/alerts.js'), /util\.formatAlert\(line\)/);
+	assert.match(read('htdocs/luci-static/resources/view/snort/alerts.js'), /data\.alert_files/);
+	assert.doesNotMatch(read('htdocs/luci-static/resources/view/snort/alerts.js'), /alert_fast\.txt/);
 });
 
 test('the settings page uses a LuCI network device dropdown', () => {
@@ -204,6 +207,35 @@ test('postinst restarts rpcd so a replaced ucode plugin is reloaded', () => {
 
 	assert.match(makefile, /\/etc\/init\.d\/rpcd restart/);
 	assert.doesNotMatch(makefile, /^\t\/etc\/init\.d\/rpcd reload/m);
+});
+
+test('storage badge follows the setting and the source follows installed rules', () => {
+	const backend = read('root/usr/share/rpcd/ucode/luci.snort.uc');
+	const updater = read('root/usr/libexec/snort-web-rules-update');
+	const overview = read('htdocs/luci-static/resources/view/snort/overview.js');
+
+	assert.match(backend, /persistent: persisted/);
+	assert.match(backend, /storage_mismatch/);
+	assert.match(backend, /path_join\(config_rules, '\.source'\)/);
+	assert.match(updater, /\/\.source/);
+	assert.match(overview, /Storage layout will change on the next update/);
+	assert.match(overview, /Temporary rules/);
+});
+
+test('a live update lock always wins over the status file', () => {
+	const backend = read('root/usr/share/rpcd/ucode/luci.snort.uc');
+
+	assert.match(backend, /const running = \(lock \|\| alive\) && !stale/);
+	assert.match(backend, /if \(running\) \{\s+result = 'running'/);
+	assert.match(backend, /result_raw/);
+});
+
+test('uci-defaults aligns the on-disk layout with rules_persist', () => {
+	const defaults = read('root/etc/uci-defaults/80_luci-app-snort3');
+
+	assert.match(defaults, /switched rules to temporary storage/);
+	assert.match(defaults, /ln -s "\$tmp_rules" "\$rules"/);
+	assert.match(defaults, /persist=0/);
 });
 
 test('menu parent uses firstchild so the active tab is highlighted', () => {

@@ -85,6 +85,33 @@ Util.joinLines = function(lines) {
 	return Array.isArray(lines) ? lines.join('\n') : '';
 };
 
+/* snort-mgr emits alert_json (one JSON object per line).  Render the useful
+ * fields instead of dumping raw JSON, and fall back to the raw line for the
+ * legacy alert_fast format. */
+Util.formatAlert = function(line) {
+	try {
+		var o = JSON.parse(line);
+
+		if (!o || typeof o !== 'object')
+			return line;
+
+		var bits = [];
+
+		if (o.timestamp) bits.push(o.timestamp);
+		if (o.action) bits.push('[' + o.action + ']');
+		if (o.msg) bits.push(o.msg);
+		if (o.src_addr || o.dst_addr)
+			bits.push((o.src_addr || '?') + (o.src_port ? ':' + o.src_port : '') +
+				' -> ' + (o.dst_addr || '?') + (o.dst_port ? ':' + o.dst_port : ''));
+		if (o.sid) bits.push('sid:' + o.sid);
+
+		return bits.length ? bits.join(' ') : line;
+	}
+	catch (e) {
+		return line;
+	}
+};
+
 Util.formatKb = function(kb) {
 	kb = Number(kb) || 0;
 
