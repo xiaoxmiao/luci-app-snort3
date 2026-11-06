@@ -71,9 +71,6 @@ msgstr ""
 msgid "Chain type"
 msgstr ""
 
-msgid "Cleanup temporary files"
-msgstr ""
-
 msgid "Community rules"
 msgstr ""
 

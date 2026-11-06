@@ -42,12 +42,6 @@ var callRulesFix = rpc.declare({
 	expect: {}
 });
 
-var callRulesCleanup = rpc.declare({
-	object: 'luci.snort',
-	method: 'rules_cleanup',
-	expect: {}
-});
-
 /*
  * LuCI >= 26 requires class module exports, see snort/util.js for details.
  */
@@ -57,6 +51,5 @@ return baseclass.extend({
 	alerts: callAlerts,
 	rules: callRules,
 	rulesUpdate: callRulesUpdate,
-	rulesFix: callRulesFix,
-	rulesCleanup: callRulesCleanup
+	rulesFix: callRulesFix
 });

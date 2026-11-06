@@ -115,8 +115,9 @@ page to create the `/etc/rc.d/S??snort` link.
 | Rule source / persistence / scheduling | Chosen on the Overview page and in Settings |
 | Rule action | Default action: default, alert, block, drop or reject |
 
-Rules updates, link repair and cleanup are performed from the Overview page
-because they need progress and result feedback.
+Rule source selection and updates are performed from the Overview page
+because they need progress and result feedback. The `rules_cleanup` ubus
+method remains available from the CLI, but no longer has a page button.
 
 ### Advanced
 

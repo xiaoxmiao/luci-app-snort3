@@ -97,9 +97,6 @@ msgstr "Gestion des règles"
 msgid "Rule files:"
 msgstr "Fichiers de règles :"
 
-msgid "Cleanup temporary files"
-msgstr "Nettoyer les fichiers temporaires"
-
 msgid "Update status"
 msgstr "Statut de la mise à jour"
 

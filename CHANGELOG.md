@@ -5,6 +5,26 @@ All notable changes to the LuCI Snort3 Module will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.4.2] - 2026-11-06
+
+### Fixed
+- **Update status no longer stays on "Update in progress..." after the update
+  finished.** The background chain appends `FINISHED` as its last action and
+  the RPC truncates the log before each run, so that marker reliably belongs
+  to the current run. But `update_state()` computed
+  `running = (lock || alive) && !stale`, ignoring it: any `/proc` entry whose
+  command line still mentioned `snort-rules` / `snort-web-rules-update` kept
+  the badge stuck at "running" even after all rule files were installed and
+  Snort was restarted. `FINISHED` now wins: `!finished && (lock || alive) &&
+  !stale`.
+
+### Changed
+- Removed the **Cleanup temporary files** button (and its unused frontend RPC
+  declaration) from the Overview page. Temporary download directories are
+  already removed by the updater's exit trap and the background chain.
+- **Use community rules** now uses the same `cbi-button-reset` styling as the
+  removed cleanup button, signalling that it replaces the installed rules.
+
 ## [4.4.1] - 2026-11-06
 
 ### Fixed

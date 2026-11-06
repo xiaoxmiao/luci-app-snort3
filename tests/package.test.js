@@ -222,11 +222,12 @@ test('storage badge follows the setting and the source follows installed rules',
 	assert.match(overview, /Temporary rules/);
 });
 
-test('a live update lock always wins over the status file', () => {
+test('a live update overrides the stale status file but FINISHED ends it', () => {
 	const backend = read('root/usr/share/rpcd/ucode/luci.snort.uc');
 
-	assert.match(backend, /const running = \(lock \|\| alive\) && !stale/);
+	assert.match(backend, /const running = !finished && \(lock \|\| alive\) && !stale/);
 	assert.match(backend, /if \(running\) \{\s+result = 'running'/);
+	assert.match(backend, /status_age > UPDATE_IDLE_AFTER/);
 	assert.match(backend, /result_raw/);
 });
 
@@ -236,6 +237,24 @@ test('uci-defaults aligns the on-disk layout with rules_persist', () => {
 	assert.match(defaults, /switched rules to temporary storage/);
 	assert.match(defaults, /ln -s "\$tmp_rules" "\$rules"/);
 	assert.match(defaults, /persist=0/);
+});
+
+test('a finished update is never reported as running', () => {
+	const backend = read('root/usr/share/rpcd/ucode/luci.snort.uc');
+
+	assert.match(backend, /const running = !finished && \(lock \|\| alive\) && !stale/);
+	assert.match(backend, /if \(running\) \{\s+result = 'running'/);
+});
+
+test('the overview has two rule buttons and no cleanup control', () => {
+	const overview = read('htdocs/luci-static/resources/view/snort/overview.js');
+	const api = read('htdocs/luci-static/resources/snort/api.js');
+
+	assert.match(overview, /Update subscriber rules/);
+	assert.match(overview, /Use community rules/);
+	assert.match(overview, /communityButton = E\('button', \{\s*'class': 'cbi-button cbi-button-reset'/);
+	assert.doesNotMatch(overview, /Cleanup temporary files|handleRulesCleanup/);
+	assert.doesNotMatch(api, /rulesCleanup|rules_cleanup/);
 });
 
 test('menu parent uses firstchild so the active tab is highlighted', () => {

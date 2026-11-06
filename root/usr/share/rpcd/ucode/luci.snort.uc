@@ -469,21 +469,23 @@ function update_state() {
 		}
 	}
 
-	/* The lock exists from the moment the RPC starts the background chain
-	 * until that chain removes it.  It is authoritative: a stale status file,
-	 * an old FINISHED line or a clock/mtime mismatch must never turn a live
-	 * download into "completed". */
+	/* The background chain appends FINISHED as its very last action, and the
+	 * RPC truncates the log before each run, so that marker belongs to this
+	 * run.  It must win over both the lock and the process scan: /proc can
+	 * still show a wrapper whose command line mentions the updater while the
+	 * download is already done, which used to leave the badge stuck on
+	 * "Update in progress..." forever. */
 	const alive = updater_process_alive();
 	const stale = lock && !alive && lock_age > UPDATE_STALE_GRACE;
-	const running = (lock || alive) && !stale;
+	const running = !finished && (lock || alive) && !stale;
 
 	const status_lines = split(trim(read_text(UPDATE_STATUS) || ''), '\n');
 	let result = trim(status_lines[0] || '') || 'idle';
 	let code = trim(status_lines[1] || '') || '';
 
-	/* A live lock wins over the status file.  While a new updater is starting
-	 * the file can still hold the previous run's "ok", which used to make the
-	 * page say "Update completed!" during an active download. */
+	/* While a new updater is starting the status file can still hold the
+	 * previous run's "ok"; a running state must override that, otherwise the
+	 * page says "Update completed!" during an active download. */
 	if (running) {
 		result = 'running';
 		code = '';

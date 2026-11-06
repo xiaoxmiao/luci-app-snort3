@@ -46,9 +46,6 @@ msgstr "链优先级"
 msgid "Chain type"
 msgstr "链类型"
 
-msgid "Cleanup temporary files"
-msgstr "清理临时文件"
-
 msgid "Configuration directory"
 msgstr "配置目录"
 

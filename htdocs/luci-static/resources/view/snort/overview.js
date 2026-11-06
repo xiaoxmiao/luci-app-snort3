@@ -343,21 +343,6 @@ return view.extend({
 		});
 	},
 
-	handleRulesCleanup: function(ev) {
-		var self = this;
-		var button = ev.currentTarget;
-
-		button.disabled = true;
-
-		return api.rulesCleanup().then(function(result) {
-			result = result || {};
-			notification(result.code, result);
-			return self.refreshRules();
-		}).catch(rpcError).then(function() {
-			button.disabled = false;
-		});
-	},
-
 	render: function(data) {
 		var status = data[0] || {};
 		var rules = data[1] || {};
@@ -433,7 +418,7 @@ return view.extend({
 		}, util.translate('Update subscriber rules'));
 
 		this.nodes.communityButton = E('button', {
-			'class': 'cbi-button cbi-button-reload',
+			'class': 'cbi-button cbi-button-reset',
 			'click': L.bind(this.handleRulesUpdate, this, 'community')
 		}, util.translate('Use community rules'));
 
@@ -451,11 +436,7 @@ return view.extend({
 			]),
 			E('div', { 'class': 'snort3-actions', 'style': 'margin-top:.75rem' }, [
 				this.nodes.subscriberButton,
-				this.nodes.communityButton,
-				E('button', {
-					'class': 'cbi-button cbi-button-reset',
-					'click': L.bind(this.handleRulesCleanup, this)
-				}, util.translate('Cleanup temporary files'))
+				this.nodes.communityButton
 			]),
 			E('div', { 'class': 'snort3-row', 'style': 'margin-top:.9rem' }, [
 				E('span', { 'class': 'snort3-label' }, util.translate('Update status')),
