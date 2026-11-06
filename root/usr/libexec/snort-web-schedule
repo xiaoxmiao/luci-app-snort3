@@ -1,0 +1,47 @@
+#!/bin/sh
+# Install or remove the scheduled rules-update crontab entry.
+# OpenWrt has no standalone "cron" package: /etc/init.d/cron and crond are
+# provided by the essential busybox package.  Detect it at runtime instead of
+# declaring a dependency that would not resolve.
+set -u
+
+CRON_DIR=/etc/crontabs
+CRON_FILE=$CRON_DIR/root
+UPDATER=/usr/libexec/snort-web-rules-update
+
+enabled=$(uci -q get snort-web.snort.rules_auto_update 2>/dev/null || true)
+interval=$(uci -q get snort-web.snort.rules_update_interval 2>/dev/null || true)
+[ -n "$interval" ] || interval=weekly
+
+case "$interval" in
+	daily)   spec='0 3 * * *' ;;
+	monthly) spec='0 3 1 * *' ;;
+	*)       spec='0 3 * * 0' ;;
+esac
+
+if [ ! -x /etc/init.d/cron ]; then
+	logger -t snort-web 'cron (busybox crond) is unavailable; scheduled rule updates are inactive' 2>/dev/null || :
+fi
+
+mkdir -p "$CRON_DIR" 2>/dev/null || exit 0
+tmp="$CRON_FILE.tmp.$$"
+
+if [ -f "$CRON_FILE" ]; then
+	grep -v 'snort-web-rules-update' "$CRON_FILE" > "$tmp" 2>/dev/null || : > "$tmp"
+else
+	: > "$tmp"
+fi
+
+if [ "$enabled" = "1" ] && [ -f "$UPDATER" ] && [ -x /etc/init.d/cron ]; then
+	printf '%s %s >/dev/null 2>&1\n' "$spec" "$UPDATER" >> "$tmp"
+fi
+
+mv "$tmp" "$CRON_FILE" || exit 0
+chmod 600 "$CRON_FILE" 2>/dev/null || :
+
+if [ -x /etc/init.d/cron ]; then
+	/etc/init.d/cron restart >/dev/null 2>&1 ||
+		/etc/init.d/cron reload >/dev/null 2>&1 || :
+fi
+
+exit 0

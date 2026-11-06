@@ -30,6 +30,8 @@ return baseclass.extend({
 	'.snort3-mem-bar > span { display: block; height: 100%; width: 0; background: #28a745; transition: width .3s ease; }',
 	'.snort3-rule-path { margin: .25rem 0 .75rem 0; overflow-wrap: anywhere; }',
 	'.snort3-rule-detail { margin-top: .5rem; }',
+	'.snort3-rule-source { display: flex; flex-direction: column; gap: .3rem; margin-top: .75rem; }',
+	'.snort3-oink { max-width: 24rem; }',
 	'.snort3-rule-meta { font-size: .85em; opacity: .78; margin-bottom: .4rem; }',
 	'.snort3-file-list { display: flex; flex-direction: column; gap: .25rem; max-height: 10rem; overflow: auto; }',
 	'.snort3-file { display: flex; justify-content: space-between; gap: .75rem; padding: .25rem .45rem; border-radius: .25rem; background: rgba(127, 127, 127, .08); font-size: .85em; }',

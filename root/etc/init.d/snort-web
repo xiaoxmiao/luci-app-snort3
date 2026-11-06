@@ -13,6 +13,9 @@ ACTION_DETAIL=/tmp/snort_service_action.detail
 
 start() {
 	[ -x "$SYNC" ] && "$SYNC" --sync
+	# Re-apply the scheduled rules-update crontab entry on every boot and
+	# after each Save & Apply (reload() calls start() first).
+	[ -f /usr/libexec/snort-web-schedule ] && /bin/sh /usr/libexec/snort-web-schedule
 }
 
 remember_action() {

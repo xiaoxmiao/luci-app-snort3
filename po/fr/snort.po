@@ -100,9 +100,6 @@ msgstr "Aucun répertoire de règles trouvé"
 msgid "Rule files:"
 msgstr "Fichiers de règles :"
 
-msgid "Update rules"
-msgstr "Mettre à jour les règles"
-
 msgid "Cleanup temporary files"
 msgstr "Nettoyer les fichiers temporaires"
 
@@ -249,12 +246,6 @@ msgstr "Répertoire temporaire"
 
 msgid "Directory for temporary files and downloaded rules"
 msgstr "Répertoire des fichiers temporaires et des règles téléchargées"
-
-msgid "Oinkcode"
-msgstr "Oinkcode"
-
-msgid "Access code to download official Snort rules (optional)"
-msgstr "Code d'accès pour télécharger les règles officielles Snort (facultatif)"
 
 msgid "Enter your Oinkcode if you have one"
 msgstr "Saisissez votre Oinkcode si vous en avez un"
@@ -424,9 +415,6 @@ msgstr "actuellement indisponible"
 msgid "Device to monitor. Automatic follows the WAN device, then the LAN bridge, then eth0."
 msgstr "Périphérique à surveiller. Le mode automatique suit le périphérique WAN, puis le pont LAN, puis eth0."
 
-msgid "Migrate to persistent storage"
-msgstr "Migrer vers le stockage persistant"
-
 msgid "Move the existing rules into the persistent /etc/snort/rules directory?"
 msgstr "Déplacer les règles existantes vers le répertoire persistant /etc/snort/rules ?"
 
@@ -438,9 +426,6 @@ msgstr "Persistant"
 
 msgid "Persistent rules"
 msgstr "Règles persistantes"
-
-msgid "Rules are stored permanently in the configuration directory and survive reboots."
-msgstr "Les règles sont stockées de façon permanente dans le répertoire de configuration et survivent aux redémarrages."
 
 msgid "Storage:"
 msgstr "Stockage :"
@@ -465,3 +450,42 @@ msgstr "Règles enregistrées"
 
 msgid "Source:"
 msgstr "Source :"
+
+msgid "1 day"
+msgstr "1 jour"
+
+msgid "1 month"
+msgstr "1 mois"
+
+msgid "1 week"
+msgstr "1 semaine"
+
+msgid "Automatic rule updates"
+msgstr "Mises à jour automatiques des règles"
+
+msgid "How often scheduled rule updates run."
+msgstr "Fréquence d'exécution des mises à jour planifiées."
+
+msgid "Keep downloaded rules in the configuration directory across reboots. When disabled, rules are downloaded again after every boot."
+msgstr "Conserver les règles téléchargées dans le répertoire de configuration après redémarrage. Sinon, elles sont téléchargées à nouveau après chaque démarrage."
+
+msgid "Oinkcode (subscriber rules)"
+msgstr "Oinkcode (règles abonnées)"
+
+msgid "Rule storage, scheduling and source selection. The Oinkcode is entered on the Overview page."
+msgstr "Stockage, planification et source des règles. L’Oinkcode est saisi sur la page Aperçu."
+
+msgid "Run scheduled rule updates with cron at 03:00."
+msgstr "Exécuter les mises à jour planifiées avec cron à 03:00."
+
+msgid "Store rules persistently"
+msgstr "Stockage persistant des règles"
+
+msgid "Update interval"
+msgstr "Intervalle de mise à jour"
+
+msgid "Update subscriber rules"
+msgstr "Mettre à jour les règles abonnées"
+
+msgid "Use community rules"
+msgstr "Utiliser les règles communautaires"

@@ -37,7 +37,8 @@ const CONFIG_NAME = 'snort-web';
 const DEFAULT_CONFIG_DIR = '/etc/snort';
 const DEFAULT_TEMP_DIR = '/var/snort.d';
 const DEFAULT_LOG_DIR = '/var/log';
-const ALERT_FILE_NAME = 'alert_fast.txt';
+const ALERT_FILE_NAME = 'alert_json.txt';
+const UPDATE_SOURCE = '/tmp/snort_rules_update.source';
 
 const TAIL_BYTES = 64 * 1024;
 const UPDATE_STALE_GRACE = 10 * 60;
@@ -137,7 +138,10 @@ function get_settings() {
 		temp_dir: safe_path(get('temp_dir', DEFAULT_TEMP_DIR), DEFAULT_TEMP_DIR),
 		oinkcode: get('oinkcode', ''),
 		action: get('action', 'default'),
-		openappid: get('openappid', '0')
+		openappid: get('openappid', '0'),
+		rules_persist: get('rules_persist', '0'),
+		rules_auto_update: get('rules_auto_update', '0'),
+		rules_update_interval: get('rules_update_interval', 'weekly')
 	};
 }
 
@@ -291,6 +295,43 @@ function read_tail_lines(path, max_lines, newest_first) {
 	return lines;
 }
 
+/* snort-mgr's template enables alert_json, which writes alert_json.txt plus
+ * one N_alert_json.txt per packet thread.  The old alert_fast.txt is kept as
+ * a compatibility fallback. */
+function alert_files(settings) {
+	const dir = settings.log_dir;
+	const names = lsdir(dir);
+	const files = [];
+
+	if (!names)
+		return files;
+
+	for (let name in names) {
+		if (name == ALERT_FILE_NAME || name == 'alert_fast.txt' ||
+		    match(name, /^[0-9]+_alert_json\.txt$/))
+			push(files, path_join(dir, name));
+	}
+
+	return files;
+}
+
+function read_alert_lines(files, limit, newest_first) {
+	let lines = [];
+
+	for (let file in files) {
+		for (let line in read_tail_lines(file, limit, false))
+			push(lines, line);
+	}
+
+	if (length(lines) > limit)
+		lines = slice(lines, length(lines) - limit);
+
+	if (newest_first)
+		reverse(lines);
+
+	return lines;
+}
+
 function count_lines(path) {
 	if (!access(path, 'f'))
 		return 0;
@@ -337,6 +378,15 @@ function count_lines(path) {
 		count++;
 
 	return count;
+}
+
+function count_alert_lines(files) {
+	let total = 0;
+
+	for (let file in files)
+		total += count_lines(file);
+
+	return total;
 }
 
 function snort_logs(limit) {
@@ -567,8 +617,13 @@ function rules_state() {
 		config_rule_count: length(files),
 		temp_rule_count: rule_file_count(temp_rules),
 		rule_files: files,
-		rules_source: length(settings.oinkcode) > 0 ? 'registered' : 'community',
+		rules_source: trim(read_text(UPDATE_SOURCE)) ||
+			(length(settings.oinkcode) > 0 ? 'registered' : 'community'),
 		rules_updated: updated,
+		rules_persist: '' + settings.rules_persist == '1',
+		rules_auto_update: '' + settings.rules_auto_update == '1',
+		rules_update_interval: settings.rules_update_interval,
+		oinkcode: settings.oinkcode,
 		updater_available: rules_updater() != null,
 		updater: rules_updater(),
 		update: update_state()
@@ -781,7 +836,7 @@ function status_call() {
 	const settings = get_settings();
 	const pids = process_id_list();
 	const memory = memory_info();
-	const alert_file = path_join(settings.log_dir, ALERT_FILE_NAME);
+	const alert_paths = alert_files(settings);
 	const uptime_text = trim(read_text('/proc/uptime'));
 	const uptime_parts = split(uptime_text, ' ');
 	const running = length(pids) > 0;
@@ -831,8 +886,8 @@ function status_call() {
 		mem_available: memory.available,
 		mem_used: memory.used,
 		mem_percent: memory.percent,
-		alert_count: count_lines(alert_file),
-		alert_file,
+		alert_count: count_alert_lines(alert_paths),
+		alert_files: alert_paths,
 		interface: runtime_interface(settings.interface),
 		mode: settings.mode,
 		method: settings.method,
@@ -978,16 +1033,16 @@ const methods = {
 		args: { limit: 0, log_limit: 0 },
 		call: function(request) {
 			const settings = get_settings();
-			const alert_file = path_join(settings.log_dir, ALERT_FILE_NAME);
+			const paths = alert_files(settings);
 			const limit = clamp_int(arg_value(request.args, 'limit', 50), 50, 1, 200);
 			const log_limit = clamp_int(arg_value(request.args, 'log_limit', 0), 0, 0, 100);
 
 			return {
 				success: true,
-				alerts: read_tail_lines(alert_file, limit, true),
+				alerts: read_alert_lines(paths, limit, true),
 				logs: snort_logs(log_limit),
-				alert_file,
-				alert_count: count_lines(alert_file)
+				alert_files: paths,
+				alert_count: count_alert_lines(paths)
 			};
 		}
 	},
@@ -999,7 +1054,8 @@ const methods = {
 	},
 
 	rules_update: {
-		call: function() {
+		args: { mode: '', oinkcode: '' },
+		call: function(request) {
 			const updater = rules_updater();
 
 			if (updater == null)
@@ -1008,13 +1064,36 @@ const methods = {
 				         message: RULES_UPDATER_BUILTIN +
 				             ' is missing. Reinstall luci-app-snort3.' };
 
+			const mode = arg_value(request.args, 'mode', 'registered');
+			const supplied = arg_value(request.args, 'oinkcode', null);
+
+			if (mode != 'registered' && mode != 'community')
+				return { success: false, ok: false, code: 'invalid_mode',
+				         message: 'Unknown rules source.' };
+
+			/* Save the Oinkcode, but keep it when the user switches to the
+			 * free community source (the setting is never cleared here). */
+			if (supplied != null && trim('' + supplied) != '') {
+				const save_rc = system('uci -q set snort-web.snort.oinkcode=' +
+					shell_quote('' + supplied) + ' && uci -q commit snort-web', 10000);
+
+				if (save_rc != 0)
+					return { success: false, ok: false, code: 'update_failed',
+					         message: 'Unable to save the Oinkcode.' };
+			}
+
+			const settings = get_settings();
+
+			if (mode == 'registered' && trim('' + settings.oinkcode) == '')
+				return { success: false, ok: false, code: 'oinkcode_missing',
+				         message: 'Enter an Oinkcode before downloading subscriber rules.' };
+
 			/* The updater reads oinkcode and paths from the runtime
 			 * snort3 configuration. */
 			if (!sync_runtime_config())
 				return { success: false, ok: false, code: 'update_failed',
 				         message: '/usr/libexec/snort-web-sync --sync failed; check /etc/config/snort-web.' };
 
-			const settings = get_settings();
 			const state = update_state();
 
 			if (state.running)
@@ -1038,12 +1117,11 @@ const methods = {
 				return { success: false, ok: false, code: 'update_failed',
 				         message: 'Unable to write ' + UPDATE_STATUS + '.' };
 
+			const extra = (mode == 'community') ? ' --community' : '';
 			/* The outer subshell keeps the complete update chain in the
 			 * background; a plain trailing "&" would only detach the last
-			 * command and block this RPC call until the updater finished.
-			 * Redirecting the subshell itself keeps its stdout pipe closed
-			 * so the RPC returns immediately. */
-			const command = '( ' + updater_command(updater) + ' > ' + UPDATE_LOG + ' 2>&1; ' +
+			 * command and block this RPC call until the updater finished. */
+			const command = '( ' + updater_command(updater) + extra + ' > ' + UPDATE_LOG + ' 2>&1; ' +
 				'echo $? > ' + UPDATE_RC + '; ' +
 				'rm -f ' + shell_quote(settings.temp_dir) + '/*.tar.gz /tmp/snort*.tar.gz 2>/dev/null; ' +
 				'rm -f ' + shell_quote(path_join(settings.temp_dir, 'rules')) + '/*.tar.gz 2>/dev/null; ' +
@@ -1061,7 +1139,7 @@ const methods = {
 			}
 
 			return { success: true, ok: true, code: 'update_started',
-			         updater, log: UPDATE_LOG };
+			         updater, mode, log: UPDATE_LOG };
 		}
 	},
 

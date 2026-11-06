@@ -7,9 +7,6 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 
-msgid "Access code to download official Snort rules (optional)"
-msgstr "下载官方 Snort 规则所需的访问代码（可选）"
-
 msgid "Actions"
 msgstr "操作"
 
@@ -220,9 +217,6 @@ msgstr "暂无更新日志。"
 msgid "Number of NFQ queues, usually 2 to 8"
 msgstr "NFQ 队列数，通常为 2 到 8"
 
-msgid "Oinkcode"
-msgstr "Oinkcode"
-
 msgid "Old directory backed up. Symbolic link created successfully"
 msgstr "旧目录已备份，符号链接创建成功"
 
@@ -403,9 +397,6 @@ msgstr "更新进行中..."
 msgid "Update launched in background. Monitoring starts automatically."
 msgstr "更新已在后台启动，将自动开始监控。"
 
-msgid "Update rules"
-msgstr "更新规则"
-
 msgid "Update status"
 msgstr "更新状态"
 
@@ -427,9 +418,6 @@ msgstr "当前不可用"
 msgid "Device to monitor. Automatic follows the WAN device, then the LAN bridge, then eth0."
 msgstr "要监听的设备。自动模式依次跟随 WAN 设备、LAN 网桥、eth0。"
 
-msgid "Migrate to persistent storage"
-msgstr "迁移到持久存储"
-
 msgid "Move the existing rules into the persistent /etc/snort/rules directory?"
 msgstr "将现有规则移动到持久目录 /etc/snort/rules？"
 
@@ -441,9 +429,6 @@ msgstr "持久化"
 
 msgid "Persistent rules"
 msgstr "规则已持久化"
-
-msgid "Rules are stored permanently in the configuration directory and survive reboots."
-msgstr "规则永久保存在配置目录中，重启后仍然保留。"
 
 msgid "Storage:"
 msgstr "存储："
@@ -468,3 +453,42 @@ msgstr "注册版规则"
 
 msgid "Source:"
 msgstr "来源："
+
+msgid "1 day"
+msgstr "1 天"
+
+msgid "1 month"
+msgstr "1 个月"
+
+msgid "1 week"
+msgstr "1 星期"
+
+msgid "Automatic rule updates"
+msgstr "自动更新规则"
+
+msgid "How often scheduled rule updates run."
+msgstr "定时规则更新的运行频率。"
+
+msgid "Keep downloaded rules in the configuration directory across reboots. When disabled, rules are downloaded again after every boot."
+msgstr "把已下载规则保存在配置目录中，重启后仍保留；关闭时每次开机联网后自动重新下载。"
+
+msgid "Oinkcode (subscriber rules)"
+msgstr "Oinkcode（订阅规则）"
+
+msgid "Rule storage, scheduling and source selection. The Oinkcode is entered on the Overview page."
+msgstr "规则存储、定时更新与来源选择。Oinkcode 在概览页输入。"
+
+msgid "Run scheduled rule updates with cron at 03:00."
+msgstr "使用 cron 在 03:00 执行定时规则更新。"
+
+msgid "Store rules persistently"
+msgstr "持久化保存规则"
+
+msgid "Update interval"
+msgstr "更新周期"
+
+msgid "Update subscriber rules"
+msgstr "更新订阅规则"
+
+msgid "Use community rules"
+msgstr "使用社区规则"

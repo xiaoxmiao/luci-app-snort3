@@ -14,7 +14,13 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-msgid "Access code to download official Snort rules (optional)"
+msgid "1 day"
+msgstr ""
+
+msgid "1 month"
+msgstr ""
+
+msgid "1 week"
 msgstr ""
 
 msgid "Actions"
@@ -45,6 +51,9 @@ msgid "Auto-start enabled"
 msgstr ""
 
 msgid "Automatic (WAN, LAN, eth0)"
+msgstr ""
+
+msgid "Automatic rule updates"
 msgstr ""
 
 msgid "Backend error"
@@ -149,6 +158,9 @@ msgstr ""
 msgid "First queue number"
 msgstr ""
 
+msgid "How often scheduled rule updates run."
+msgstr ""
+
 msgid "Idle"
 msgstr ""
 
@@ -171,6 +183,9 @@ msgid "IP address range to protect"
 msgstr ""
 
 msgid "IPS (Prevention)"
+msgstr ""
+
+msgid "Keep downloaded rules in the configuration directory across reboots. When disabled, rules are downloaded again after every boot."
 msgstr ""
 
 msgid "Kernel load balancing algorithm"
@@ -204,9 +219,6 @@ msgid "Maximum queue length"
 msgstr ""
 
 msgid "Memory"
-msgstr ""
-
-msgid "Migrate to persistent storage"
 msgstr ""
 
 msgid "Mode"
@@ -257,7 +269,7 @@ msgstr ""
 msgid "Number of NFQ queues, usually 2 to 8"
 msgstr ""
 
-msgid "Oinkcode"
+msgid "Oinkcode (subscriber rules)"
 msgstr ""
 
 msgid "Old directory backed up. Symbolic link created successfully"
@@ -326,7 +338,7 @@ msgstr ""
 msgid "Rule files:"
 msgstr ""
 
-msgid "Rules are stored permanently in the configuration directory and survive reboots."
+msgid "Rule storage, scheduling and source selection. The Oinkcode is entered on the Overview page."
 msgstr ""
 
 msgid "Rules management"
@@ -336,6 +348,9 @@ msgid "Rules update failed"
 msgstr ""
 
 msgid "Rules updater not found"
+msgstr ""
+
+msgid "Run scheduled rule updates with cron at 03:00."
 msgstr ""
 
 msgid "Running"
@@ -413,6 +428,9 @@ msgstr ""
 msgid "Storage:"
 msgstr ""
 
+msgid "Store rules persistently"
+msgstr ""
+
 msgid "Symbolic link created successfully"
 msgstr ""
 
@@ -461,13 +479,19 @@ msgstr ""
 msgid "Update in progress..."
 msgstr ""
 
+msgid "Update interval"
+msgstr ""
+
 msgid "Update launched in background. Monitoring starts automatically."
 msgstr ""
 
-msgid "Update rules"
+msgid "Update status"
 msgstr ""
 
-msgid "Update status"
+msgid "Update subscriber rules"
+msgstr ""
+
+msgid "Use community rules"
 msgstr ""
 
 msgid "View all alerts"

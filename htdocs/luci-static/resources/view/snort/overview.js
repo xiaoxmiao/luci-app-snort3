@@ -97,6 +97,33 @@ function reportBackendError(data) {
 	return false;
 }
 
+/* snort-mgr emits alert_json (one JSON object per line).  Render the useful
+ * fields instead of dumping raw JSON, and fall back to the raw line for the
+ * legacy alert_fast format. */
+function formatAlert(line) {
+	try {
+		var o = JSON.parse(line);
+
+		if (!o || typeof o !== 'object')
+			return line;
+
+		var bits = [];
+
+		if (o.timestamp) bits.push(o.timestamp);
+		if (o.action) bits.push('[' + o.action + ']');
+		if (o.msg) bits.push(o.msg);
+		if (o.src_addr || o.dst_addr)
+			bits.push((o.src_addr || '?') + (o.src_port ? ':' + o.src_port : '') +
+				' -> ' + (o.dst_addr || '?') + (o.dst_port ? ':' + o.dst_port : ''));
+		if (o.sid) bits.push('sid:' + o.sid);
+
+		return bits.length ? bits.join(' ') : line;
+	}
+	catch (e) {
+		return line;
+	}
+}
+
 return view.extend({
 	load: function() {
 		return Promise.all([
@@ -260,9 +287,16 @@ return view.extend({
 		var logLines = Array.isArray(update.log_lines) ? update.log_lines : [];
 		setText(this.nodes.updateLog, logLines.length ? util.joinLines(logLines) : util.translate('No update log yet.'));
 
-		if (this.nodes.updateButton)
-			this.nodes.updateButton.disabled =
-				rules.updater_available === false || update.running === true;
+		if (this.nodes.oinkcodeInput && document.activeElement !== this.nodes.oinkcodeInput)
+			this.nodes.oinkcodeInput.value = rules.oinkcode || '';
+
+		var busy = rules.updater_available === false || update.running === true;
+
+		if (this.nodes.subscriberButton)
+			this.nodes.subscriberButton.disabled = busy;
+
+		if (this.nodes.communityButton)
+			this.nodes.communityButton.disabled = busy;
 	},
 
 	updateAlerts: function(alerts) {
@@ -278,7 +312,7 @@ return view.extend({
 		}
 
 		dom.content(this.nodes.recentAlerts, lines.map(function(line) {
-			return E('div', { 'class': 'snort3-alert' }, line);
+			return E('div', { 'class': 'snort3-alert' }, formatAlert(line));
 		}));
 	},
 
@@ -300,14 +334,14 @@ return view.extend({
 		});
 	},
 
-	handleRulesUpdate: function(ev) {
+	handleRulesUpdate: function(mode, ev) {
 		var self = this;
 		var button = ev.currentTarget;
 		var started = false;
 
 		button.disabled = true;
 
-		return api.rulesUpdate().then(function(result) {
+		return api.rulesUpdate(mode, self.nodes.oinkcodeInput.value).then(function(result) {
 			result = result || {};
 			notification(result.code, result);
 			started = result.ok === true;
@@ -415,10 +449,22 @@ return view.extend({
 			])
 		]);
 
-		this.nodes.updateButton = E('button', {
+		this.nodes.oinkcodeInput = E('input', {
+			'type': 'password',
+			'class': 'cbi-input-text snort3-oink',
+			'placeholder': util.translate('Enter your Oinkcode if you have one'),
+			'autocomplete': 'off'
+		});
+
+		this.nodes.subscriberButton = E('button', {
 			'class': 'cbi-button cbi-button-apply',
-			'click': L.bind(this.handleRulesUpdate, this)
-		}, util.translate('Update rules'));
+			'click': L.bind(this.handleRulesUpdate, this, 'registered')
+		}, util.translate('Update subscriber rules'));
+
+		this.nodes.communityButton = E('button', {
+			'class': 'cbi-button cbi-button-reload',
+			'click': L.bind(this.handleRulesUpdate, this, 'community')
+		}, util.translate('Use community rules'));
 
 		var rulesSection = E('div', { 'class': 'snort3-section' }, [
 			E('h3', {}, util.translate('Rules management')),
@@ -428,12 +474,13 @@ return view.extend({
 			E('div', { 'class': 'snort3-rule-path' }, this.nodes.rulesPath),
 			this.nodes.ruleCounts,
 			this.nodes.rulesDetail,
+			E('div', { 'class': 'snort3-rule-source' }, [
+				E('span', { 'class': 'snort3-toolbar-note' }, util.translate('Oinkcode (subscriber rules)')),
+				this.nodes.oinkcodeInput
+			]),
 			E('div', { 'class': 'snort3-actions', 'style': 'margin-top:.75rem' }, [
-				this.nodes.updateButton,
-				E('button', {
-					'class': 'cbi-button cbi-button-reload',
-					'click': L.bind(this.handleRulesFix, this)
-				}, util.translate('Migrate to persistent storage')),
+				this.nodes.subscriberButton,
+				this.nodes.communityButton,
 				E('button', {
 					'class': 'cbi-button cbi-button-reset',
 					'click': L.bind(this.handleRulesCleanup, this)

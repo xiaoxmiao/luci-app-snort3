@@ -32,6 +32,7 @@ var callRules = rpc.declare({
 var callRulesUpdate = rpc.declare({
 	object: 'luci.snort',
 	method: 'rules_update',
+	params: [ 'mode', 'oinkcode' ],
 	expect: {}
 });
 

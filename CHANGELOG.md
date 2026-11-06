@@ -5,6 +5,36 @@ All notable changes to the LuCI Snort3 Module will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.4.0] - 2026-11-06
+
+### Fixed
+- **Alerts now actually appear.** The generated `snort.lua` enables
+  `alert_json`, which writes `alert_json.txt` plus one `N_alert_json.txt` per
+  packet thread. The backend still looked for the obsolete `alert_fast.txt`,
+  so the alert count was always zero. It now reads all of those files, keeps
+  `alert_fast.txt` as a compatibility fallback, and the view formats JSON
+  alerts into timestamp / action / message / source -> destination / sid.
+
+### Changed
+- **Rule source is chosen on the Overview page.** The single *Update rules*
+  button is replaced with an Oinkcode field, **Update subscriber rules** and
+  **Use community rules**. The latter forces the free community ruleset and
+  replaces the previously installed rules, while the saved Oinkcode is kept
+  for later use. The Oinkcode field was removed from Settings.
+- **Rule persistence is a setting, defaulting to off.** When off, rules live
+  in tmpfs with the usual symlink; when on, they stay in `/etc/snort/rules`.
+  The updater supports both layouts, `--community` and `--fallback`.
+- **Scheduled updates.** Settings gained *Automatic rule updates* with an
+  interval of 1 day / 1 week / 1 month. `snort-web-schedule` writes the
+  crontab entry and restarts cron. OpenWrt has no standalone `cron` package
+  (crond is part of the essential busybox package), so the helper detects its
+  absence at runtime and logs a warning instead of adding a broken dependency.
+- **Boot-time top-up.** With persistence off, an `ifup` hotplug script runs
+  once per boot (`/tmp` marker) to download rules. `--fallback` installs the
+  packaged `builtin_rules` (or a minimal ICMP rule) when the device has no
+  Internet, so Snort can still start with a non-empty rules directory.
+- Translations, docs, tests and version updated.
+
 ## [4.3.4] - 2026-11-06
 
 ### Fixed

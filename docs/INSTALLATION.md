@@ -395,7 +395,7 @@ removed.
 | Service state shows an error | read the reason below the badge (only syslog lines from the current start are quoted, so old `local.lua` crashes are not reused); check `/etc/init.d/snort` and `/etc/snort/rules` |
 | `cannot open ./local.lua` / DAQ `pcap` not found / procd crash loop | historical log lines from before 4.3.0. The generated configuration always sets `daq.module_dirs`; check the timestamps and `ps \| grep '[s]nort'` |
 | Overview shows only N/A values | run `ubus call luci.snort status`; a structured `backend_error` reply names the failing method, also saved to `/tmp/snort_backend_error.log` |
-| No alerts | `/var/log/alert_fast.txt` exists and Snort logging is enabled |
+| No alerts | `/var/log/alert_json.txt` (and `N_alert_json.txt`) exist and Snort logging is enabled |
 | French texts missing | `snort.fr.lmo` installed; LuCI language set to French |
 | Chinese texts missing | `snort.zh-cn.lmo` installed; LuCI language set to Simplified Chinese |
 | Service control fails | `/etc/init.d/snort` exists and is executable |

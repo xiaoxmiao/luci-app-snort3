@@ -55,13 +55,18 @@ notifications and the dashboard is refreshed immediately afterwards.
 
 ### Rules management
 
-The rules card reports whether `/etc/snort/rules` is a real, persistent
-directory. Rules are stored there, so they survive reboots and `snort3`
-upgrades. **Update rules** downloads the free community ruleset (or the
-registered snapshot with an oinkcode), installs it atomically into that
-directory, and restarts Snort automatically because `snort-mgr` enumerates
-`*.rules` at render time. **Migrate to persistent storage** converts an old
-tmpfs symlink into a real directory without losing its rules.
+The rules card shows the current storage mode, the rule source, the last
+update time and every installed `.rules` file with its size.
+
+**Overview** has an Oinkcode field and two actions: **Update subscriber rules**
+(uses the saved Oinkcode) and **Use community rules** (forces the free
+community ruleset, replaces the installed rules but keeps the Oinkcode).
+
+`rules_persist` in Settings is off by default: rules are in tmpfs and an
+`ifup` hotplug script downloads them once per boot, with a minimal fallback
+ruleset when there is no Internet. Turn it on to keep them in the real
+`/etc/snort/rules` directory. `rules_auto_update` plus a 1 day / 1 week / 1
+month interval schedules cron updates at 03:00, independently of storage.
 
 
 ### Recent alerts
@@ -99,7 +104,7 @@ page to create the `/etc/rc.d/S??snort` link.
 | Option | Description |
 | --- | --- |
 | Enable logging | Enables event logging |
-| Log directory | Directory containing `alert_fast.txt` |
+| Log directory | Directory containing `alert_json.txt` and `N_alert_json.txt` |
 | Configuration directory | Snort configuration directory, usually `/etc/snort` |
 | Temporary directory | Downloaded rules and temporary files, usually `/var/snort.d` |
 
@@ -107,7 +112,7 @@ page to create the `/etc/rc.d/S??snort` link.
 
 | Option | Description |
 | --- | --- |
-| Oinkcode | Optional access code for official rule downloads |
+| Rule source / persistence / scheduling | Chosen on the Overview page and in Settings |
 | Rule action | Default action: default, alert, block, drop or reject |
 
 Rules updates, link repair and cleanup are performed from the Overview page
@@ -154,7 +159,7 @@ snort-mgr report -v
 
 This command requires the `coreutils-sort` package. The main log files are:
 
-- `/var/log/alert_fast.txt` — fast one-line alerts;
+- `/var/log/alert_json.txt` plus `N_alert_json.txt` — JSON alerts;
 - `/var/log/*alert_json.txt` — detailed JSON alerts.
 
 ## RPC API
@@ -189,7 +194,7 @@ paths without `..` components or control characters.
 | `/usr/libexec/snort-web-rules-update` | Bundled updater (the only one used) |
 | `/tmp/snort_rules_update.status` | Last rules update result (`running`/`ok`/`failed` plus an error code) |
 | `/tmp/snort_service_action.status` | Last service action result |
-| `/var/log/alert_fast.txt` | Fast alerts |
+| `/var/log/alert_json.txt` | JSON alerts (one object per line) |
 | `/var/log/<other>` | Syslog is read through `/sbin/logread` |
 | `/etc/snort/rules` | Persistent rules directory |
 | `/var/snort.d/` | Transient download/extract area and generated `snort_conf.lua` |
@@ -208,7 +213,7 @@ paths without `..` components or control characters.
   browser session.
 - Rule updates run in the background as root because the updater needs to write
   to `/etc/snort` and `/var/snort.d`. Only the bundled updater is used, so no
-  third-party script can replace the persistent rules directory with a symlink.
+  the storage mode is chosen explicitly by the `rules_persist` setting.
 
 ## Troubleshooting
 
@@ -220,12 +225,12 @@ paths without `..` components or control characters.
 | Update badge shows **Failed** | Inspect `/tmp/snort_rules_update.log`; check DNS, HTTPS certificates (`ca-certificates`) and free space |
 | **Save & Apply** does not start Snort | Check `/etc/init.d/snort-web enabled` and run `/etc/init.d/ucitrack restart` to register the config trigger (the package postinst does this on upgrade) |
 | Service state shows **Error** | Read the reason next to the badge; fix the init script or install rules, then press **Start** |
-| **Start** reports an error and nothing runs | Enable *Enable Snort* in Settings, then run **Update rules**; the reason next to the badge only includes snort syslog lines written by the latest start. Run `snort-mgr check` and `logread \| grep snort` for details |
+| **Start** reports an error and nothing runs | Enable *Enable Snort* in Settings, then use one of the rule buttons; the reason next to the badge only includes snort syslog lines written by the latest start. Run `snort-mgr check` and `logread \| grep snort` for details |
 | Old `local.lua` / DAQ crash lines in `logread` | Historical syslog entries from releases before 4.3.0. Check their timestamps and confirm with `ps \| grep '[s]nort'`. The generated configuration always sets `daq.module_dirs` |
 | Overview shows only N/A values | Look for the *Backend error* notification; the failing method and message are also in `/tmp/snort_backend_error.log` |
-| Update rules shows an error | The notification contains the backend reason and log path; inspect `/tmp/snort_rules_update.log` and `/tmp/snort_rules_update.status` |
-| No rules found | Run **Update rules**, then **Restart**; do not point a working link at an empty directory |
-| Migration to persistent storage fails | Check that `/etc/snort` is writable and that no process holds the rules directory |
+| A rule update shows an error | The notification contains the backend reason and log path; inspect `/tmp/snort_rules_update.log` and `/tmp/snort_rules_update.status` |
+| No rules found | Use **Use community rules** or **Update subscriber rules** on the Overview page |
+| Boot-time top-up never runs | Check `rules_persist=0`, that an interface fires `ifup`, and `/tmp/snort_rules_boot_done` |
 | Wrong interface displayed | Update the interface in Settings and apply |
 | Settings not applied | Run `/usr/libexec/snort-web-sync --sync` and compare `uci show snort-web` with `uci show snort` |
 | French UI not translated | Install the French catalog and set the LuCI language to French |

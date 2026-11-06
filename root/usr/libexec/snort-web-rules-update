@@ -1,29 +1,27 @@
 #!/bin/sh
 #
-# Built-in free Snort3 rules updater for luci-app-snort3.
+# Built-in Snort3 rules updater for luci-app-snort3.
 #
-# Installed as /usr/libexec/snort-web-rules-update and invoked by the
-# luci.snort rpcd backend when "Update rules" is clicked. It downloads the
-# free Snort 3 community ruleset (or the free registered ruleset when an
-# oinkcode is configured) and installs every downloaded *.rules file into
-# the persistent $config_dir/rules directory.
+# Called by the luci.snort rpcd backend, by cron (scheduled updates) and by
+# the ifup hotplug script (boot-time top-up when rules are not persistent).
 #
-# Rules are deliberately NOT kept in tmpfs: the snort3 package's own updater
-# symlinks /etc/snort/rules into $temp_dir, which loses all rules on reboot.
-# Downloading and unpacking still happen in tmpfs; only the final staging
-# directory lives beside the target so the rename is atomic.
+# snort-web.snort.rules_persist decides where the rules live:
+#   1 -> real directory at $config_dir/rules (survives reboot)
+#   0 -> $temp_dir/rules in tmpfs, with $config_dir/rules as a symlink
 #
-# The first line of /tmp/snort_rules_update.status is the state (running, ok
-# or failed); the optional second line is an error code the UI maps to a
-# translated message. Detailed diagnostics go to stdout and are captured in
-# /tmp/snort_rules_update.log by the backend.
+# /tmp/snort_rules_update.status holds running/ok/failed and an error code;
+# /tmp/snort_rules_update.source records community/registered.
 
 set -u
 
 STATUS_FILE=/tmp/snort_rules_update.status
+SOURCE_FILE=/tmp/snort_rules_update.source
 COMMUNITY_URL='https://www.snort.org/downloads/community/snort3-community-rules.tar.gz'
 SNAPSHOT_VERSION=${SNORT_RULES_SNAPSHOT:-31470}
 TESTING=0
+COMMUNITY=0
+FALLBACK=0
+SOURCE=community
 
 log() {
 	printf '%s %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*"
@@ -44,20 +42,23 @@ fail() {
 
 usage() {
 	cat <<USAGE
-Usage: snort-web-rules-update [-t|--testing] [-h|--help]
+Usage: snort-web-rules-update [-c|--community] [-f|--fallback] [-t|--testing]
 
-  -t  Generate two synthetic test rules instead of downloading anything.
+  -c  Force the free community ruleset (ignore a saved Oinkcode).
+  -f  On download failure, install a minimal fallback ruleset instead of
+      failing, so Snort can still start when the device boots without Internet.
+  -t  Generate synthetic test rules instead of downloading anything.
   -h  Show this help.
 
-Without options the free Snort 3 community ruleset is downloaded. When
-snort.snort.oinkcode is set, the free registered snapshot is used instead.
-Set SNORT_RULES_SNAPSHOT to override the hard-coded snapshot version.
+Set SNORT_RULES_SNAPSHOT to override the subscriber snapshot version.
 USAGE
 }
 
 while [ "${1:-}" ]; do
 	case "$1" in
 		-t|--testing) TESTING=1 ;;
+		-c|--community) COMMUNITY=1 ;;
+		-f|--fallback) FALLBACK=1 ;;
 		-h|--help) usage; exit 0 ;;
 		*) usage; exit 1 ;;
 	esac
@@ -101,8 +102,27 @@ fetch() {
 		log 'Downloading with wget.'
 		wget -O "$out" "$url" && return 0
 	fi
-
 	return 1
+}
+
+# Used for the boot-time top-up and whenever a download fails badly enough
+# that Snort would otherwise start with an empty rules directory.
+fallback_rules() {
+	dest=$1
+	copied=0
+
+	if [ -d /etc/snort/builtin_rules ]; then
+		for f in /etc/snort/builtin_rules/*.rules; do
+			[ -f "$f" ] || continue
+			cp -f "$f" "$dest/" && copied=$((copied + 1))
+		done
+	fi
+
+	if [ "$copied" -eq 0 ]; then
+		printf '%s\n' \
+			'alert icmp any any <> any any (msg:"FALLBACK TEST ALERT ICMP v4"; icode:0; itype:8; sid:99010;)' \
+			> "$dest/fallback.rules"
+	fi
 }
 
 set_state running
@@ -110,12 +130,20 @@ set_state running
 conf_dir=$(uci_value config_dir /etc/snort)
 temp_dir=$(uci_value temp_dir /var/snort.d)
 oinkcode=$(uci_value oinkcode '')
+persist=$(uci -q get snort-web.snort.rules_persist 2>/dev/null || true)
+[ "$persist" = "1" ] || persist=0
 safe_dir "$conf_dir"
 safe_dir "$temp_dir"
 
-rules_target="$conf_dir/rules"
+rules_link="$conf_dir/rules"
+if [ "$persist" = "1" ]; then
+	rules_target="$conf_dir/rules"
+	new_rules="$conf_dir/.rules-new.$$"
+else
+	rules_target="$temp_dir/rules"
+	new_rules="$temp_dir/.rules-new.$$"
+fi
 work_dir="$temp_dir/.rules-download.$$"
-new_rules="$conf_dir/.rules-new.$$"
 
 cleanup() {
 	rm -rf "$work_dir" "$new_rules"
@@ -123,6 +151,7 @@ cleanup() {
 trap cleanup EXIT INT TERM
 
 mkdir -p "$temp_dir" || fail "Unable to create $temp_dir" 'rules_dir_failed'
+mkdir -p "$conf_dir" || fail "Unable to create $conf_dir" 'rules_dir_failed'
 rm -rf "$work_dir" "$new_rules"
 mkdir -p "$work_dir" "$new_rules" || fail 'Unable to create working directories' 'rules_dir_failed'
 
@@ -135,23 +164,33 @@ if [ "$TESTING" -eq 1 ]; then
 else
 	tarball="$work_dir/rules.tar.gz"
 
-	if [ -n "$oinkcode" ]; then
-		url="https://www.snort.org/rules/snortrules-snapshot-${SNAPSHOT_VERSION}.tar.gz?oinkcode=${oinkcode}"
-		log "Downloading registered rules (snapshot ${SNAPSHOT_VERSION})."
-	else
+	if [ "$COMMUNITY" -eq 1 ] || [ -z "$oinkcode" ]; then
 		url="$COMMUNITY_URL"
+		SOURCE=community
 		log 'Downloading free community rules.'
+	else
+		url="https://www.snort.org/rules/snortrules-snapshot-${SNAPSHOT_VERSION}.tar.gz?oinkcode=${oinkcode}"
+		SOURCE=registered
+		log "Downloading subscriber rules (snapshot ${SNAPSHOT_VERSION})."
 	fi
 
-	fetch "$url" "$tarball" || fail 'Unable to download rules (check network, DNS and ca-certificates)' 'download_failed'
-	[ -s "$tarball" ] || fail 'Downloaded archive is empty' 'download_failed'
-	tar -xzf "$tarball" -C "$work_dir" || fail 'Unable to extract the rules archive' 'extract_failed'
-
-	find "$work_dir" -type f -name '*.rules' ! -name 'includes.rules' \
-		-exec cp -f '{}' "$new_rules/" \; || fail 'Unable to collect rule files' 'extract_failed'
+	if fetch "$url" "$tarball" && [ -s "$tarball" ] && tar -xzf "$tarball" -C "$work_dir"; then
+		find "$work_dir" -type f -name '*.rules' ! -name 'includes.rules' \
+			-exec cp -f '{}' "$new_rules/" \; || fail 'Unable to collect rule files' 'extract_failed'
+	elif [ "$FALLBACK" -eq 1 ]; then
+		log 'Download failed; installing a minimal fallback ruleset.'
+		fallback_rules "$new_rules"
+	else
+		fail 'Unable to download rules (check network, DNS and ca-certificates)' 'download_failed'
+	fi
 fi
 
 rule_count=$(find "$new_rules" -type f -name '*.rules' | wc -l)
+if [ "$rule_count" -eq 0 ] && [ "$FALLBACK" -eq 1 ]; then
+	log 'The archive contained no rules; installing a minimal fallback ruleset.'
+	fallback_rules "$new_rules"
+	rule_count=$(find "$new_rules" -type f -name '*.rules' | wc -l)
+fi
 [ "$rule_count" -gt 0 ] || fail 'The archive contains no .rules files' 'rules_empty'
 
 for f in "$new_rules"/*.rules; do
@@ -159,30 +198,32 @@ for f in "$new_rules"/*.rules; do
 	log "  rule: $(basename "$f") ($(wc -c < "$f") bytes)"
 done
 
-# Install into the persistent rules directory.  The staging directory is on
-# the same filesystem as the target, so the final rename is atomic.
-mkdir -p "$conf_dir" || fail "Unable to create $conf_dir" 'rules_dir_failed'
-
-if [ -L "$rules_target" ]; then
-	rm -f "$rules_target" || fail "Unable to replace the old rules symlink" 'rules_dir_failed'
-elif [ -d "$rules_target" ]; then
-	backup="${rules_target}.backup.$(date '+%s')"
-	mv "$rules_target" "$backup" || fail "Unable to back up $rules_target" 'rules_dir_failed'
+# Remove the previous rules path before installing the new directory.
+if [ -L "$rules_link" ]; then
+	rm -f "$rules_link" || fail "Unable to replace $rules_link" 'link_failed'
+elif [ -d "$rules_link" ]; then
+	backup="${rules_link}.backup.$(date '+%s')"
+	mv "$rules_link" "$backup" || fail "Unable to back up $rules_link" 'link_failed'
 	log "Backed up the previous rules directory to $backup."
-elif [ -e "$rules_target" ]; then
-	fail "$rules_target exists and is neither a directory nor a symbolic link" 'rules_dir_failed'
+elif [ -e "$rules_link" ]; then
+	fail "$rules_link exists and is neither a directory nor a symbolic link" 'link_failed'
+fi
+
+if [ -d "$rules_target" ]; then
+	rm -rf "$rules_target" || fail "Unable to replace $rules_target" 'rules_dir_failed'
 fi
 
 mv "$new_rules" "$rules_target" || fail "Unable to install rules into $rules_target" 'rules_dir_failed'
+if [ "$persist" = "0" ]; then
+	ln -s "$rules_target" "$rules_link" || fail "Unable to create $rules_link" 'link_failed'
+fi
 rm -rf "$work_dir"
 
+printf '%s\n' "$SOURCE" > "$SOURCE_FILE" 2>/dev/null || :
 set_state ok
-log "Loaded ${rule_count} rule file(s) into ${rules_target} (persistent)."
+log "Loaded ${rule_count} rule file(s) into ${rules_target} (persistent=${persist}, source=${SOURCE})."
 
-# snort-mgr enumerates *.rules at render time, so replacing the files alone
-# is not enough: a restart regenerates snort_conf.lua with the new includes.
-# The daemon's comm is "snort3" on many builds even though the binary is
-# /usr/bin/snort; check both so the automatic restart really happens.
+# snort-mgr enumerates *.rules at render time, so a restart is required.
 if pidof snort3 >/dev/null 2>&1 || pidof snort >/dev/null 2>&1; then
 	log 'Restarting Snort to load the new rules.'
 	/etc/init.d/snort restart >/dev/null 2>&1 ||

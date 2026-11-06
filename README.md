@@ -17,7 +17,7 @@ This module gives Snort3 a native place in LuCI:
 - live service status, PID, memory use, uptime, interface, IDS/IPS mode and DAQ method;
 - start, stop, restart, enable and disable controls;
 - recent alerts and system log excerpts, refreshed every 5 seconds;
-- persistent rule updates with progress log, migration and temporary-file cleanup;
+- optional persistent or in-memory rule storage, scheduled updates and boot-time top-up;
 - complete UCI settings for service, logging, rules, OpenAppID and NFQ;
 - English source strings with complete French and Simplified Chinese catalogs.
 
@@ -123,6 +123,9 @@ config snort 'snort'
 	option interface 'auto'
 	option mode 'ids'
 	option method 'pcap'
+	option rules_persist '0'
+	option rules_auto_update '0'
+	option rules_update_interval 'weekly'
 
 config nfq 'nfq'
 	option queue_count '4'
@@ -164,24 +167,37 @@ overwritten on the next apply or boot.
 ### Rules management
 
 The application ships a built-in updater at
-`/usr/libexec/snort-web-rules-update`, so **Update rules** works out of the box:
+`/usr/libexec/snort-web-rules-update`. The **Overview** page has an Oinkcode
+field and two actions:
 
-- it downloads the free Snort 3 community ruleset, or the free registered
-  snapshot when an oinkcode is configured in Settings;
-- it installs every `*.rules` file into the real, persistent `/etc/snort/rules`
-  directory (not a tmpfs symlink), so rules survive reboots and `snort3`
-  upgrades. Downloading and unpacking still use tmpfs and the final rename is
-  atomic; existing symlinks are migrated on upgrade or via **Migrate**;
-- it reports **Idle / In progress / Completed / Failed** on the Overview page,
-  with the detailed reason in the update log. The status returns to *Idle* five
-  minutes after a run, and the page lists every installed `.rules` file with its
-  size, the rules source (community or registered) and the last update time;
-- after a successful update it restarts Snort automatically, because
-  `snort-mgr` enumerates `*.rules` when rendering `snort_conf.lua`.
+- **Update subscriber rules** downloads the registered snapshot using the
+  saved Oinkcode. The code is stored in `snort-web.snort.oinkcode`.
+- **Use community rules** forces the free community ruleset and replaces the
+  previously installed rules. It keeps the saved Oinkcode for later use.
+
+Every update replaces the whole rules directory atomically and prints each
+installed `.rules` file with its size in the update log. A successful update
+restarts Snort, because `snort-mgr` enumerates `*.rules` when rendering
+`snort_conf.lua`.
+
+**Storage** is controlled by `rules_persist` in Settings and is **off by
+default**: rules live in `$temp_dir/rules` (tmpfs) with `/etc/snort/rules` as a
+symlink, so they disappear on reboot. Turning the setting on stores them in
+the real `/etc/snort/rules` directory instead. When persistence is off, an
+`ifup` hotplug script downloads the rules once per boot; `--fallback` installs
+the packaged `builtin_rules` (or a minimal ICMP rule) if there is no Internet,
+so Snort never starts with an empty rules directory.
+
+**Scheduling** is independent of storage: `rules_auto_update` plus
+`rules_update_interval` (1 day / 1 week / 1 month) writes a crontab entry that
+runs at 03:00. `/usr/libexec/snort-web-schedule` manages the entry and restarts
+cron. OpenWrt has no standalone `cron` package - `crond` is part of the
+essential busybox package - so the helper checks for `/etc/init.d/cron` at
+runtime and logs a warning if it is missing.
 
 The Overview page also shows a three-state service status (**running**,
-**stopped** or **error**, with the reason) and can clean up downloaded
-archives and stale update lock/log files.
+**stopped** or **error**, with the reason), the installed rule files with their
+source and last update time, and recent alerts formatted from `alert_json`.
 
 
 ### Project layout
@@ -196,7 +212,7 @@ root/etc/config/snort-web                  default application configuration
 root/usr/libexec/snort-web-sync            snort-web -> snort synchronisation
 root/etc/init.d/snort-web                  boot-time sync before snort
 root/usr/share/ucitrack/                   Save & Apply restart trigger
-root/etc/uci-defaults/                     migration, sync and persistent-rules repair
+root/etc/uci-defaults/                     migration, sync and scheduling
 dist/lmo/snort.fr.lmo                      prebuilt French catalog
 dist/lmo/snort.zh-cn.lmo                   prebuilt Simplified Chinese catalog
 po/fr/snort.po                             French catalog
@@ -415,8 +431,8 @@ sont importés une fois (`snort-web.internal.migrated=1`). Ensuite, seul
 `/etc/config/snort-web` fait foi. Le bouton **Mettre à jour les règles** lance
 le programme fourni `/usr/libexec/snort-web-rules-update`, qui télécharge
 gratuitement les règles communautaires Snort 3, et n'est désactivé que si aucun
-programme de mise à jour n'est disponible. Les règles sont installées dans `/etc/snort/rules` (répertoire réel persistant) ;
-les anciens liens symboliques sont migrés lors de la mise à niveau.
+programme de mise à jour n'est disponible. Le stockage persistant est optionnel (désactivé par défaut) ; sans lui, les règles
+sont téléchargées à nouveau après chaque démarrage.
 
 ### Structure du projet
 
@@ -554,11 +570,11 @@ LuCI 应用的设置保存在 **`/etc/config/snort-web`**，而 OpenWrt 的 `sno
 - **设置**：服务、日志、规则、高级和 NFQ 选项；
 - **告警**：最近 50 条告警和最近 20 条 Snort 系统日志。
 
-规则更新功能已内置：`/usr/libexec/snort-web-rules-update` 会下载免费的
-Snort 3 社区规则（填写 Oinkcode 时改用免费注册版规则），把规则写入持久目录
-`/etc/snort/rules`（重启后仍保留），不需要额外安装 `snort-rules`。页面上的
-更新状态会显示「空闲 / 进行中 / 完成 / 失败」，失败时可在更新日志里看到具体
-原因。更新成功后会自动重启 Snort，因为 `snort-mgr` 在渲染配置时会枚举规则文件。
+规则更新功能已内置：概览页提供 Oinkcode 输入框和「更新订阅规则」「使用社区规则」
+两个按钮（后者保留已保存的 Oinkcode，只切换来源）。规则是否持久化由设置页开关
+控制，**默认关闭**（重启后丢失，开机联网后自动重新下载并可生成兜底规则）；打开后
+规则保存在 `/etc/snort/rules`。定时更新开关可选 1 天 / 1 星期 / 1 个月，由 cron
+在 03:00 执行。更新成功后会自动重启 Snort 以重新渲染配置。
 
 ### 构建与检查
 

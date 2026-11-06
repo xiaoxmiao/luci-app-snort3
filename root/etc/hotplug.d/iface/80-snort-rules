@@ -1,0 +1,14 @@
+#!/bin/sh
+# Non-persistent rules live in tmpfs and disappear on reboot.  Refresh them
+# once after the first interface comes up.  --fallback installs a minimal
+# ruleset when the device boots without Internet, so Snort can still start.
+[ "${ACTION:-}" = "ifup" ] || exit 0
+[ "$(uci -q get snort-web.snort.rules_persist 2>/dev/null)" = "1" ] && exit 0
+[ -f /tmp/snort_rules_boot_done ] && exit 0
+[ -f /usr/libexec/snort-web-rules-update ] || exit 0
+
+: > /tmp/snort_rules_boot_done
+( sleep 8
+  /bin/sh /usr/libexec/snort-web-rules-update --fallback >> /tmp/snort_rules_update.log 2>&1
+) >/dev/null 2>&1 &
+exit 0

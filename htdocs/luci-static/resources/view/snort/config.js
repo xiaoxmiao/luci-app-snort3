@@ -145,14 +145,27 @@ return view.extend({
 		o.datatype = 'directory';
 
 		s = m.section(form.TypedSection, 'snort', _('Rules management'),
-			_('Rules are stored permanently in the configuration directory and survive reboots.'));
+			_('Rule storage, scheduling and source selection. The Oinkcode is entered on the Overview page.'));
 		s.anonymous = true;
 		s.addremove = false;
 
-		o = s.option(form.Value, 'oinkcode', _('Oinkcode'),
-			_('Access code to download official Snort rules (optional)'));
-		o.password = true;
-		o.placeholder = _('Enter your Oinkcode if you have one');
+		o = s.option(form.Flag, 'rules_persist', _('Store rules persistently'),
+			_('Keep downloaded rules in the configuration directory across reboots. When disabled, rules are downloaded again after every boot.'));
+		o.default = '0';
+		o.rmempty = false;
+
+		o = s.option(form.Flag, 'rules_auto_update', _('Automatic rule updates'),
+			_('Run scheduled rule updates with cron at 03:00.'));
+		o.default = '0';
+		o.rmempty = false;
+
+		o = s.option(form.ListValue, 'rules_update_interval', _('Update interval'),
+			_('How often scheduled rule updates run.'));
+		o.value('daily', _('1 day'));
+		o.value('weekly', _('1 week'));
+		o.value('monthly', _('1 month'));
+		o.default = 'weekly';
+		o.depends('rules_auto_update', '1');
 
 		o = s.option(form.ListValue, 'action', _('Rule action'),
 			_('Default action for rules'));

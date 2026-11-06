@@ -107,7 +107,10 @@ cp -f "$SRC_DIR/root/usr/libexec/snort-web-sync" /usr/libexec/snort-web-sync
 cp -f "$SRC_DIR/root/usr/libexec/snort-web-rules-update" /usr/libexec/snort-web-rules-update
 cp -f "$SRC_DIR/root/etc/init.d/snort-web" /etc/init.d/snort-web
 cp -f "$SRC_DIR/root/usr/share/ucitrack/luci-app-snort3.json" /usr/share/ucitrack/luci-app-snort3.json
-chmod 0755 /usr/libexec/snort-web-sync /usr/libexec/snort-web-rules-update /etc/init.d/snort-web
+cp -f "$SRC_DIR/root/usr/libexec/snort-web-schedule" /usr/libexec/snort-web-schedule
+mkdir -p /etc/hotplug.d/iface
+cp -f "$SRC_DIR/root/etc/hotplug.d/iface/80-snort-rules" /etc/hotplug.d/iface/80-snort-rules
+chmod 0755 /usr/libexec/snort-web-sync /usr/libexec/snort-web-rules-update /usr/libexec/snort-web-schedule /etc/init.d/snort-web /etc/hotplug.d/iface/80-snort-rules
 chmod 0644 /usr/share/ucitrack/luci-app-snort3.json
 
 # Keep an existing application configuration intact
@@ -174,6 +177,9 @@ install_lmo zh_Hans zh-cn
 
 # Apply defaults immediately so a fresh install is usable without a reboot
 /etc/uci-defaults/80_luci-app-snort3 || true
+
+# Apply the scheduled rules-update entry
+[ -f /usr/libexec/snort-web-schedule ] && /bin/sh /usr/libexec/snort-web-schedule
 
 # Drop LuCI and rpcd caches
 rm -rf /tmp/luci-indexcache* /tmp/luci-modulecache 2>/dev/null || true

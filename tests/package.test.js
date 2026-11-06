@@ -45,8 +45,13 @@ test('the default snort-web configuration matches the sync helper', () => {
 	/* manual is forced to 0 and interface is resolved from "auto" by the
 	 * helper instead of being copied verbatim, so both stay in the UCI file
 	 * but not in SNORT_OPTIONS. */
+	/* manual/interface are handled specially and rule storage/scheduling
+	 * options belong to the application only; none are copied verbatim. */
 	assert.deepEqual(Object.keys(sections.snort.options).sort(),
-		snortOptions[1].split(/\s+/).concat([ 'manual', 'interface' ]).sort());
+		snortOptions[1].split(/\s+/).concat([
+			'manual', 'interface', 'rules_persist',
+			'rules_auto_update', 'rules_update_interval'
+		]).sort());
 	assert.deepEqual(Object.keys(sections.nfq.options).sort(),
 		nfqOptions[1].split(/\s+/).sort());
 	assert.equal(sections.internal.options.migrated, '0');
@@ -100,17 +105,65 @@ test('read-only RPC failures are reported instead of aborting the method', () =>
 	assert.doesNotMatch(backend, /match\(path, \/\[\\x00-\\x1f\]\/\)/);
 });
 
-test('rules are persistent and a restart reloads the generated config', () => {
+test('the updater supports both storage modes, community source and boot fallback', () => {
 	const updater = read('root/usr/libexec/snort-web-rules-update');
 	const sync = read('root/usr/libexec/snort-web-sync');
 
+	assert.match(updater, /rules_persist/);
 	assert.match(updater, /rules_target="\$conf_dir\/rules"/);
-	assert.match(updater, /new_rules="\$conf_dir\/\.rules-new\.\$\$"/);
-	assert.doesNotMatch(updater, /ln -s/);
+	assert.match(updater, /rules_target="\$temp_dir\/rules"/);
+	assert.match(updater, /--community/);
+	assert.match(updater, /--fallback/);
+	assert.match(updater, /fallback_rules\(\)/);
+	assert.match(updater, /ln -s "\$rules_target"/);
 	assert.match(updater, /\/etc\/init\.d\/snort restart/);
 	assert.match(sync, /resolve_interface\(\)/);
 	assert.match(sync, /network\.\$net\.device/);
 	assert.match(sync, /\/sys\/class\/net\/eth0/);
+});
+
+test('the overview exposes subscriber/community buttons and the settings expose scheduling', () => {
+	const view = read('htdocs/luci-static/resources/view/snort/config.js');
+	const overview = read('htdocs/luci-static/resources/view/snort/overview.js');
+	const api = read('htdocs/luci-static/resources/snort/api.js');
+	const backend = read('root/usr/share/rpcd/ucode/luci.snort.uc');
+
+	assert.match(api, /params: \[ 'mode', 'oinkcode' \]/);
+	assert.match(overview, /Update subscriber rules/);
+	assert.match(overview, /Use community rules/);
+	assert.match(overview, /Oinkcode \(subscriber rules\)/);
+	assert.doesNotMatch(view, /form\.Value, 'oinkcode'/);
+	assert.match(view, /rules_persist/);
+	assert.match(view, /rules_auto_update/);
+	assert.match(view, /rules_update_interval/);
+	assert.match(backend, /args: \{ mode: '', oinkcode: '' \}/);
+	assert.match(backend, /mode == 'community'\) \? ' --community'/);
+});
+
+test('scheduled updates and boot top-up are wired up', () => {
+	const schedule = read('root/usr/libexec/snort-web-schedule');
+	const hotplug = read('root/etc/hotplug.d/iface/80-snort-rules');
+	const init = read('root/etc/init.d/snort-web');
+
+	assert.match(schedule, /0 3 \* \* \*/);
+	assert.match(schedule, /\/etc\/init\.d\/cron/);
+	assert.match(schedule, /snort-web-rules-update/);
+	assert.match(hotplug, /ACTION.*ifup/);
+	assert.match(hotplug, /--fallback/);
+	assert.match(hotplug, /snort_rules_boot_done/);
+	assert.match(init, /snort-web-schedule/);
+});
+
+test('alerts are read from the alert_json family of files', () => {
+	const backend = read('root/usr/share/rpcd/ucode/luci.snort.uc');
+	const overview = read('htdocs/luci-static/resources/view/snort/overview.js');
+
+	assert.match(backend, /ALERT_FILE_NAME = 'alert_json\.txt'/);
+	assert.match(backend, /\^\[0-9\]\+_alert_json/);
+	assert.match(backend, /function read_alert_lines/);
+	assert.match(backend, /count_alert_lines/);
+	assert.match(overview, /function formatAlert/);
+	assert.match(overview, /formatAlert\(line\)/);
 });
 
 test('the settings page uses a LuCI network device dropdown', () => {

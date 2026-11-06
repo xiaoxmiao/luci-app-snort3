@@ -61,5 +61,6 @@ fi
 # Import an existing /etc/config/snort once and push the application settings
 # into the runtime configuration used by the snort3 init script.
 [ -x /usr/libexec/snort-web-sync ] && /usr/libexec/snort-web-sync --sync
+[ -f /usr/libexec/snort-web-schedule ] && /bin/sh /usr/libexec/snort-web-schedule
 
 exit 0

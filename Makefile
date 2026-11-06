@@ -12,6 +12,10 @@ include $(TOPDIR)/rules.mk
 
 LUCI_TITLE:=LuCI support for Snort3 IDS/IPS
 LUCI_DESCRIPTION:=Web interface for status, service control, configuration, alerts and rules management of Snort3.
+# Scheduled rule updates use busybox crond (/etc/init.d/cron).  OpenWrt has no
+# standalone "cron" package - the applet belongs to the essential busybox
+# package - so nothing is added to LUCI_DEPENDS.  snort-web-schedule detects
+# its absence at runtime and logs a warning instead of breaking the install.
 LUCI_DEPENDS:=+luci-base +rpcd-mod-ucode
 # Snort3 is a runtime-only dependency. Keeping it in LUCI_DEPENDS makes the
 # OpenWrt build system compile the whole Snort3 stack before this UI package,
@@ -20,7 +24,7 @@ LUCI_DEPENDS:=+luci-base +rpcd-mod-ucode
 LUCI_EXTRA_DEPENDS:=snort3$(if $(CONFIG_USE_APK), (>=0))
 LUCI_PKGARCH:=all
 
-PKG_VERSION:=4.3.4
+PKG_VERSION:=4.4.0
 PKG_RELEASE:=1
 PKG_PO_VERSION:=$(PKG_VERSION)-r$(PKG_RELEASE)
 
@@ -47,6 +51,7 @@ define Package/luci-app-snort3/postinst
 	fi
 	rm -f /tmp/luci-indexcache.*
 	rm -rf /tmp/luci-modulecache/
+	[ -f /usr/libexec/snort-web-schedule ] && /bin/sh /usr/libexec/snort-web-schedule
 	# rpcd reload only sends a signal; it does not re-fork the long-lived
 	# ucode plugin processes.  A restart is required after replacing the plugin.
 	/etc/init.d/rpcd restart 2>/dev/null
